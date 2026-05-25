@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SIGDIP</string>
+    <string name="title_activity_main">SIGDIP</string>
+    <string name="package_name">com.cefppnay.sigdip</string>
+    <string name="custom_url_scheme">com.cefppnay.sigdip</string>
+</resources>

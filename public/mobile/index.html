@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGDIP Mobile - Inspección</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+    <header>
+        <h1>SIGDIP Mobile</h1>
+        <div class="status-bar">
+            <span id="connection-status" class="online">En línea</span>
+            <span id="sync-indicator" class="">Todo sincronizado</span>
+        </div>
+    </header>
+
+    <main>
+        <div class="predio-info">
+            <h2>Rancho La Esperanza</h2>
+            <p><strong>CUP:</strong> 18-001-0001-001</p>
+            <p><strong>Localidad:</strong> Tepic</p>
+        </div>
+
+        <div class="scanner-section">
+            <button id="btn-scan" class="btn-primary" onclick="toggleScanner()">📷 Escanear Arete</button>
+            <div id="reader" style="width: 100%; display: none; margin-top: 15px;"></div>
+        </div>
+
+        <h3>Lista de Animales</h3>
+        <div id="animal-list">
+            <!-- Mock animals for demonstration -->
+            <div class="animal-card">
+                <div class="animal-meta">
+                    <span class="arete">7000000001</span>
+                    <span class="raza">Angus - Macho</span>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-neg" onclick="handleInspectionSubmit(1, 'Negativo')">Negativo</button>
+                    <button class="btn-reac" onclick="handleInspectionSubmit(1, 'Reactivo')">Reactivo</button>
+                </div>
+            </div>
+
+            <div class="animal-card">
+                <div class="animal-meta">
+                    <span class="arete">7000000002</span>
+                    <span class="raza">Hereford - Hembra</span>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-neg" onclick="handleInspectionSubmit(2, 'Negativo')">Negativo</button>
+                    <button class="btn-reac" onclick="handleInspectionSubmit(2, 'Reactivo')">Reactivo</button>
+                </div>
+            </div>
+
+            <div class="animal-card">
+                <div class="animal-meta">
+                    <span class="arete">7000000003</span>
+                    <span class="raza">Brahman - Macho</span>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-neg" onclick="handleInspectionSubmit(3, 'Negativo')">Negativo</button>
+                    <button class="btn-reac" onclick="handleInspectionSubmit(3, 'Reactivo')">Reactivo</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/db.js"></script>
+    <script src="js/sync.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
