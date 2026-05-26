@@ -118,7 +118,20 @@ export default {
   async mounted() {
     window.addEventListener('online', () => this.isOnline = true);
     window.addEventListener('offline', () => this.isOnline = false);
+
+    // Escuchar el evento de sincronización de fondo para actualizar las estadísticas en tiempo real
+    this._syncListener = async (e) => {
+      await this.refreshStats();
+      this.resultado = `Sincronizados ${e.detail.procesados} dictámenes automáticamente en segundo plano.`;
+    };
+    window.addEventListener('sigdip-sync-complete', this._syncListener);
+
     await this.refreshStats();
+  },
+  unmounted() {
+    if (this._syncListener) {
+      window.removeEventListener('sigdip-sync-complete', this._syncListener);
+    }
   },
   methods: {
     async refreshStats() {

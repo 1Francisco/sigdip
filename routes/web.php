@@ -71,4 +71,13 @@ Route::middleware(['auth'])->group(function () {
 
     // API para búsqueda de aretes (Autocompletado en Dictámenes)
     Route::get('/api/buscar-arete/{numero}', [InspeccionController::class, 'buscarArete'])->name('api.buscar.arete');
+
+    // Descarga de APK de la App Móvil
+    Route::get('/descargar-apk', function () {
+        $path = public_path('sigdip.apk');
+        if (file_exists($path)) {
+            return response()->download($path, 'sigdip.apk');
+        }
+        return back()->with('error', 'El archivo APK de la aplicación móvil no está disponible en este momento. Contacte al administrador del CEFPPENAY.');
+    })->name('descargar.apk');
 });

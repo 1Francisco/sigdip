@@ -153,6 +153,7 @@
 
 <script>
 import db from '../services/db.js';
+import backgroundSync from '../services/backgroundSync.js';
 
 export default {
   name: 'InspeccionFormView',
@@ -236,7 +237,8 @@ export default {
       await db.saveInspeccion({ ...this.form });
 
       if (estado === 'sincronizado') {
-        alert('✅ Dictamen finalizado y guardado localmente. Sincroniza cuando tengas internet.');
+        alert('✅ Dictamen finalizado y guardado localmente. Se sincronizará automáticamente al detectar internet.');
+        backgroundSync.syncIfConnected().catch(e => console.error(e));
       } else {
         alert('💾 Borrador guardado. Puedes editarlo después.');
       }

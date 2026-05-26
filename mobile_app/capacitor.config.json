@@ -2,10 +2,11 @@
   "appId": "com.cefppnay.sigdip",
   "appName": "SIGDIP",
   "webDir": "dist",
+  "overrideUserAgent": "SIGDIP-Mobile-App",
   "server": {
     "androidScheme": "https",
     "cleartext": true,
-    "url": "https://theme-specialized-beam-apart.trycloudflare.com"
+    "url": "https://sigdip-cefppnay-nayarit-desarrollo.loca.lt"
   },
   "plugins": {
     "CapacitorHttp": {

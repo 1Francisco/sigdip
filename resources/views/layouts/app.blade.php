@@ -465,6 +465,26 @@
                 <i class="bi bi-file-earmark-excel"></i> Sábana Excel
             </a>
             @endrole
+
+            <hr class="mx-3 text-slate-200">
+            <a class="nav-link text-primary fw-semibold" href="{{ route('descargar.apk') }}">
+                <i class="bi bi-phone"></i> Descargar App (APK)
+            </a>
+
+            <!-- Descargar APK Premium Card (Solo Escritorio) -->
+            <div class="mx-3 my-3 p-3 rounded-4 border border-primary border-opacity-10 d-none d-lg-block" style="background-color: var(--primary-soft);">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="fs-5 text-primary"><i class="bi bi-phone-fill"></i></span>
+                    <strong class="small text-dark">Aplicación Móvil</strong>
+                </div>
+                <p class="text-secondary small mb-3" style="font-size: 0.75rem; line-height: 1.4;">
+                    Captura inspecciones offline y escanea aretes SINIIGA en campo.
+                </p>
+                <a href="{{ route('descargar.apk') }}" class="btn btn-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-2 py-2">
+                    <i class="bi bi-download"></i> Descargar APK
+                </a>
+            </div>
+
             <form method="POST" action="{{ route('logout') }}" class="mt-auto">
                 @csrf
                 <button type="submit" class="nav-link text-danger w-100 border-0 text-start bg-transparent" style="cursor: pointer;">
