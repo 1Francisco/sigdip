@@ -25,7 +25,7 @@ class WebAuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt($credentials, true)) {
             $request->session()->regenerate();
 
             // Redirect to dashboard

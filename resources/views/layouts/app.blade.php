@@ -6,6 +6,8 @@
     <title>SIGDIP - @yield('title', 'Sistema de Gestión')</title>
     <link rel="icon" type="image/png" href="{{ asset('icon_png.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('icon_png.png') }}">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2563eb">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Bootstrap 5 -->
@@ -635,5 +637,46 @@
             }
         })();
     </script>
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(reg) {
+                        console.log('Service Worker registrado con éxito. Scope:', reg.scope);
+                    })
+                    .catch(function(err) {
+                        console.log('Fallo en registro de Service Worker:', err);
+                    });
+            });
+        }
+    </script>
+    @auth
+    <!-- Background Pre-fetching for Offline PWA use -->
+    <script>
+        window.addEventListener('load', function() {
+            // Wait 2.5 seconds to let the main page finish loading smoothly
+            setTimeout(function() {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    const pagesToPrefetch = [
+                        '/inspecciones/nuevo',
+                        '/visitas',
+                        '/productores',
+                        '/predios'
+                    ];
+                    pagesToPrefetch.forEach(function(url) {
+                        fetch(url)
+                            .then(function() {
+                                console.log('[PWA] Pre-descargado y cacheado en segundo plano:', url);
+                            })
+                            .catch(function(err) {
+                                console.warn('[PWA] Fallo al pre-descargar en segundo plano:', url, err);
+                            });
+                    });
+                }
+            }, 2500);
+        });
+    </script>
+    @endauth
 </body>
 </html>
