@@ -479,7 +479,7 @@
                                         <tr>
                                             <th style="width: 220px;">Identificación (Arete)</th>
                                             <th style="width: 180px;">Tipo Arete</th>
-                                            <th style="width: 80px;">Edad (m)</th>
+                                            <th style="width: 120px;">Edad (m)</th>
                                             <th style="width: 120px;">Raza</th>
                                             <th style="width: 100px;">Sexo</th>
                                             <th style="width: 80px;">Fierro</th>
@@ -493,7 +493,7 @@
                                         <tr>
                                             <td data-label="Identificador">
                                                 <div class="input-group input-group-sm">
-                                                    <input type="text" name="animales[{{ $index }}][identificador]" class="form-control arete-input" id="arete_{{ $index }}" value="{{ $detalle->animal->numero_arete_siniiga }}" required onchange="buscarDatosAnimal(this)" inputmode="numeric">
+                                                    <input type="text" name="animales[{{ $index }}][identificador]" class="form-control arete-input" id="arete_{{ $index }}" value="{{ $detalle->animal->numero_arete_siniiga }}" required onchange="buscarDatosAnimal(this)">
                                                     <button class="btn btn-primary" type="button" onclick="startScanner({{ $index }})">
                                                         <i class="bi bi-camera"></i>
                                                     </button>
@@ -540,7 +540,7 @@
                                         <tr>
                                             <td data-label="Identificador">
                                                 <div class="input-group input-group-sm">
-                                                    <input type="text" name="animales[0][identificador]" class="form-control arete-input" id="arete_0" placeholder="SINIIGA" required onchange="buscarDatosAnimal(this)" inputmode="numeric">
+                                                    <input type="text" name="animales[0][identificador]" class="form-control arete-input" id="arete_0" placeholder="SINIIGA" required onchange="buscarDatosAnimal(this)">
                                                     <button class="btn btn-primary" type="button" onclick="startScanner(0)">
                                                         <i class="bi bi-camera"></i>
                                                     </button>
@@ -1157,7 +1157,7 @@
             <tr>
                 <td data-label="Identificador">
                     <div class="input-group input-group-sm">
-                        <input type="text" name="animales[${animalCount}][identificador]" class="form-control arete-input" id="arete_${animalCount}" placeholder="SINIIGA" required onchange="buscarDatosAnimal(this)" inputmode="numeric">
+                        <input type="text" name="animales[${animalCount}][identificador]" class="form-control arete-input" id="arete_${animalCount}" placeholder="SINIIGA" required onchange="buscarDatosAnimal(this)">
                         <button class="btn btn-primary" type="button" onclick="startScanner(${animalCount})">
                             <i class="bi bi-camera"></i>
                         </button>

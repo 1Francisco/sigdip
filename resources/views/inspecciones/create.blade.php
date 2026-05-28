@@ -437,22 +437,22 @@
                                 <table class="table table-bordered align-middle mb-0 table-mobile-cards" id="tablaAnimales">
                                     <thead class="bg-light text-center small fw-bold">
                                         <tr>
-                                            <th>Identificación (Arete)</th>
-                                            <th>Tipo Arete</th>
-                                            <th>Edad (m)</th>
-                                            <th>Raza</th>
-                                            <th>Sexo</th>
-                                            <th>Fierro</th>
-                                            <th>Resultado</th>
+                                            <th style="width: 220px;">Identificación (Arete)</th>
+                                            <th style="width: 180px;">Tipo Arete</th>
+                                            <th style="width: 120px;">Edad (m)</th>
+                                            <th style="width: 120px;">Raza</th>
+                                            <th style="width: 100px;">Sexo</th>
+                                            <th style="width: 80px;">Fierro</th>
+                                            <th style="width: 140px;">Resultado</th>
                                             <th>Observaciones</th>
-                                            <th></th>
+                                            <th style="width: 40px;"></th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
                                              <td data-label="Identificador">
                                                  <div class="input-group input-group-sm">
-                                                     <input type="text" name="animales[0][identificador]" class="form-control arete-input" id="arete_0" placeholder="SINIIGA o SA" required onchange="buscarDatosAnimal(this)" inputmode="numeric">
+                                                     <input type="text" name="animales[0][identificador]" class="form-control arete-input" id="arete_0" placeholder="SINIIGA o SA" required onchange="buscarDatosAnimal(this)">
                                                      <button class="btn btn-primary" type="button" onclick="startScanner(0)">
                                                          <i class="bi bi-camera"></i>
                                                      </button>
@@ -1011,7 +1011,7 @@
              <tr>
                  <td data-label="Identificador">
                      <div class="input-group input-group-sm">
-                         <input type="text" name="animales[${animalCount}][identificador]" class="form-control arete-input" id="arete_${animalCount}" placeholder="SINIIGA o SA" required onchange="buscarDatosAnimal(this)" inputmode="numeric">
+                         <input type="text" name="animales[${animalCount}][identificador]" class="form-control arete-input" id="arete_${animalCount}" placeholder="SINIIGA o SA" required onchange="buscarDatosAnimal(this)">
                          <button class="btn btn-primary" type="button" onclick="startScanner(${animalCount})">
                              <i class="bi bi-camera"></i>
                          </button>

@@ -7,12 +7,15 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class InspeccionExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
+class InspeccionExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
 {
     /**
-    * @return \Illuminate\Support\Collection
-    */
+     * @return \Illuminate\Support\Collection
+     */
     public function collection()
     {
         return Inspeccion::with(['predio.productor', 'detalles'])->get();
@@ -44,7 +47,7 @@ class InspeccionExport implements FromCollection, WithHeadings, WithMapping, Sho
             'REACTORES (POSITIVOS)',
             'LATITUD',
             'LONGITUD',
-            'OBSERVACIONES'
+            'OBSERVACIONES',
         ];
     }
 
@@ -53,19 +56,19 @@ class InspeccionExport implements FromCollection, WithHeadings, WithMapping, Sho
         $negativos = $inspeccion->detalles->where('resultado_prueba', 'Negativo')->count();
         $sospechosos = $inspeccion->detalles->where('resultado_prueba', 'Sospechoso')->count();
         $positivos = $inspeccion->detalles->where('resultado_prueba', 'Positivo')->count();
-        $total_probados = $inspeccion->detalles->count();
+        $totalProbados = $inspeccion->detalles->count();
 
         return [
             $inspeccion->id,
-            'DEFINITIVA', // O el valor que corresponda a "Recurso"
+            'DEFINITIVA',
             $inspeccion->folio,
             $inspeccion->predio->nombre_rancho,
             $inspeccion->predio->clave_unidad_produccion,
             $inspeccion->predio->productor->nombre . ' ' . $inspeccion->predio->productor->apellido_paterno . ' ' . $inspeccion->predio->productor->apellido_materno,
             $inspeccion->predio->municipio ?? $inspeccion->predio->localidad,
             $inspeccion->predio->localidad,
-            $inspeccion->sementales + $inspeccion->vacas + $inspeccion->vaquillas + $inspeccion->becerras + $inspeccion->becerros,
-            $inspeccion->sementales,
+            $inspeccion->semental + $inspeccion->vacas + $inspeccion->vaquillas + $inspeccion->becerras + $inspeccion->becerros,
+            $inspeccion->semental,
             $inspeccion->vacas,
             $inspeccion->vaquillas,
             $inspeccion->becerras,
@@ -73,13 +76,31 @@ class InspeccionExport implements FromCollection, WithHeadings, WithMapping, Sho
             $inspeccion->funcion_zootecnica,
             $inspeccion->fecha_inyeccion ? $inspeccion->fecha_inyeccion->format('d/m/Y') : '',
             $inspeccion->fecha_lectura ? $inspeccion->fecha_lectura->format('d/m/Y') : '',
-            $total_probados,
+            $totalProbados,
             $negativos,
             $sospechosos,
             $positivos,
             $inspeccion->predio->latitud,
             $inspeccion->predio->longitud,
-            $inspeccion->observaciones
+            $inspeccion->observaciones,
+        ];
+    }
+
+    /**
+     * Apply grey background and bold font to the header row.
+     */
+    public function styles(Worksheet $sheet)
+    {
+        return [
+            1 => [
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'color' => ['rgb' => 'D9D9D9'],
+                ],
+                'font' => [
+                    'bold' => true,
+                ],
+            ],
         ];
     }
 }

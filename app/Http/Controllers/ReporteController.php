@@ -19,7 +19,7 @@ class ReporteController extends Controller
 
         $pdf = Pdf::loadView('reports.inspeccion_pdf', compact('inspeccion'));
         
-        return $pdf->stream("inspeccion_{$inspeccion->id}.pdf");
+        return $pdf->stream($this->buildPdfFilename($inspeccion));
     }
 
     public function exportPdf($id)
@@ -29,7 +29,32 @@ class ReporteController extends Controller
 
         $pdf = Pdf::loadView('reports.inspeccion_pdf', compact('inspeccion'));
         
-        return $pdf->download("inspeccion_{$inspeccion->id}.pdf");
+        return $pdf->download($this->buildPdfFilename($inspeccion));
+    }
+
+    /**
+     * Genera el nombre del archivo PDF con el formato:
+     * DICTAMEN_{NOMBRE_PRODUCTOR}_{FECHA_INSPECCION}.pdf
+     */
+    private function buildPdfFilename(Inspeccion $inspeccion): string
+    {
+        $productor = $inspeccion->predio->productor;
+
+        // Nombre: apellido paterno + primer nombre
+        $nombre = trim($productor->apellido_paterno . ' ' . $productor->nombre);
+
+        // Sanitizar: quitar acentos, ñ, y caracteres no permitidos en nombres de archivo
+        $nombre = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $nombre);
+        $nombre = preg_replace('/[^A-Za-z0-9 _-]/', '', $nombre);
+        $nombre = preg_replace('/\s+/', '_', trim($nombre));
+        $nombre = strtoupper($nombre);
+
+        // Fecha: usar fecha de inyección si existe, si no la fecha de hoy
+        $fecha = $inspeccion->fecha_inyeccion
+            ? \Carbon\Carbon::parse($inspeccion->fecha_inyeccion)->format('d-m-Y')
+            : now()->format('d-m-Y');
+
+        return "DICTAMEN_{$nombre}_{$fecha}.pdf";
     }
 
     /**
@@ -37,6 +62,6 @@ class ReporteController extends Controller
      */
     public function exportExcel()
     {
-        return Excel::download(new \App\Exports\InspeccionExport, 'dictamenes_pecuarios_' . date('Ymd') . '.xlsx');
+        return Excel::download(new \App\Exports\InspeccionExport, 'dictamenes_pecuarios_' . date('d-m-Y') . '.xlsx');
     }
 }

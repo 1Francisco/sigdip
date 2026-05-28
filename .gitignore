@@ -30,3 +30,6 @@ storage/logs/*
 !storage/logs/.gitignore
 bootstrap/cache/*
 !bootstrap/cache/.gitignore
+scratch/generate_docx.py
+comparativa_plataformas.docx
+comparativa_plataformas.md
