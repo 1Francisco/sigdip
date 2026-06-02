@@ -152,6 +152,12 @@
         }
 
         async function sendDraft(record) {
+            // Dinámicamente actualizar el token CSRF con el activo del formulario para prevenir errores 419
+            const activeTokenEl = form.querySelector('input[name="_token"]');
+            if (activeTokenEl && record && record.payload) {
+                record.payload._token = activeTokenEl.value;
+            }
+
             const response = await fetch(record.action, {
                 method: 'POST',
                 body: payloadToFormData(record.payload),

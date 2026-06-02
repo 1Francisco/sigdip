@@ -3,9 +3,10 @@
     <header class="app-header">
       <div>
         <h1>📷 Escáner SINIIGA</h1>
-        <div class="subtitle">Escanea el código de barras del arete</div>
+        <div class="subtitle" v-if="isSingleMode">Escanea el arete para el animal #{{ singleIndex + 1 }}</div>
+        <div class="subtitle" v-else>Escanea el código de barras del arete</div>
       </div>
-      <button @click="$router.push('/dashboard')" style="background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;">✕</button>
+      <button @click="goBack" style="background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;">✕</button>
     </header>
 
     <main class="app-content">
@@ -32,7 +33,12 @@
       <div class="card" style="margin-top: 16px;">
         <div class="card-title" style="margin-bottom: 12px;">✏️ Ingreso Manual</div>
         <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 12px;">
-          Si el escáner no logra leer el código, escríbelo a mano aquí:
+          <template v-if="isSingleMode">
+            Escribe el arete del animal y presiona "Confirmar":
+          </template>
+          <template v-else>
+            Si el escáner no logra leer el código, escríbelo a mano aquí:
+          </template>
         </p>
         <div class="form-group">
           <input
@@ -40,39 +46,48 @@
             type="text"
             class="form-input"
             placeholder="Ej: 09-1234-5678-0"
-            @keyup.enter="addAnimal"
+            @keyup.enter="isSingleMode ? confirmSingle() : addAnimal()"
           />
         </div>
-        <button class="btn btn-accent" @click="addAnimal" :disabled="!manualCode">
+
+        <!-- Single-scan mode: confirm button -->
+        <button v-if="isSingleMode" class="btn btn-accent" @click="confirmSingle" :disabled="!manualCode">
+          <span class="btn-icon">✅</span> Confirmar Arete
+        </button>
+
+        <!-- Batch mode: add button -->
+        <button v-else class="btn btn-accent" @click="addAnimal" :disabled="!manualCode">
           <span class="btn-icon">➕</span> Agregar Animal
         </button>
       </div>
 
-      <!-- Lista de aretes escaneados -->
-      <div v-if="scannedAnimals.length" style="margin-top: 16px;">
-        <div class="section-title">Aretes Escaneados ({{ scannedAnimals.length }})</div>
-        <div
-          v-for="(animal, idx) in scannedAnimals"
-          :key="idx"
-          class="animal-row"
-          :class="{ positivo: animal.resultado === 'Positivo' }"
-        >
-          <span class="arete">🏷️ {{ animal.identificador }}</span>
-          <select v-model="animal.resultado" style="padding: 6px; border-radius: 8px; border: 1px solid #ccc; font-size: 0.8rem;">
-            <option value="Negativo">✅ Negativo</option>
-            <option value="Positivo">🔴 Positivo</option>
-            <option value="Sospechoso">🟡 Sospechoso</option>
-          </select>
-          <button @click="removeAnimal(idx)" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--color-danger);">🗑️</button>
+      <!-- Lista de aretes escaneados (solo en modo batch) -->
+      <template v-if="!isSingleMode">
+        <div v-if="scannedAnimals.length" style="margin-top: 16px;">
+          <div class="section-title">Aretes Escaneados ({{ scannedAnimals.length }})</div>
+          <div
+            v-for="(animal, idx) in scannedAnimals"
+            :key="idx"
+            class="animal-row"
+            :class="{ positivo: animal.resultado === 'Positivo' }"
+          >
+            <span class="arete">🏷️ {{ animal.identificador }}</span>
+            <select v-model="animal.resultado" style="padding: 6px; border-radius: 8px; border: 1px solid #ccc; font-size: 0.8rem;">
+              <option value="Negativo">✅ Negativo</option>
+              <option value="Positivo">🔴 Positivo</option>
+              <option value="Sospechoso">🟡 Sospechoso</option>
+            </select>
+            <button @click="removeAnimal(idx)" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--color-danger);">🗑️</button>
+          </div>
         </div>
-      </div>
 
-      <!-- Botón para ir a formulario completo con estos animales -->
-      <div v-if="scannedAnimals.length" style="margin-top: 20px;">
-        <button class="btn btn-primary btn-lg" @click="goToForm">
-          📝 Continuar al Dictamen ({{ scannedAnimals.length }} animales)
-        </button>
-      </div>
+        <!-- Botón para ir a formulario completo con estos animales -->
+        <div v-if="scannedAnimals.length" style="margin-top: 20px;">
+          <button class="btn btn-primary btn-lg" @click="goToForm">
+            📝 Continuar al Dictamen ({{ scannedAnimals.length }} animales)
+          </button>
+        </div>
+      </template>
     </main>
 
     <nav class="bottom-nav">
@@ -102,13 +117,22 @@ export default {
   data() {
     return {
       manualCode: '',
-      scannedAnimals: []
+      scannedAnimals: [],
+      isSingleMode: false,
+      singleIndex: -1
     };
   },
   mounted() {
-    // Recuperar animales previos si volvemos de otra pantalla
-    const saved = sessionStorage.getItem('scanned_animals');
-    if (saved) this.scannedAnimals = JSON.parse(saved);
+    // Check if we're in single-scan mode (coming from a specific animal row)
+    const targetIndex = sessionStorage.getItem('scan_target_index');
+    if (targetIndex !== null) {
+      this.isSingleMode = true;
+      this.singleIndex = parseInt(targetIndex);
+    } else {
+      // Batch mode: recover previously scanned animals if any
+      const saved = sessionStorage.getItem('scanned_animals');
+      if (saved) this.scannedAnimals = JSON.parse(saved);
+    }
   },
   methods: {
     addAnimal() {
@@ -140,9 +164,27 @@ export default {
     saveToSession() {
       sessionStorage.setItem('scanned_animals', JSON.stringify(this.scannedAnimals));
     },
+    confirmSingle() {
+      if (!this.manualCode.trim()) return;
+      // Save the single scanned arete and go back to the form
+      sessionStorage.setItem('scanned_single_arete', this.manualCode.trim().toUpperCase());
+      // scan_target_index and inspeccion_draft remain in sessionStorage for the form to read
+      this.$router.push('/inspeccion');
+    },
     goToForm() {
       this.saveToSession();
       this.$router.push('/inspeccion');
+    },
+    goBack() {
+      if (this.isSingleMode) {
+        // Clean up single-scan session data on cancel
+        sessionStorage.removeItem('scan_target_index');
+        sessionStorage.removeItem('scanned_single_arete');
+        // Keep inspeccion_draft so the form restores its state
+        this.$router.push('/inspeccion');
+      } else {
+        this.$router.push('/dashboard');
+      }
     }
   }
 };

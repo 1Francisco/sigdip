@@ -1,43 +1,43 @@
 /* ===== SIGDIP Mobile - Design System ===== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Colores SENASICA / Gobierno */
-  --color-primary: #1B5E20;
-  --color-primary-light: #2E7D32;
-  --color-primary-dark: #0D3B12;
-  --color-accent: #FF6F00;
-  --color-accent-light: #FFA726;
-  --color-danger: #D32F2F;
-  --color-danger-light: #EF5350;
-  --color-success: #2E7D32;
-  --color-warning: #F57F17;
-  --color-info: #1565C0;
+  /* Colores SIGDIP Web Cloned */
+  --color-primary: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-primary-dark: #1d4ed8;
+  --color-accent: #f59e0b;
+  --color-accent-light: #fef3c7;
+  --color-danger: #ef4444;
+  --color-danger-light: #fee2e2;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
 
   /* Fondos */
-  --bg-primary: #F5F7FA;
+  --bg-primary: #f8fafc;
   --bg-card: #FFFFFF;
-  --bg-dark: #1A1A2E;
-  --bg-input: #F0F2F5;
+  --bg-dark: #0f172a;
+  --bg-input: #ffffff;
 
   /* Texto */
-  --text-primary: #1A1A2E;
-  --text-secondary: #6B7280;
-  --text-muted: #9CA3AF;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
   --text-white: #FFFFFF;
 
   /* Sombras */
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-  --shadow-xl: 0 16px 40px rgba(0,0,0,0.15);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
   /* Bordes */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
   --radius-full: 50%;
 
   /* Spacing */
@@ -56,7 +56,7 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -73,7 +73,7 @@ body {
 
 /* ===== Header / Navbar Móvil ===== */
 .app-header {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  background: var(--color-primary);
   color: var(--text-white);
   padding: var(--space-md) var(--space-lg);
   display: flex;
@@ -199,21 +199,21 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  background: var(--color-primary);
   color: var(--text-white);
-  box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .btn-accent {
-  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light));
+  background: var(--color-accent);
   color: var(--text-white);
-  box-shadow: 0 4px 12px rgba(255, 111, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, var(--color-danger), var(--color-danger-light));
+  background: var(--color-danger);
   color: var(--text-white);
-  box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
 }
 
 .btn-outline {
@@ -523,3 +523,185 @@ body {
   margin-bottom: var(--space-md);
   padding-left: var(--space-xs);
 }
+
+/* ===== Bootstrap Utility Classes Fallbacks for Offline ===== */
+.d-flex { display: flex !important; }
+.d-none { display: none !important; }
+.flex-column { flex-direction: column !important; }
+.flex-grow-1 { flex-grow: 1 !important; }
+.align-items-center { align-items: center !important; }
+.justify-content-center { justify-content: center !important; }
+.justify-content-between { justify-content: space-between !important; }
+.text-center { text-align: center !important; }
+.text-primary { color: var(--color-primary) !important; }
+.text-success { color: var(--color-success) !important; }
+.text-danger { color: var(--color-danger) !important; }
+.text-warning { color: var(--color-warning) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+.fw-bold { font-weight: 700 !important; }
+.fw-semibold { font-weight: 600 !important; }
+.rounded-circle { border-radius: 50% !important; }
+.rounded-pill { border-radius: 50px !important; }
+.shadow-sm { box-shadow: var(--shadow-sm) !important; }
+.border { border: 1px solid #e2e8f0 !important; }
+.p-2 { padding: var(--space-sm) !important; }
+.p-3 { padding: var(--space-md) !important; }
+.p-4 { padding: var(--space-lg) !important; }
+.pe-3 { padding-right: var(--space-md) !important; }
+.py-1-5 { padding-top: 6px !important; padding-bottom: 6px !important; }
+.px-2-5 { padding-left: 10px !important; padding-right: 10px !important; }
+.gap-1-5 { gap: 8px !important; }
+.me-2 { margin-right: var(--space-sm) !important; }
+.mb-1 { margin-bottom: 4px !important; }
+.mb-2 { margin-bottom: var(--space-sm) !important; }
+.mb-4 { margin-bottom: var(--space-lg) !important; }
+.mt-2 { margin-top: var(--space-sm) !important; }
+.mt-3 { margin-top: var(--space-md) !important; }
+.mt-4 { margin-top: var(--space-lg) !important; }
+.mt-5 { margin-top: var(--space-xl) !important; }
+.w-100 { width: 100% !important; }
+.w-auto { width: auto !important; }
+
+/* Badges and Buttons */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+.bg-success-subtle { background-color: #d1fae5 !important; border-color: #a7f3d0 !important; color: #065f46 !important; }
+.bg-danger-subtle { background-color: #fee2e2 !important; border-color: #fca5a5 !important; color: #991b1b !important; }
+.bg-warning-subtle { background-color: #fef3c7 !important; border-color: #fde68a !important; color: #92400e !important; }
+.bg-primary-soft { background-color: var(--color-primary-light) !important; color: var(--color-primary) !important; }
+.bg-info-subtle { background-color: #e0f2fe !important; border-color: #bae6fd !important; color: #075985 !important; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: 10px 16px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+.btn-light {
+  background-color: #f1f5f9 !important;
+  color: #64748b !important;
+  border-color: #e2e8f0 !important;
+}
+.btn-light:active {
+  background-color: #e2e8f0 !important;
+}
+
+/* ===== Responsive Grid Layout Fallbacks for Offline ===== */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -8px;
+  margin-left: -8px;
+}
+
+.row > * {
+  box-sizing: border-box;
+  padding-right: 8px;
+  padding-left: 8px;
+}
+
+.col-6 {
+  flex: 0 0 50%;
+  max-width: 50%;
+}
+
+.col-12 {
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+.g-3 {
+  margin-top: -6px;
+  margin-bottom: -6px;
+}
+.g-3 > * {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.g-4 {
+  margin-top: -8px;
+  margin-bottom: -8px;
+}
+.g-4 > * {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+@media (min-width: 768px) {
+  .col-md-4 {
+    flex: 0 0 33.333333%;
+    max-width: 33.333333%;
+  }
+}
+
+@media (min-width: 992px) {
+  .col-lg-4 {
+    flex: 0 0 33.333333%;
+    max-width: 33.333333%;
+  }
+  .col-lg-5 {
+    flex: 0 0 41.666667%;
+    max-width: 41.666667%;
+  }
+  .col-lg-7 {
+    flex: 0 0 58.333333%;
+    max-width: 58.333333%;
+  }
+  .col-lg-8 {
+    flex: 0 0 66.666667%;
+    max-width: 66.666667%;
+  }
+}
+
+/* Extra utility classes for lists and warnings */
+.border-slate-100 {
+  border-color: #f1f5f9 !important;
+}
+.font-mono {
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
+.small-badge {
+  font-size: 0.65rem !important;
+  padding: 3px 8px !important;
+  font-weight: 600 !important;
+}
+
+/* ===== NOTCH & SAFE AREA INSET SUPPORT (Capacitor Fullscreen Support) ===== */
+.mobile-header {
+  padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+}
+
+.app-header {
+  padding-top: calc(var(--space-md) + env(safe-area-inset-top, 0px)) !important;
+}
+
+.form-view-header {
+  padding-top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+}
+
+@media (max-width: 576px) {
+  .form-view-header {
+    padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+  }
+  .app-content {
+    padding: 12px 8px 90px 8px !important;
+  }
+}
+

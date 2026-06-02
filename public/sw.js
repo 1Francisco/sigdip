@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sigdip-pwa-cache-v2';
+const CACHE_NAME = 'sigdip-pwa-cache-v3';
 const STATIC_ASSETS = [
   '/icon_png.png',
   'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap',
@@ -9,15 +9,15 @@ const STATIC_ASSETS = [
   'https://unpkg.com/html5-qrcode'
 ];
 
-// Install Event - Cache only public static assets (avoids redirect/login issues)
+// Install Event
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log('[Service Worker] Precaching public static assets...');
+      console.log('[Service Worker] Precaching static assets...');
       return Promise.allSettled(
         STATIC_ASSETS.map(url => {
           return cache.add(url).catch(err => {
-            console.warn('[Service Worker] Failed to cache static asset:', url, err);
+            console.warn('[Service Worker] Failed to cache asset:', url, err);
           });
         })
       );
@@ -41,45 +41,51 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch Event (Network First, with Fallback to Cache)
+// Fetch Event - Stale-While-Revalidate Strategy (Instant offline loading)
 self.addEventListener('fetch', event => {
-  // Skip non-GET requests (e.g. POST for forms)
+  // Skip non-GET requests (e.g. POST forms)
   if (event.request.method !== 'GET') {
     return;
   }
 
-  // Skip chrome-extension or other non-http schemas
+  // Skip non-http schemas
   if (!event.request.url.startsWith('http')) {
     return;
   }
 
-  // Strategy: Network First, fallback to Cache
+  // Stale-While-Revalidate
   event.respondWith(
-    fetch(event.request)
-      .then(networkResponse => {
-        // If successful and response is OK, dynamically cache/update the page or asset
-        if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return networkResponse;
-      })
-      .catch(() => {
-        // Offline: try to serve from Cache
-        return caches.match(event.request).then(cachedResponse => {
-          if (cachedResponse) {
-            return cachedResponse;
+    caches.match(event.request).then(cachedResponse => {
+      // Create a promise to fetch from network and update cache
+      const fetchPromise = fetch(event.request)
+        .then(networkResponse => {
+          // If successful (status 200), dynamically cache/update the page
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseToCache);
+            });
           }
-          
-          // Fallback if navigating offline and page is not cached
-          if (event.request.mode === 'navigate') {
-            console.log('[Service Worker] Navigating offline, trying fallback...');
-            // Match main entrypoint if specific page isn't in cache
-            return caches.match('/admin/dashboard');
-          }
+          return networkResponse;
+        })
+        .catch(err => {
+          console.warn('[Service Worker] Fetch failed:', event.request.url, err);
+          throw err;
         });
-      })
+
+      // Serve instantly from cache if available, else wait for network
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      // If no cached response, wait for network, and handle failure with a fallback
+      return fetchPromise.catch(() => {
+        const acceptHeader = event.request.headers.get('accept') || '';
+        if (acceptHeader.includes('text/html')) {
+          console.log('[Service Worker] Serving offline fallback for:', event.request.url);
+          return caches.match('/admin/dashboard');
+        }
+      });
+    })
   );
 });

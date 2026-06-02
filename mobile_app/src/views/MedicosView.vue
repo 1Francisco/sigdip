@@ -1,0 +1,867 @@
+<template>
+  <div class="app-container bg-light-page">
+    <!-- Sidebar (Drawer) -->
+    <div class="sidebar-overlay" :class="{ active: sidebarActive }" @click="sidebarActive = false"></div>
+    
+    <aside class="sidebar" :class="{ active: sidebarActive }">
+      <div class="sidebar-brand">
+        <img src="/icon_png.png" alt="SIGDIP" class="sidebar-logo">
+        <span>SIGDIP</span>
+        <button class="btn-close-sidebar" @click="sidebarActive = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <nav class="nav flex-column">
+        <template v-if="isAdmin">
+          <a class="nav-link" @click.prevent="$router.push('/dashboard')">
+            <i class="bi bi-grid-1x2-fill"></i> Dashboard
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/productores')">
+            <i class="bi bi-people"></i> Productores
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/predios')">
+            <i class="bi bi-house-door"></i> Predios
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/inspecciones')">
+            <i class="bi bi-clipboard-check"></i> Inspecciones
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/visitas')">
+            <i class="bi bi-calendar-event"></i> Agenda / Visitas
+          </a>
+          <a class="nav-link active" @click.prevent="sidebarActive = false">
+            <i class="bi bi-person-badge"></i> Médicos
+          </a>
+          <a class="nav-link" @click.prevent="alertWebOnly('Importar Excel')">
+            <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
+          </a>
+          <hr class="mx-3 text-slate-200">
+          <a class="nav-link" @click.prevent="$router.push('/inspecciones?downloadExcel=true')">
+            <i class="bi bi-file-earmark-excel"></i> Sábana Excel
+          </a>
+        </template>
+        <template v-else>
+          <a class="nav-link" @click.prevent="$router.push('/dashboard')">
+            <i class="bi bi-grid-1x2-fill"></i> Dashboard
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/productores')">
+            <i class="bi bi-people"></i> Productores
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/predios')">
+            <i class="bi bi-house-door"></i> Predios
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/visitas')">
+            <i class="bi bi-calendar-event"></i> Agenda / Visitas
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/inspecciones')">
+            <i class="bi bi-clipboard-check"></i> Inspecciones
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/inspeccion')">
+            <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/sync')">
+            <i class="bi bi-arrow-repeat"></i> Sincronizar
+          </a>
+        </template>
+
+        <hr class="mx-3 text-slate-200">
+        <a class="nav-link text-danger logout-btn" @click.prevent="doLogout">
+          <i class="bi bi-box-arrow-left"></i> Salir
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header shadow-sm">
+      <button class="header-hamburger-btn rounded-circle" @click="sidebarActive = true">
+        <i class="bi bi-list fs-4"></i>
+      </button>
+      
+      <div class="brand-title flex-grow-1 text-center">
+        <img src="/icon_png.png" alt="SIGDIP" class="brand-icon">
+        <span class="fw-bold">SIGDIP</span>
+      </div>
+
+      <!-- Connectivity Badge Mobile -->
+      <div 
+        class="badge rounded-pill px-2-5 py-1-5 d-flex align-items-center gap-1.5 fw-semibold me-2 border connectivity-badge shadow-sm"
+        :class="isOnline ? 'bg-success-subtle text-success border-success-subtle' : 'bg-danger-subtle text-danger border-danger-subtle'"
+      >
+        <span class="pulse-dot" :class="isOnline ? 'bg-success' : 'bg-danger'"></span>
+        <span class="badge-text d-none d-sm-inline">{{ isOnline ? 'Online' : 'Offline' }}</span>
+      </div>
+
+      <button class="avatar-circle rounded-circle" @click="sidebarActive = true">
+        <i class="bi bi-person"></i>
+      </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-content main-content bg-light">
+      
+      <!-- Top Action Bar (Premium Web Replica) -->
+      <div class="welcome-header mb-4 text-start d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+          <h2 class="h4 fw-bold mb-1 text-dark">Médicos Verificadores</h2>
+          <p class="text-secondary small mb-0">Administra el personal autorizado para realizar inspecciones</p>
+        </div>
+        
+        <!-- Web Badges -->
+        <div class="d-none d-md-flex align-items-center gap-2">
+          <span class="web-connectivity-pill">
+            <span class="dot" :class="isOnline ? 'bg-success' : 'bg-danger'"></span>
+            {{ isOnline ? 'Conectado' : 'Desconectado' }}
+          </span>
+          <span class="web-role-pill">
+            <i class="bi bi-person-fill text-primary"></i>
+            {{ userName }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Alerts -->
+      <div v-if="errorMsg" class="alert alert-danger shadow-sm rounded-4 border-0 text-start">{{ errorMsg }}</div>
+      <div v-if="successMsg" class="alert alert-success shadow-sm rounded-4 border-0 text-start">{{ successMsg }}</div>
+
+      <!-- Card Container for Medicos List -->
+      <div class="card border-0 shadow-sm p-0 overflow-hidden card-outer-mobile-flat bg-white rounded-4">
+        <div class="card-header bg-white p-3 p-md-4 border-bottom border-slate-100">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 w-100">
+            <h5 class="mb-0 fw-bold fs-5 text-dark text-center text-md-start w-100 w-md-auto">
+              <i class="bi bi-people text-primary me-2"></i>Personal en Campo
+            </h5>
+            <div class="w-100 w-md-auto">
+              <button @click="$router.push('/medicos/nuevo')" class="btn btn-primary btn-sm-custom d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 bg-primary text-white border-0 rounded-3 w-100 w-md-auto">
+                <i class="bi bi-plus-lg"></i> Nuevo Médico
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body p-0 text-start">
+          
+          <!-- Empty State when filtered results are 0 -->
+          <div v-if="!loading && medicos.length === 0" class="text-center p-5 text-muted">
+            <i class="bi bi-people display-6 d-block mb-2 text-muted"></i>
+            <p class="mb-0 small text-secondary">No hay médicos registrados en el sistema</p>
+          </div>
+
+          <div v-else>
+            <!-- 1. TABLE VIEW: Horizontally scrollable on mobile to match screenshot -->
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th class="ps-4 text-secondary fw-bold text-uppercase fs-7 tracking-wider">Nombre Completo</th>
+                    <th class="text-secondary fw-bold text-uppercase fs-7 tracking-wider">Correo de Acceso</th>
+                    <th class="text-secondary fw-bold text-uppercase fs-7 tracking-wider">Fecha Regist.</th>
+                    <th class="text-center text-secondary fw-bold text-uppercase fs-7 tracking-wider">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="medico in paginatedMedicos" :key="medico.id" class="border-bottom">
+                    <td class="ps-4">
+                      <div class="d-flex align-items-center">
+                        <!-- Icon matching mockup -->
+                        <div class="bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width: 40px; height: 40px; background-color: rgba(37, 99, 235, 0.1);">
+                          <i class="bi bi-person-badge fs-5"></i>
+                        </div>
+                        <div>
+                          <div class="fw-bold text-dark fs-6">{{ medico.name }}</div>
+                          <small class="text-secondary">Rol: Médico de Campo</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-dark">{{ medico.email }}</td>
+                    <td class="text-dark">{{ medico.created_at }}</td>
+                    <td>
+                      <div class="d-flex justify-content-center">
+                        <button 
+                          @click="deleteMedico(medico)" 
+                          class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center gap-1.5 px-3 py-1-5 bg-transparent border-danger text-danger rounded-3" 
+                          title="Eliminar médico"
+                        >
+                          <i class="bi bi-trash"></i> Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- PAGINATION FOOTER: Custom chevron styles matching mockup -->
+            <div class="pagination-footer-custom d-flex justify-content-between align-items-center flex-wrap gap-3 p-4 bg-white">
+              <!-- Left: Pagination Info (Desktop only) -->
+              <div class="text-secondary small d-none d-md-block">
+                Mostrando <strong class="text-dark">{{ startResult }}</strong> a <strong class="text-dark">{{ endResult }}</strong> de <strong class="text-dark">{{ totalResults }}</strong> registros
+              </div>
+              
+              <!-- Center/Right: Beautiful Custom Chevrons Pagination -->
+              <div class="pagination-custom-wrapper d-flex align-items-center justify-content-center w-100 w-md-auto gap-4 py-2">
+                <button 
+                  class="pagination-custom-btn prev-btn" 
+                  :disabled="currentPage === 1" 
+                  @click="prevPage"
+                >
+                  <i class="bi bi-chevron-left"></i>
+                </button>
+                <div class="pagination-custom-text text-center">
+                  <div class="fw-bold text-dark fs-6" style="line-height: 1.2;">Pág. {{ currentPage }} de {{ totalPages }}</div>
+                  <small class="text-secondary" style="font-size: 0.78rem;">({{ totalResults }} registros)</small>
+                </div>
+                <button 
+                  class="pagination-custom-btn next-btn" 
+                  :disabled="currentPage === totalPages" 
+                  @click="nextPage"
+                >
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <a class="bottom-nav-link" @click.prevent="$router.push('/dashboard')">
+        <i class="bi bi-grid-1x2"></i>
+        <span>Inicio</span>
+      </a>
+      <a class="bottom-nav-link" @click.prevent="$router.push('/inspecciones')">
+        <i class="bi bi-clipboard-check"></i>
+        <span>Dictámenes</span>
+      </a>
+      <a class="bottom-nav-link" @click.prevent="$router.push('/visitas')">
+        <i class="bi bi-calendar-event"></i>
+        <span>Agenda</span>
+      </a>
+      <a class="bottom-nav-link active" @click.prevent="sidebarActive = true">
+        <i class="bi bi-people"></i>
+        <span>Más</span>
+      </a>
+    </nav>
+
+  </div>
+</template>
+
+<script>
+import { Network } from '@capacitor/network';
+import api from '../services/api.js';
+
+export default {
+  name: 'MedicosView',
+  data() {
+    return {
+      userName: '',
+      isAdmin: false,
+      isOnline: true,
+      sidebarActive: false,
+      networkListener: null,
+      loading: false,
+      saving: false,
+      medicos: [],
+      showModal: false,
+      form: {
+        name: '',
+        email: '',
+        password: ''
+      },
+      currentPage: 1,
+      successMsg: '',
+      errorMsg: ''
+    };
+  },
+  computed: {
+    totalPages() {
+      return Math.ceil(this.totalResults / 10) || 1;
+    },
+    totalResults() {
+      return this.medicos.length;
+    },
+    startResult() {
+      return this.totalResults === 0 ? 0 : ((this.currentPage - 1) * 10) + 1;
+    },
+    endResult() {
+      return Math.min(this.currentPage * 10, this.totalResults);
+    },
+    paginatedMedicos() {
+      const start = (this.currentPage - 1) * 10;
+      const end = this.currentPage * 10;
+      return this.medicos.slice(start, end);
+    }
+  },
+  async mounted() {
+    const user = api.getCurrentUser();
+    this.userName = user?.name || 'Administrador Central';
+    this.isAdmin = user?.roles && user.roles.includes('Administrador');
+    this.isOnline = navigator.onLine;
+
+    // Solo permitir acceso a Administradores
+    if (!this.isAdmin) {
+      alert('Acceso restringido. Solo administradores pueden gestionar el personal médico.');
+      this.$router.push('/dashboard');
+      return;
+    }
+
+    await this.loadMedicos();
+
+    try {
+      const status = await Network.getStatus();
+      this.isOnline = status.connected;
+      this.networkListener = await Network.addListener('networkStatusChange', (status) => {
+        this.isOnline = status.connected;
+      });
+    } catch (e) {
+      window.addEventListener('online', () => this.isOnline = true);
+      window.addEventListener('offline', () => this.isOnline = false);
+    }
+  },
+  beforeUnmount() {
+    if (this.networkListener) {
+      this.networkListener.remove();
+    }
+  },
+  methods: {
+    alertWebOnly(seccion) {
+      alert(`La sección de ${seccion} es una función administrativa disponible en la web de escritorio.`);
+      this.sidebarActive = false;
+    },
+    async doLogout() {
+      try { 
+        await api.logout(); 
+      } catch (e) { 
+        // Silenciar errores en offline
+      }
+      localStorage.removeItem('sigdip_token');
+      localStorage.removeItem('sigdip_user');
+      sessionStorage.clear();
+      this.$router.push('/login');
+    },
+    async loadMedicos() {
+      this.loading = true;
+      this.errorMsg = '';
+      try {
+        const res = await api.getMedicos();
+        this.medicos = res.data || [];
+        this.currentPage = 1;
+      } catch (e) {
+        this.errorMsg = e.message || 'No se pudieron cargar los médicos verificadores desde el servidor.';
+      } finally {
+        this.loading = false;
+      }
+    },
+    openCreate() {
+      this.form = { name: '', email: '', password: '' };
+      this.showModal = true;
+    },
+    closeModal() {
+      this.showModal = false;
+    },
+    async saveMedico() {
+      this.saving = true;
+      this.errorMsg = '';
+      this.successMsg = '';
+      try {
+        await api.storeMedico(this.form);
+        this.successMsg = 'Médico Verificador registrado correctamente.';
+        this.closeModal();
+        await this.loadMedicos();
+      } catch (e) {
+        this.errorMsg = e.message || 'No se pudo registrar al médico.';
+      } finally {
+        this.saving = false;
+      }
+    },
+    async deleteMedico(medico) {
+      if (!confirm(`¿Estás seguro de eliminar al médico "${medico.name}"? No podrá volver a iniciar sesión.`)) return;
+      this.errorMsg = '';
+      this.successMsg = '';
+      try {
+        await api.deleteMedico(medico.id);
+        this.successMsg = `Médico "${medico.name}" eliminado del sistema.`;
+        await this.loadMedicos();
+      } catch (e) {
+        this.errorMsg = e.message || 'No se pudo eliminar al médico.';
+      }
+    },
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    }
+  }
+};
+</script>
+
+<style scoped>
+/* App Layout Structure */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-header {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  padding: 0 0.9rem;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.header-hamburger-btn {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  background: #f5f6f8;
+  color: #111827;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.brand-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  color: #2563eb;
+  font-size: 1.02rem;
+}
+
+.brand-icon,
+.sidebar-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.avatar-circle {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.welcome-header {
+  padding: 0.95rem 0.95rem 0.35rem;
+}
+
+/* Sidebar Styles */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.38);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 90;
+}
+
+.sidebar-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 270px;
+  height: 100vh;
+  background: #fff;
+  z-index: 100;
+  transform: translateX(-100%);
+  transition: transform 0.22s ease;
+  box-shadow: 20px 0 40px rgba(15, 23, 42, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar.active {
+  transform: translateX(0);
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1rem 1rem 0.8rem;
+  font-weight: 800;
+  color: #2563eb;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.btn-close-sidebar {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #334155;
+}
+
+.nav {
+  padding: 0.8rem 0.4rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.nav-link {
+  padding: 0.85rem 1rem;
+  border-radius: 0.8rem;
+  color: #334155;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  text-decoration: none;
+}
+
+.nav-link.active {
+  background: #2563eb;
+  color: white;
+}
+
+.logout-btn {
+  margin-top: auto;
+}
+
+/* Header Badges */
+.connectivity-badge {
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border: 1px solid;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.bg-success-subtle {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.bg-danger-subtle {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.bg-success {
+  background-color: #10b981;
+}
+
+.bg-danger {
+  background-color: #ef4444;
+}
+
+/* Web Badges */
+.web-connectivity-pill {
+  background-color: #d1fae5;
+  color: #065f46;
+  font-weight: 600;
+  font-size: 0.78rem;
+  padding: 6px 12px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #a7f3d0;
+}
+
+.web-connectivity-pill .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.web-role-pill {
+  background-color: white;
+  color: #1e293b;
+  font-weight: 600;
+  font-size: 0.78rem;
+  padding: 6px 14px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+/* Table styling matching desktop web index exactly */
+.table th {
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  background: #f8fafc !important;
+  padding: 14px 16px !important;
+}
+
+.table td {
+  padding: 14px 16px !important;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.fs-7-5 {
+  font-size: 0.78rem !important;
+}
+
+/* Custom chevrons pagination styling */
+.pagination-custom-wrapper {
+  margin: 0 auto;
+}
+
+.pagination-custom-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.prev-btn {
+  background-color: #f1f5f9;
+  border: none;
+  color: #64748b;
+}
+
+.prev-btn:hover:not(:disabled) {
+  background-color: #e2e8f0;
+}
+
+.next-btn {
+  background-color: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #2563eb;
+}
+
+.next-btn:hover:not(:disabled) {
+  background-color: #eff6ff;
+  border-color: #2563eb;
+}
+
+.pagination-custom-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-footer-custom {
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Bottom Nav bar */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: #fff;
+  border-top: 1px solid #e9eef5;
+  display: flex;
+  z-index: 80;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav-link {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 0.78rem;
+  gap: 0.2rem;
+}
+
+.bottom-nav-link i {
+  font-size: 1.15rem;
+}
+
+.bottom-nav-link.active {
+  color: #2563eb;
+}
+
+/* Modals */
+.form-group-custom {
+  margin-bottom: 16px;
+}
+
+.form-label-custom {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.form-control-custom {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: #1e293b;
+  background: white;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 520px;
+  background: white;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.modal-header, .modal-footer {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-title {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.btn-close-modal {
+  background: #e2e8f0;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.btn-modal-save, .btn-modal-cancel {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 600;
+}
+
+.btn-modal-save {
+  background: #2563eb;
+  color: #fff;
+}
+
+.btn-modal-cancel {
+  background: #fff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+/* Responsive configurations */
+@media (min-width: 769px) {
+  .mobile-header,
+  .bottom-nav {
+    display: none;
+  }
+
+  .main-content {
+    margin-left: 270px;
+    padding: 2.5rem !important;
+    min-height: 100vh;
+  }
+
+  .welcome-header {
+    padding: 0;
+    margin-bottom: 2rem;
+  }
+
+  .card-outer-mobile-flat {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: flex;
+  }
+  
+  .main-content {
+    padding: 1rem;
+    padding-bottom: 90px;
+  }
+
+  .card-outer-mobile-flat {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .card-outer-mobile-flat .card-header {
+    background: white !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid #e2e8f0 !important;
+    margin-bottom: 16px !important;
+  }
+
+  .pagination-footer-custom {
+    background: white !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid #e2e8f0 !important;
+    margin-top: 16px !important;
+    padding: 16px !important;
+  }
+}
+</style>

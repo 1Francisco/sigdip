@@ -5,7 +5,7 @@
 
 import localforage from 'localforage';
 
-// Instancia para catálogos (predios, visitas)
+// Instancia para catálogos (predios, visitas, productores, medicos)
 const catalogStore = localforage.createInstance({
   name: 'sigdip_mobile',
   storeName: 'catalogos',
@@ -19,18 +19,39 @@ const inspeccionStore = localforage.createInstance({
   description: 'Dictámenes creados offline que esperan sincronización'
 });
 
+// Función auxiliar para desvincular proxies reactivos de Vue antes de guardar en IndexedDB
+function clean(obj) {
+  return obj ? JSON.parse(JSON.stringify(obj)) : obj;
+}
+
 export default {
   // ====== CATÁLOGOS ======
   async savePredios(predios) {
-    await catalogStore.setItem('predios', predios);
+    await catalogStore.setItem('predios', clean(predios));
   },
 
   async getPredios() {
     return (await catalogStore.getItem('predios')) || [];
   },
 
+  async saveProductores(productores) {
+    await catalogStore.setItem('productores', clean(productores));
+  },
+
+  async getProductores() {
+    return (await catalogStore.getItem('productores')) || [];
+  },
+
+  async saveMedicos(medicos) {
+    await catalogStore.setItem('medicos', clean(medicos));
+  },
+
+  async getMedicos() {
+    return (await catalogStore.getItem('medicos')) || [];
+  },
+
   async saveVisitas(visitas) {
-    await catalogStore.setItem('visitas', visitas);
+    await catalogStore.setItem('visitas', clean(visitas));
   },
 
   async getVisitas() {
@@ -51,9 +72,9 @@ export default {
     // Usar el folio como ID único
     const idx = lista.findIndex(i => i.folio === inspeccion.folio);
     if (idx >= 0) {
-      lista[idx] = inspeccion; // Actualizar existente
+      lista[idx] = clean(inspeccion); // Actualizar existente
     } else {
-      lista.push(inspeccion); // Agregar nueva
+      lista.push(clean(inspeccion)); // Agregar nueva
     }
     await inspeccionStore.setItem('lista', lista);
   },
@@ -77,6 +98,15 @@ export default {
   async countPendientes() {
     const lista = await this.getInspeccionesPendientes();
     return lista.length;
+  },
+
+  // ====== DASHBOARD CACHE ======
+  async saveDashboardData(data) {
+    await catalogStore.setItem('dashboard_data', clean(data));
+  },
+
+  async getDashboardData() {
+    return await catalogStore.getItem('dashboard_data');
   },
 
   // ====== LIMPIEZA ======

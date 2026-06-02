@@ -5,6 +5,26 @@
 @section('header_subtitle', 'Historial de registros y seguimiento')
 
 @section('content')
+<div id="offline-global-sync-alert" class="alert alert-warning border-0 shadow-sm rounded-4 mb-4 d-none">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; flex-shrink: 0;">
+                <i class="bi bi-cloud-arrow-up-fill fs-5"></i>
+            </div>
+            <div>
+                <h6 class="mb-0 fw-bold">Tienes dictámenes modificados en modo offline sin sincronizar</h6>
+                <p class="mb-0 small text-secondary">Se han detectado cambios guardados en este dispositivo. Conéctate a internet y presiona el botón para subirlos todos al servidor.</p>
+            </div>
+        </div>
+        <div>
+            <button id="btn-sync-all-offline" class="btn btn-warning fw-bold d-flex align-items-center gap-2 px-4 shadow-sm" onclick="syncAllPendingDrafts()">
+                <span id="sync-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                <i id="sync-icon" class="bi bi-arrow-repeat"></i> Sincronizar Cambios
+            </button>
+        </div>
+    </div>
+</div>
+
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0 fw-bold">Dictámenes Registrados</h5>
@@ -35,11 +55,13 @@
                 <tbody>
                     @foreach($inspecciones as $inspeccion)
                     <tr>
-                        <td class="ps-4 fw-bold text-primary" data-label="Folio">
+                        <td class="ps-4" data-label="Folio">
                             @if(empty($inspeccion->folio) || \Illuminate\Support\Str::startsWith($inspeccion->folio, 'TB-'))
-                                <span class="text-muted fst-italic">Sin Folio (Borrador)</span>
+                                <span class="text-muted fst-italic fw-bold">Sin Folio (Borrador)</span>
                             @else
-                                {{ $inspeccion->folio }}
+                                <a href="{{ route('inspecciones.show', $inspeccion->id) }}" class="text-decoration-none text-primary fw-bold">
+                                    {{ $inspeccion->folio }}
+                                </a>
                             @endif
                         </td>
                         <td data-label="Fecha">{{ \Carbon\Carbon::parse($inspeccion->fecha)->format('d/m/Y') }}</td>
@@ -80,4 +102,132 @@
         {{ $inspecciones->links() }}
     </div>
 </div>
+
+<script>
+    (function() {
+        const syncAlert = document.getElementById('offline-global-sync-alert');
+        const syncButton = document.getElementById('btn-sync-all-offline');
+        
+        // Scan localStorage for pending drafts
+        const pendingDrafts = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('sigdip:borrador:')) {
+                try {
+                    const record = JSON.parse(localStorage.getItem(key));
+                    if (record && record.status === 'pendiente') {
+                        // Extract pathname to match against table edit links
+                        const pathname = key.replace('sigdip:borrador:', '').split('?')[0];
+                        pendingDrafts.push({ key, pathname, record });
+                    }
+                } catch(e) {}
+            }
+        }
+
+        if (pendingDrafts.length > 0) {
+            // Show global alert banner
+            if (syncAlert) {
+                syncAlert.classList.remove('d-none');
+            }
+
+            // Find matching rows in table and inject warning badges
+            pendingDrafts.forEach(function(draft) {
+                // Find edit link targeting the pathname
+                const editLinks = document.querySelectorAll('a[href*="' + draft.pathname + '"]');
+                editLinks.forEach(function(link) {
+                    const row = link.closest('tr');
+                    if (row) {
+                        row.classList.add('table-warning-soft');
+                        row.style.backgroundColor = 'rgba(255, 193, 7, 0.08)';
+                        
+                        // Add warning badge next to the status cell
+                        const statusCell = row.querySelector('td[data-label="Estado"]');
+                        if (statusCell) {
+                            const badge = document.createElement('span');
+                            badge.className = 'badge bg-warning text-dark border border-warning border-opacity-20 d-block mt-1 small';
+                            badge.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-1"></i> Cambios locales';
+                            statusCell.appendChild(badge);
+                        }
+                    }
+                });
+            });
+        }
+
+        // Global synchronization function
+        window.syncAllPendingDrafts = async function() {
+            const spinner = document.getElementById('sync-spinner');
+            const icon = document.getElementById('sync-icon');
+            
+            if (spinner) spinner.classList.remove('d-none');
+            if (icon) icon.classList.add('d-none');
+            if (syncButton) syncButton.disabled = true;
+
+            let successCount = 0;
+            let failCount = 0;
+            let lastErrorMessage = '';
+
+            for (const draft of pendingDrafts) {
+                try {
+                    // Refresh token in payload to prevent 419 Page Expired
+                    draft.record.payload._token = '{{ csrf_token() }}';
+
+                    // Prepare body payload as FormData
+                    const formData = new FormData();
+                    Object.entries(draft.record.payload || {}).forEach(([k, v]) => {
+                        if (Array.isArray(v)) {
+                            v.forEach(val => formData.append(k, val));
+                        } else {
+                            formData.append(k, v);
+                        }
+                    });
+
+                    // Perform POST request
+                    const response = await fetch(draft.record.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'same-origin',
+                    });
+
+                    const contentType = response.headers.get('content-type') || '';
+                    const body = contentType.includes('application/json') ? await response.json() : {};
+
+                    if (!response.ok || body.success === false) {
+                        if (response.status === 422 && body.errors) {
+                            const firstError = Object.values(body.errors).flat()[0];
+                            throw new Error(firstError || 'Fallo de validación en el servidor.');
+                        }
+                        throw new Error(body.message || 'Error desconocido del servidor.');
+                    }
+
+                    // Succeeded! Mark as synchronized
+                    draft.record.status = 'sincronizado';
+                    localStorage.setItem(draft.key, JSON.stringify(draft.record));
+                    successCount++;
+                } catch (error) {
+                    console.error('Fallo al sincronizar draft:', draft.key, error);
+                    failCount++;
+                    lastErrorMessage = error.message;
+                }
+            }
+
+            if (spinner) spinner.classList.add('d-none');
+            if (icon) icon.classList.remove('d-none');
+            if (syncButton) syncButton.disabled = false;
+
+            if (successCount > 0 && failCount === 0) {
+                alert('¡Éxito! Se sincronizaron ' + successCount + ' dictamen(es) correctamente con la base de datos.');
+                window.location.reload();
+            } else if (successCount > 0 && failCount > 0) {
+                alert('Sincronización parcial: se sincronizaron ' + successCount + ' dictamen(es), pero ' + failCount + ' fallaron. Detalle: ' + lastErrorMessage);
+                window.location.reload();
+            } else {
+                alert('Fallo de sincronización: ' + (lastErrorMessage || 'Por favor revisa tu conexión a internet o inicia sesión de nuevo.'));
+            }
+        };
+    })();
+</script>
 @endsection

@@ -1,7 +1,21 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
-})
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+
+          if (id.includes('@capacitor')) return 'capacitor';
+          if (id.includes('vue')) return 'vue';
+          if (id.includes('vue-router')) return 'router';
+          if (id.includes('localforage')) return 'storage';
+          if (id.includes('chart.js')) return 'charts';
+        }
+      }
+    }
+  }
+});

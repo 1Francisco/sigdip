@@ -423,7 +423,11 @@
         <div class="fw-bold text-primary flex-grow-1 text-center">
             <img src="{{ asset('icon_png.png') }}" alt="SIGDIP" style="width: 20px; height: 20px; object-fit: contain; vertical-align: -3px; margin-right: 6px;"> SIGDIP
         </div>
-        <div class="bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+        <!-- Connectivity Badge Mobile -->
+        <div id="connectivity-badge-mobile" class="badge rounded-pill px-2 py-1.5 d-flex align-items-center gap-1 fw-semibold me-2 shadow-sm border" style="font-size: 0.7rem;">
+            <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" style="width: 6px; height: 6px;"></span>
+        </div>
+        <div class="bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; flex-shrink: 0;">
             <i class="bi bi-person"></i>
         </div>
     </header>
@@ -519,6 +523,11 @@
                 </div>
             </div>
             <div class="d-flex align-items-center gap-3">
+                <!-- Connectivity Badge Desktop -->
+                <div id="connectivity-badge-desktop" class="badge rounded-pill px-3 py-2 d-flex align-items-center gap-1.5 fw-semibold shadow-sm border" style="font-size: 0.8rem;">
+                    <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" style="width: 8px; height: 8px;"></span>
+                    Cargando...
+                </div>
                 <div class="d-flex align-items-center gap-2 bg-white p-2 rounded-pill shadow-sm border px-3">
                     <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
                         <i class="bi bi-person"></i>
@@ -652,31 +661,113 @@
         }
     </script>
     @auth
-    <!-- Background Pre-fetching for Offline PWA use -->
+    <!-- Direct Client-Side Caching of Authenticated Pages for Offline PWA use -->
     <script>
         window.addEventListener('load', function() {
-            // Wait 2.5 seconds to let the main page finish loading smoothly
+            // Wait 1.5 seconds to let the main page finish loading smoothly
             setTimeout(function() {
-                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                    const pagesToPrefetch = [
+                if ('caches' in window) {
+                    const CACHE_NAME = 'sigdip-pwa-cache-v3';
+                    const pagesToCache = [
+                        '/admin/dashboard',
+                        '/inspecciones',
                         '/inspecciones/nuevo',
                         '/visitas',
                         '/productores',
                         '/predios'
                     ];
-                    pagesToPrefetch.forEach(function(url) {
-                        fetch(url)
-                            .then(function() {
-                                console.log('[PWA] Pre-descargado y cacheado en segundo plano:', url);
-                            })
-                            .catch(function(err) {
-                                console.warn('[PWA] Fallo al pre-descargar en segundo plano:', url, err);
-                            });
+
+                    @php
+                        try {
+                            $borradoresIds = \App\Models\Inspeccion::where('veterinario_id', auth()->id())
+                                ->where('estado', 'borrador')
+                                ->pluck('id')
+                                ->toArray();
+                        } catch (\Exception $e) {
+                            $borradoresIds = [];
+                        }
+                    @endphp
+
+                    const draftIds = @json($borradoresIds);
+                    if (Array.isArray(draftIds)) {
+                        draftIds.forEach(function(id) {
+                            pagesToCache.push('/inspecciones/' + id + '/editar');
+                        });
+                    }
+
+                    caches.open(CACHE_NAME).then(function(cache) {
+                        pagesToCache.forEach(function(url) {
+                            fetch(url)
+                                .then(function(response) {
+                                    if (response.status === 200) {
+                                        cache.put(url, response.clone());
+                                        console.log('[PWA] Precargado y cacheado directamente:', url);
+                                    } else {
+                                        console.warn('[PWA] Respuesta no satisfactoria al cachear:', url, response.status);
+                                    }
+                                })
+                                .catch(function(err) {
+                                    console.warn('[PWA] Error al descargar para cachear:', url, err);
+                                });
+                        });
+                    }).catch(function(err) {
+                        console.error('[PWA] Error al abrir cache de precarga:', err);
                     });
                 }
-            }, 2500);
+            }, 1500);
         });
     </script>
     @endauth
+    <!-- Global Connectivity Status Listener -->
+    <script>
+        (function() {
+            const badgeDesktop = document.getElementById('connectivity-badge-desktop');
+            const badgeMobile = document.getElementById('connectivity-badge-mobile');
+
+            function updateConnectivityStatus() {
+                const isOnline = navigator.onLine;
+
+                // Desktop Badge Styles & Content
+                if (badgeDesktop) {
+                    if (isOnline) {
+                        badgeDesktop.className = 'badge bg-success-subtle text-success border border-success border-opacity-20 rounded-pill px-3 py-2 d-flex align-items-center gap-1.5 fw-semibold shadow-sm';
+                        badgeDesktop.innerHTML = '<span class="d-inline-block bg-success rounded-circle" style="width: 8px; height: 8px; animation: pulse 2s infinite;"></span> <i class="bi bi-cloud-check-fill ms-0.5"></i> Conectado';
+                    } else {
+                        badgeDesktop.className = 'badge bg-danger-subtle text-danger border border-danger border-opacity-20 rounded-pill px-3 py-2 d-flex align-items-center gap-1.5 fw-semibold shadow-sm';
+                        badgeDesktop.innerHTML = '<span class="d-inline-block bg-danger rounded-circle" style="width: 8px; height: 8px;"></span> <i class="bi bi-cloud-slash-fill ms-0.5"></i> Modo Offline';
+                    }
+                }
+
+                // Mobile Badge Styles & Content
+                if (badgeMobile) {
+                    if (isOnline) {
+                        badgeMobile.className = 'badge bg-success-subtle text-success border border-success border-opacity-20 rounded-pill px-2 py-1.5 d-flex align-items-center gap-1 fw-semibold me-2 shadow-sm';
+                        badgeMobile.innerHTML = '<span class="d-inline-block bg-success rounded-circle" style="width: 6px; height: 6px; animation: pulse 2s infinite;"></span> <i class="bi bi-cloud-check-fill ms-0.5"></i>';
+                    } else {
+                        badgeMobile.className = 'badge bg-danger-subtle text-danger border border-danger border-opacity-20 rounded-pill px-2 py-1.5 d-flex align-items-center gap-1 fw-semibold me-2 shadow-sm';
+                        badgeMobile.innerHTML = '<span class="d-inline-block bg-danger rounded-circle" style="width: 6px; height: 6px;"></span> <i class="bi bi-cloud-slash-fill ms-0.5"></i> Offline';
+                    }
+                }
+            }
+
+            // CSS Pulse Animation for Online Dot
+            const style = document.createElement('style');
+            style.innerHTML = `
+                @keyframes pulse {
+                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+                    70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+                }
+            `;
+            document.head.appendChild(style);
+
+            // Listeners
+            window.addEventListener('online', updateConnectivityStatus);
+            window.addEventListener('offline', updateConnectivityStatus);
+
+            // Initial execution
+            updateConnectivityStatus();
+        })();
+    </script>
 </body>
 </html>

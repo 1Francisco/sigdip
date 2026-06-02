@@ -1,96 +1,148 @@
 <template>
-  <div class="app-container">
-    <header class="app-header">
-      <div>
-        <h1>🔄 Sincronización</h1>
-        <div class="subtitle">Gestión de datos offline</div>
+  <div class="app-container bg-light">
+    <!-- Header (Premium Web Style) -->
+    <header class="app-header shadow-sm">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn-back" @click="$router.push('/dashboard')">
+          <i class="bi bi-arrow-left fs-4 text-white"></i>
+        </button>
+        <div>
+          <h1>Sincronización</h1>
+          <div class="subtitle">Gestión de datos offline</div>
+        </div>
       </div>
-      <button @click="$router.push('/dashboard')" style="background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;">✕</button>
+      <button @click="$router.push('/dashboard')" class="btn-close-form">
+        <i class="bi bi-x-lg text-white"></i>
+      </button>
     </header>
 
-    <main class="app-content">
-      <!-- Status de conexión -->
-      <div class="card" :style="{ borderLeft: '4px solid ' + (isOnline ? 'var(--color-success)' : 'var(--color-danger)') }">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <span style="font-size: 2rem;">{{ isOnline ? '🟢' : '🔴' }}</span>
+    <main class="app-content main-content">
+      <!-- Status de conexión dinámico (Clon de la web) -->
+      <div 
+        class="card shadow-sm border-0 mb-4 p-4 rounded-4" 
+        :style="{ borderLeft: isOnline ? '4px solid var(--color-success)' : '4px solid var(--color-danger)' }"
+      >
+        <div class="d-flex align-items-center gap-3">
+          <div 
+            class="rounded-circle d-flex align-items-center justify-content-center"
+            style="width: 48px; height: 48px;"
+            :class="isOnline ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'"
+          >
+            <i class="bi fs-3" :class="isOnline ? 'bi-cloud-check-fill' : 'bi-cloud-slash-fill'"></i>
+          </div>
           <div>
-            <div style="font-weight: 700; font-size: 0.9rem;">{{ isOnline ? 'Conectado' : 'Sin Conexión' }}</div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ isOnline ? 'Listo para sincronizar' : 'Los datos se guardarán localmente' }}</div>
+            <div class="fw-bold fs-6 text-primary">{{ isOnline ? 'Dispositivo Conectado' : 'Modo Sin Conexión (Offline)' }}</div>
+            <div class="text-secondary small">
+              {{ isOnline ? 'La sincronización y descarga están habilitadas y listas.' : 'Trabajarás con tus catálogos locales y los datos se encolarán.' }}
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Stats -->
+      <!-- Stats Grid -->
       <div class="stats-grid">
-        <div class="stat-card">
+        <div class="stat-card shadow-sm">
+          <div class="stat-icon-wrapper text-primary bg-primary-soft">
+            <i class="bi bi-house-fill"></i>
+          </div>
           <div class="stat-value">{{ prediosCount }}</div>
           <div class="stat-label">Ranchos</div>
         </div>
-        <div class="stat-card">
+
+        <div class="stat-card shadow-sm">
+          <div class="stat-icon-wrapper text-info bg-info-subtle">
+            <i class="bi bi-calendar-event-fill"></i>
+          </div>
           <div class="stat-value">{{ visitasCount }}</div>
           <div class="stat-label">Visitas</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-value" :style="{ color: pendientes > 0 ? 'var(--color-accent)' : 'var(--color-success)' }">{{ pendientes }}</div>
-          <div class="stat-label">Pendientes de subir</div>
+
+        <div class="stat-card shadow-sm">
+          <div class="stat-icon-wrapper text-warning bg-warning-subtle">
+            <i class="bi bi-cloud-arrow-up-fill"></i>
+          </div>
+          <div class="stat-value" :class="{ 'text-danger fw-bold': pendientes > 0 }">{{ pendientes }}</div>
+          <div class="stat-label">Por subir</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-value" style="font-size: 0.85rem;">{{ lastSyncText }}</div>
-          <div class="stat-label">Última sync</div>
+
+        <div class="stat-card shadow-sm">
+          <div class="stat-icon-wrapper text-secondary bg-light">
+            <i class="bi bi-clock-history"></i>
+          </div>
+          <div class="stat-value small-value">{{ lastSyncText }}</div>
+          <div class="stat-label">Último Sync</div>
         </div>
       </div>
 
-      <!-- Botón descargar -->
-      <button class="btn btn-primary btn-lg" @click="downloadData" :disabled="downloading || !isOnline" style="margin-bottom: 12px;">
-        <span v-if="downloading" class="loader"></span>
-        <span v-else>
-          <span class="btn-icon">⬇️</span> Descargar Catálogos
-        </span>
-      </button>
+      <!-- Botones de sincronización -->
+      <div class="action-sync-buttons mb-4 d-flex flex-column gap-2">
+        <button 
+          class="btn btn-primary btn-lg w-100 shadow-sm d-flex align-items-center justify-content-center gap-2" 
+          @click="downloadData" 
+          :disabled="downloading || !isOnline"
+        >
+          <span v-if="downloading" class="loader"></span>
+          <span v-else class="d-flex align-items-center gap-2">
+            <i class="bi bi-cloud-arrow-down-fill"></i> Descargar Catálogos del Día
+          </span>
+        </button>
 
-      <!-- Botón subir -->
-      <button class="btn btn-accent btn-lg" @click="uploadData" :disabled="uploading || !isOnline || pendientes === 0" style="margin-bottom: 12px;">
-        <span v-if="uploading" class="loader"></span>
-        <span v-else>
-          <span class="btn-icon">⬆️</span> Subir Dictámenes ({{ pendientes }})
-        </span>
-      </button>
-
-      <!-- Resultado -->
-      <div v-if="resultado" class="card" style="margin-top: 12px; border-left: 4px solid var(--color-success);">
-        <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 4px;">✅ Resultado</div>
-        <div style="font-size: 0.8rem; color: var(--text-secondary);">{{ resultado }}</div>
+        <!-- Botón subir -->
+        <button 
+          class="btn btn-accent btn-lg w-100 shadow-sm d-flex align-items-center justify-content-center gap-2" 
+          @click="uploadData" 
+          :disabled="uploading || !isOnline || pendientes === 0"
+        >
+          <span v-if="uploading" class="loader"></span>
+          <span v-else class="d-flex align-items-center gap-2">
+            <i class="bi bi-cloud-arrow-up-fill"></i> Subir Dictámenes Pendientes ({{ pendientes }})
+          </span>
+        </button>
       </div>
 
-      <div v-if="errorMsg" class="card" style="margin-top: 12px; border-left: 4px solid var(--color-danger);">
-        <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 4px;">❌ Error</div>
-        <div style="font-size: 0.8rem; color: var(--text-secondary);">{{ errorMsg }}</div>
+      <!-- Resultados / Mensajes -->
+      <div v-if="resultado" class="card shadow-sm border-0 border-start border-success border-4 p-4 rounded-4 mt-3 bg-white text-start">
+        <div class="d-flex align-items-center gap-2 mb-1 text-success fw-bold">
+          <i class="bi bi-check-circle-fill"></i> Sincronización Completada
+        </div>
+        <div class="text-secondary small">{{ resultado }}</div>
+      </div>
+
+      <div v-if="errorMsg" class="card shadow-sm border-0 border-start border-danger border-4 p-4 rounded-4 mt-3 bg-white text-start">
+        <div class="d-flex align-items-center gap-2 mb-1 text-danger fw-bold">
+          <i class="bi bi-exclamation-octagon-fill"></i> Error en Operación
+        </div>
+        <div class="text-secondary small">{{ errorMsg }}</div>
       </div>
 
       <!-- Borrar datos locales -->
-      <div style="margin-top: 32px;">
-        <button class="btn btn-danger" @click="clearLocalData" style="opacity: 0.7;">
-          🗑️ Borrar Datos Locales
+      <div class="text-center mt-5 mb-4">
+        <p class="text-muted small px-3">
+          Solo utiliza este botón en caso de problemas técnicos extremos. Al limpiar datos locales se borrarán los ranchos cacheados y borradores locales.
+        </p>
+        <button class="btn btn-danger w-auto px-4 py-2 mt-1 shadow-sm" @click="clearLocalData">
+          <i class="bi bi-trash-fill me-1"></i> Limpiar Caché Local
         </button>
       </div>
     </main>
 
+    <!-- Bottom Nav -->
     <nav class="bottom-nav">
-      <a @click.prevent="$router.push('/dashboard')">
-        <span class="nav-icon">🏠</span>
-        Inicio
+      <a class="bottom-nav-link" @click.prevent="$router.push('/dashboard')">
+        <i class="bi bi-grid-1x2"></i>
+        <span>Inicio</span>
       </a>
-      <a @click.prevent="$router.push('/scan')">
-        <span class="nav-icon">📷</span>
-        Escanear
+      <a class="bottom-nav-link" @click.prevent="$router.push('/scan')">
+        <i class="bi bi-qr-code-scan"></i>
+        <span>Escanear</span>
       </a>
-      <a @click.prevent="$router.push('/inspeccion')">
-        <span class="nav-icon">📝</span>
-        Dictamen
+      <a class="bottom-nav-link" @click.prevent="$router.push('/inspeccion')">
+        <i class="bi bi-clipboard-check-fill"></i>
+        <span>Dictamen</span>
       </a>
-      <a class="active" @click.prevent>
-        <span class="nav-icon">🔄</span>
-        Sync
+      <a class="bottom-nav-link active" @click.prevent>
+        <i class="bi bi-arrow-repeat"></i>
+        <span>Sincronizar</span>
       </a>
     </nav>
   </div>
@@ -157,10 +209,10 @@ export default {
         await db.savePredios(res.data.predios);
         await db.saveVisitas(res.data.visitas);
         await db.setLastSync();
-        this.resultado = `Descargados ${res.data.predios.length} ranchos y ${res.data.visitas.length} visitas.`;
+        this.resultado = `Descargados ${res.data.predios.length} ranchos y ${res.data.visitas.length} visitas correctamente en local.`;
         await this.refreshStats();
       } catch (err) {
-        this.errorMsg = err.message;
+        this.errorMsg = err.message || 'No se pudo establecer conexión con el servidor de CEFPPENAY.';
       } finally {
         this.downloading = false;
       }
@@ -178,23 +230,151 @@ export default {
         }
         this.resultado = `Sincronizados ${res.procesados.length} dictámenes exitosamente.`;
         if (res.errores && res.errores.length) {
-          this.resultado += ` (${res.errores.length} con errores)`;
+          this.resultado += ` (${res.errores.length} con errores de validación)`;
         }
         await this.refreshStats();
       } catch (err) {
-        this.errorMsg = err.message;
+        this.errorMsg = err.message || 'Error al conectar con la base de datos central.';
       } finally {
         this.uploading = false;
       }
     },
 
     async clearLocalData() {
-      if (confirm('¿Seguro que deseas borrar todos los datos locales? Los dictámenes no sincronizados se perderán.')) {
+      if (confirm('🚨 ATENCIÓN: ¿Seguro que deseas borrar todos los datos locales?\nLos dictámenes creados en offline que NO estén sincronizados se perderán permanentemente.')) {
         await db.clearAll();
         await this.refreshStats();
-        this.resultado = 'Datos locales eliminados.';
+        this.resultado = 'Caché y catálogos locales eliminados con éxito.';
       }
     }
   }
 };
 </script>
+
+<style scoped>
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-header {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: white;
+  padding: 12px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.btn-back, .btn-close-form {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.btn-close-form {
+  margin-left: auto;
+}
+
+/* Status Conexión colors */
+.bg-success-subtle {
+  background-color: #d1fae5 !important;
+}
+
+.bg-danger-subtle {
+  background-color: #fee2e2 !important;
+}
+
+.bg-info-subtle {
+  background-color: #e0f2fe !important;
+}
+
+.text-info {
+  color: var(--color-info) !important;
+}
+
+/* Stat Cards */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1px solid #f1f5f9;
+}
+
+.stat-icon-wrapper {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  margin-bottom: 12px;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.stat-value.small-value {
+  font-size: 0.8rem;
+  font-weight: 700;
+  word-break: break-all;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  text-align: left;
+}
+
+.stat-label {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  margin-top: 4px;
+}
+
+.action-sync-buttons .btn {
+  padding: 15px;
+  font-size: 0.95rem;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.bottom-nav-link {
+  flex-grow: 1;
+}
+
+.loader {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
