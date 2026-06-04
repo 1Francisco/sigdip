@@ -98,11 +98,18 @@ class SyncController extends Controller
                     foreach ($data['animales'] as $item) {
                         if (empty($item['identificador']) && $isDraft) continue;
 
+                        $sexo = $item['sexo'] ?? 'Macho';
+                        if ($sexo === 'H' || $sexo === 'Hembra') {
+                            $sexo = 'Hembra';
+                        } elseif ($sexo === 'M' || $sexo === 'Macho') {
+                            $sexo = 'Macho';
+                        }
+
                         $animal = Animal::firstOrCreate(
                             ['numero_arete_siniiga' => $item['identificador']],
                             [
                                 'raza' => $item['raza'] ?? 'No especificada', 
-                                'sexo' => $item['sexo'] ?? 'Macho', 
+                                'sexo' => $sexo, 
                                 'predio_id' => $data['predio_id'],
                                 'edad' => $item['edad_meses'] ?? 0
                             ]
@@ -111,9 +118,10 @@ class SyncController extends Controller
                         DetalleInspeccion::create([
                             'inspeccion_id' => $inspeccion->id,
                             'animal_id' => $animal->id,
+                            'tipo_arete' => !empty($item['tipo_arete']) ? $item['tipo_arete'] : ($item['tipo_arete_default'] ?? 'SINIIGA'),
                             'edad_meses' => $item['edad_meses'] ?? null,
                             'raza' => $item['raza'] ?? null,
-                            'sexo' => $item['sexo'] ?? null,
+                            'sexo' => $sexo,
                             'fierro' => $item['fierro'] ?? null,
                             'resultado_prueba' => $item['resultado'] ?? 'Negativo',
                             'observaciones_animal' => $item['observaciones'] ?? null,
@@ -121,11 +129,18 @@ class SyncController extends Controller
                     }
                 }
 
-                // Si se finalizó la inspección y viene de una visita, marcar visita como completada
-                if (!$isDraft && isset($data['visita_id'])) {
+                // Si la inspección viene de una visita, actualizar inyección y estado de la visita
+                if (isset($data['visita_id'])) {
                     $visita = Visita::find($data['visita_id']);
                     if ($visita) {
-                        $visita->update(['estado' => 'completada']);
+                        $visitaUpdate = [];
+                        if (!$isDraft || !empty($data['fecha_inyeccion']) || ($data['inyeccion_realizada'] ?? false)) {
+                            $visitaUpdate['inyeccion'] = true;
+                            $visitaUpdate['estado'] = 'completada';
+                        }
+                        if (!empty($visitaUpdate)) {
+                            $visita->update($visitaUpdate);
+                        }
                     }
                 }
 

@@ -10,23 +10,9 @@
     </header>
 
     <main class="app-content">
-      <!-- Vista de la cámara (simulación en web) -->
+      <!-- Vista de la cámara (HTML5 QrCode Stream) -->
       <div class="scanner-viewport">
-        <div class="scanner-overlay">
-          <div class="scanner-frame">
-            <div class="corner tl"></div>
-            <div class="corner tr"></div>
-            <div class="corner bl"></div>
-            <div class="corner br"></div>
-            <div class="scanner-line"></div>
-          </div>
-          <p class="scanner-hint">Apunta al código de barras del arete</p>
-        </div>
-        <!-- En dispositivos nativos, la cámara se inyectaría aquí -->
-        <div class="camera-placeholder">
-          <span>📷</span>
-          <p>Cámara del dispositivo</p>
-        </div>
+        <div id="scanner-reader" style="width: 100%; height: 100%; background: black;"></div>
       </div>
 
       <!-- Input manual como fallback -->
@@ -73,6 +59,7 @@
           >
             <span class="arete">🏷️ {{ animal.identificador }}</span>
             <select v-model="animal.resultado" style="padding: 6px; border-radius: 8px; border: 1px solid #ccc; font-size: 0.8rem;">
+              <option value="Pendiente">⏳ Pendiente</option>
               <option value="Negativo">✅ Negativo</option>
               <option value="Positivo">🔴 Positivo</option>
               <option value="Sospechoso">🟡 Sospechoso</option>
@@ -112,6 +99,8 @@
 </template>
 
 <script>
+import { Html5Qrcode } from 'html5-qrcode';
+
 export default {
   name: 'ScanView',
   data() {
@@ -119,7 +108,8 @@ export default {
       manualCode: '',
       scannedAnimals: [],
       isSingleMode: false,
-      singleIndex: -1
+      singleIndex: -1,
+      html5QrCode: null
     };
   },
   mounted() {
@@ -133,6 +123,12 @@ export default {
       const saved = sessionStorage.getItem('scanned_animals');
       if (saved) this.scannedAnimals = JSON.parse(saved);
     }
+    
+    // Start camera stream immediately
+    this.startCamera();
+  },
+  beforeUnmount() {
+    this.stopCamera();
   },
   methods: {
     addAnimal() {
@@ -147,10 +143,10 @@ export default {
       this.scannedAnimals.push({
         identificador: this.manualCode.trim(),
         raza: '',
-        sexo: 'Macho',
+        sexo: 'H',
         edad_meses: null,
-        fierro: '',
-        resultado: 'Negativo',
+        fierro: 'Si',
+        resultado: 'Pendiente',
         observaciones: ''
       });
 
@@ -184,6 +180,44 @@ export default {
         this.$router.push('/inspeccion');
       } else {
         this.$router.push('/dashboard');
+      }
+    },
+    async startCamera() {
+      this.$nextTick(async () => {
+        try {
+          this.html5QrCode = new Html5Qrcode("scanner-reader");
+          const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 150 }
+          };
+          await this.html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            this.onScanSuccessCallback
+          );
+        } catch (err) {
+          console.error("Error starting camera in ScanView:", err);
+        }
+      });
+    },
+    onScanSuccessCallback(decodedText) {
+      this.manualCode = decodedText.trim().toUpperCase();
+      if (this.isSingleMode) {
+        this.confirmSingle();
+      } else {
+        this.addAnimal();
+      }
+    },
+    async stopCamera() {
+      if (this.html5QrCode) {
+        if (this.html5QrCode.isScanning) {
+          try {
+            await this.html5QrCode.stop();
+          } catch (e) {
+            console.error("Error stopping camera in ScanView:", e);
+          }
+        }
+        this.html5QrCode = null;
       }
     }
   }

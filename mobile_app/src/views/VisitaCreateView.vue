@@ -170,6 +170,7 @@
               <select 
                 v-model="form.veterinario_id" 
                 class="form-control-custom"
+                :disabled="!isAdmin"
                 required
               >
                 <option value="">Seleccione un médico...</option>
@@ -278,11 +279,8 @@ export default {
     this.isAdmin = user?.roles && user.roles.includes('Administrador');
     this.isOnline = navigator.onLine;
 
-    // Solo permitir acceso a Administradores o personal autorizado
-    if (!this.isAdmin) {
-      alert('Acceso restringido. Solo administradores pueden programar visitas de campo.');
-      this.$router.push('/visitas');
-      return;
+    if (!this.isAdmin && user) {
+      this.form.veterinario_id = user.id;
     }
 
     await this.loadAllData();
@@ -377,6 +375,19 @@ export default {
       if (!this.form.predio_id || !this.form.fecha_programada || !this.form.veterinario_id) {
         this.errorMsg = 'Por favor complete todos los campos obligatorios.';
         return;
+      }
+
+      if (!this.isEdit) {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        
+        const fechaProg = new Date(this.form.fecha_programada);
+        fechaProg.setHours(0, 0, 0, 0);
+
+        if (fechaProg.getTime() < hoy.getTime()) {
+          this.errorMsg = '⚠️ La fecha programada no puede ser anterior a la fecha de hoy.';
+          return;
+        }
       }
 
       this.saving = true;

@@ -180,7 +180,7 @@ export default {
   },
 
   async buscarArete(numero) {
-    return await request('GET', `/buscar-arete/${numero}`);
+    return await request('GET', `/censo/buscar-arete/${numero}`);
   },
 
   // Helpers

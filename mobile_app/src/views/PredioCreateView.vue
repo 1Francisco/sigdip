@@ -607,8 +607,44 @@ export default {
         this.modalErrorMsg = 'Por favor complete los campos obligatorios (*).';
         return;
       }
-      this.modalSaving = true;
+
       this.modalErrorMsg = '';
+
+      // Validar CURP si se proporciona
+      if (this.newProductor.curp.trim()) {
+        const curpVal = this.newProductor.curp.trim().toUpperCase();
+        const curpRegex = /^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/;
+        if (curpVal.length !== 18 || !curpRegex.test(curpVal)) {
+          this.modalErrorMsg = 'La CURP debe tener exactamente 18 caracteres y un formato válido (Ej: AAAA111111HXXYYY01).';
+          return;
+        }
+      }
+
+      // Validar duplicados locales en IndexedDB
+      try {
+        const prediosLocales = await db.getPredios();
+        
+        if (this.newProductor.curp.trim()) {
+          const curpVal = this.newProductor.curp.trim().toUpperCase();
+          const duplicateCurp = prediosLocales.some(p => p.productor && p.productor.curp && p.productor.curp.toUpperCase() === curpVal);
+          if (duplicateCurp) {
+            this.modalErrorMsg = 'Ya existe un productor registrado con esta CURP localmente.';
+            return;
+          }
+        }
+
+        if (this.newProductor.upp.trim()) {
+          const duplicateUpp = prediosLocales.some(p => p.productor && p.productor.upp && p.productor.upp === this.newProductor.upp.trim());
+          if (duplicateUpp) {
+            this.modalErrorMsg = 'Ya existe un productor registrado con esta UPP localmente.';
+            return;
+          }
+        }
+      } catch (dbErr) {
+        console.warn('Error al verificar duplicados locales en modal:', dbErr);
+      }
+
+      this.modalSaving = true;
 
       const body = {
         nombre: this.newProductor.nombre.trim(),
@@ -690,6 +726,84 @@ export default {
       this.$router.push('/predios');
     },
     async savePredio() {
+      // Validaciones básicas de campos requeridos
+      if (!this.form.nombre_rancho.trim() || !this.form.clave_unidad_produccion.trim() || !this.form.localidad.trim()) {
+        this.errorMsg = '⚠️ Por favor complete todos los campos obligatorios del Rancho (Nombre, UPP y Localidad).';
+        return;
+      }
+
+      if (!this.form.productor_id) {
+        this.errorMsg = '⚠️ Por favor seleccione un productor para este Rancho.';
+        return;
+      }
+
+      // Validaciones de rangos de coordenadas
+      const lat = this.form.latitud ? parseFloat(this.form.latitud) : null;
+      const lng = this.form.longitud ? parseFloat(this.form.longitud) : null;
+
+      if (this.form.latitud && (isNaN(lat) || lat < -90 || lat > 90)) {
+        this.errorMsg = '⚠️ La latitud debe ser un número entre -90 y 90.';
+        return;
+      }
+
+      if (this.form.longitud && (isNaN(lng) || lng < -180 || lng > 180)) {
+        this.errorMsg = '⚠️ La longitud debe ser un número entre -180 y 180.';
+        return;
+      }
+
+      // Validar CURP del productor si se está editando
+      if (this.isEditing) {
+        if (!this.productorForm.nombre.trim() || !this.productorForm.apellido_paterno.trim()) {
+          this.errorMsg = '⚠️ Por favor complete los campos obligatorios del Productor (Nombre y Apellido Paterno).';
+          return;
+        }
+
+        if (this.productorForm.curp.trim()) {
+          const curpVal = this.productorForm.curp.trim().toUpperCase();
+          const curpRegex = /^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/;
+          if (curpVal.length !== 18 || !curpRegex.test(curpVal)) {
+            this.errorMsg = '⚠️ La CURP del productor debe tener exactamente 18 caracteres y un formato válido.';
+            return;
+          }
+        }
+      }
+
+      // Validar duplicidad local
+      try {
+        const prediosLocales = await db.getPredios();
+        
+        // Duplicidad de UPP del predio
+        const duplicatePredioUpp = prediosLocales.some(p => p.upp && p.upp === this.form.clave_unidad_produccion.trim() && String(p.id) !== String(this.predioId));
+        if (duplicatePredioUpp) {
+          this.errorMsg = '⚠️ Ya existe un Rancho/Predio registrado con esta UPP localmente.';
+          return;
+        }
+
+        // Si se está editando el productor también
+        if (this.isEditing && this.productorIdOriginal) {
+          const prodCurp = this.productorForm.curp.trim().toUpperCase();
+          const prodUpp = this.productorForm.upp.trim();
+
+          if (prodCurp) {
+            const duplicateCurp = prediosLocales.some(p => p.productor && p.productor.curp && p.productor.curp.toUpperCase() === prodCurp && String(p.productor.id) !== String(this.productorIdOriginal));
+            if (duplicateCurp) {
+              this.errorMsg = '⚠️ Ya existe un productor registrado con esta CURP localmente.';
+              return;
+            }
+          }
+
+          if (prodUpp) {
+            const duplicateUpp = prediosLocales.some(p => p.productor && p.productor.upp && p.productor.upp === prodUpp && String(p.productor.id) !== String(this.productorIdOriginal));
+            if (duplicateUpp) {
+              this.errorMsg = '⚠️ Ya existe un productor registrado con esta UPP localmente.';
+              return;
+            }
+          }
+        }
+      } catch (dbErr) {
+        console.warn('Error al verificar duplicados locales en savePredio:', dbErr);
+      }
+
       this.saving = true;
       this.errorMsg = '';
       this.successMsg = '';
@@ -698,8 +812,8 @@ export default {
         nombre_rancho: this.form.nombre_rancho.trim(),
         clave_unidad_produccion: this.form.clave_unidad_produccion.trim(),
         productor_id: this.form.productor_id,
-        latitud: this.form.latitud ? parseFloat(this.form.latitud) : null,
-        longitud: this.form.longitud ? parseFloat(this.form.longitud) : null,
+        latitud: lat,
+        longitud: lng,
         domicilio: this.form.domicilio.trim(),
         municipio: this.form.municipio.trim() || 'General',
         localidad: this.form.localidad.trim()

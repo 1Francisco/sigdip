@@ -421,56 +421,66 @@
               </div>
             </div>
           </div>
-
           <!-- SECCIÓN IV: RESULTADOS INDIVIDUALES -->
           <div class="accordion-item shadow-sm mb-3">
             <button class="accordion-header-btn" @click="toggleSection(4)" :class="{ collapsed: activeSection !== 4 }">
-              <div class="d-flex align-items-center gap-2 flex-grow-1">
-                <div class="accordion-icon-box text-warning">
+              <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
+                <div class="accordion-icon-box text-warning d-none d-sm-flex">
                   <i class="bi bi-list-task fs-5"></i>
                 </div>
-                <span class="header-title" style="color: #2563eb;">IV: RESULTADOS INDIVIDUALES</span>
-              </div>
-
-              <!-- Completion Badge Pill -->
-              <div v-if="!isSection4Complete" class="accordion-badge-pill danger">
-                <i class="bi bi-exclamation-circle-fill"></i>
-                <span>Faltan Aretes</span>
-              </div>
-              <div v-else class="accordion-badge-pill success">
-                <i class="bi bi-check-circle-fill"></i>
-                <span>Listo</span>
+                <span class="header-title" style="color: #2563eb; font-weight: 800;">IV: RESULTADOS INDIVIDUALES</span>
+                
+                <!-- Red pill "por definir" -->
+                <span v-if="sinDefinirResultadoCount > 0" class="badge-por-definir ms-1">
+                  {{ sinDefinirResultadoCount }} por definir
+                </span>
+                
+                <!-- Green pill "Completo" -->
+                <span v-if="isSection4Complete" class="badge-completo-outline ms-1">
+                  <i class="bi bi-check-circle-fill text-success"></i> Completo
+                </span>
               </div>
 
               <i class="bi bi-chevron-down arrow-icon" :class="{ rotate: activeSection === 4 }"></i>
             </button>
             
             <div class="accordion-body-content p-0" :class="{ show: activeSection === 4 }">
-              <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light flex-wrap gap-2">
-                <div class="d-flex gap-1-5 flex-wrap">
-                  <!-- # Total -->
-                  <span class="badge bg-primary rounded-pill px-2-5 py-1-5 small-badge d-inline-flex align-items-center gap-1">
-                    <i class="bi bi-hash"></i> Total: {{ totalRows }}
-                  </span>
-                  <!-- Con Arete -->
-                  <span class="badge bg-success text-white rounded-pill px-2-5 py-1-5 small-badge d-inline-flex align-items-center gap-1">
-                    <i class="bi bi-check-circle"></i> Con Arete: {{ conAreteCount }}
-                  </span>
-                  <!-- SA sin definir -->
-                  <span class="badge bg-warning text-dark rounded-pill px-2-5 py-1-5 small-badge d-inline-flex align-items-center gap-1">
-                    <i class="bi bi-exclamation-triangle"></i> SA sin definir: {{ saSinDefinirCount }}
-                  </span>
-                  <!-- SA definidos -->
-                  <span class="badge bg-info text-white rounded-pill px-2-5 py-1-5 small-badge d-inline-flex align-items-center gap-1" style="background-color: #06b6d4 !important;">
-                    <i class="bi bi-tag"></i> SA definidos: {{ saDefinidosCount }}
-                  </span>
-                  <!-- Sin definir resultado -->
-                  <span class="badge bg-danger text-white rounded-pill px-2-5 py-1-5 small-badge d-inline-flex align-items-center gap-1">
-                    <i class="bi bi-exclamation-circle"></i> Sin definir resultado: {{ sinDefinirResultadoCount }}
-                  </span>
+              
+              <!-- Warning Banner for Blocked Results -->
+              <div v-if="!puedoEditarResultados() && form.fecha_lectura" class="results-blocked-banner p-3 m-3 d-flex align-items-start gap-2.5">
+                <div class="banner-icon-box">
+                  <i class="bi bi-exclamation-triangle-fill text-warning fs-3"></i>
                 </div>
+                <div class="banner-text-box text-start">
+                  <div class="fw-bold text-dark fs-7-5">⚠️ Sección de resultados bloqueada</div>
+                  <div class="text-secondary small mt-0.5" style="line-height: 1.35;">La captura de resultados de la prueba se habilitará el día de la lectura: <strong class="text-dark">{{ form.fecha_lectura.split('-').reverse().join('/') }}</strong>.</div>
+                </div>
+              </div>
+
+              <div class="indicators-row-container p-3 border-bottom bg-light">
+                <!-- # Total -->
+                <span class="custom-indicator-badge badge-blue">
+                  <i class="bi bi-hash"></i> Total: {{ totalRows }}
+                </span>
+                <!-- Con Arete -->
+                <span class="custom-indicator-badge badge-green">
+                  <i class="bi bi-check-circle-fill"></i> Con Arete: {{ conAreteCount }}
+                </span>
+                <!-- SA sin definir -->
+                <span class="custom-indicator-badge badge-yellow">
+                  <i class="bi bi-exclamation-triangle-fill"></i> SA sin definir: {{ saSinDefinirCount }}
+                </span>
+                <!-- SA definidos -->
+                <span class="custom-indicator-badge badge-cyan">
+                  <i class="bi bi-tag-fill"></i> SA definidos: {{ saDefinidosCount }}
+                </span>
+                <!-- Sin definir resultado -->
+                <span class="custom-indicator-badge badge-red">
+                  <i class="bi bi-slash-circle-fill"></i> Sin definir resultado: {{ sinDefinirResultadoCount }}
+                </span>
                 
-                <button type="button" class="btn btn-primary btn-sm rounded-pill px-3 py-1-5 shadow-sm add-animal-btn" @click="addEmptyAnimal">
+                <!-- Añadir Animal -->
+                <button type="button" class="custom-indicator-btn btn-add-animal" @click="addEmptyAnimal">
                   <i class="bi bi-plus-lg"></i> Añadir Animal
                 </button>
               </div>
@@ -485,13 +495,13 @@
                 </button>
               </div>
 
-              <!-- Tabla responsiva simuladora de web cards en móvil -->
-              <div v-else class="table-responsive">
-                <table class="table table-bordered align-middle mb-0 table-mobile-cards">
-                  <thead class="bg-light text-center small fw-bold d-none-mobile">
+              <!-- Tabla responsiva (Desktop) -->
+              <div v-else class="table-responsive d-none d-lg-block">
+                <table class="table table-bordered align-middle mb-0">
+                  <thead class="bg-light text-center small fw-bold">
                     <tr>
                       <th style="width: 180px;">Identificación (Arete)</th>
-                      <th style="width: 110px;">Tipo Arete</th>
+                      <th v-if="mostrarColumnaTipoArete" style="width: 110px;">Tipo Arete</th>
                       <th style="width: 100px;">Edad (m)</th>
                       <th style="width: 120px;">Raza</th>
                       <th style="width: 80px;">Sexo</th>
@@ -503,49 +513,48 @@
                   </thead>
                   <tbody>
                     <tr v-for="(animal, index) in form.animales" :key="index" :class="{ 'positivo-row': animal.resultado === 'Positivo' }">
-                      <td data-label="Identificación (Arete)">
+                      <td>
                         <div class="input-group">
-                          <input type="text" v-model="animal.identificador" class="form-control form-control-sm" placeholder="SINIIGA o SA" required @change="onIdentificadorChange(animal)" />
+                          <input type="text" v-model="animal.identificador" class="form-control form-control-sm text-uppercase" placeholder="SINIIGA o SA" required @change="onIdentificadorChange(animal)" />
                           <button class="btn btn-primary py-0 px-2" type="button" @click="scanSingleAnimal(index)" title="Escanear">
                             <i class="bi bi-camera"></i>
                           </button>
                         </div>
                       </td>
-                      <td data-label="Tipo Arete">
-                        <select v-if="isSA(animal.identificador)" v-model="animal.tipo_arete" class="form-select form-control-sm text-center" style="min-width: 90px;" required>
-                          <option value="SINIIGA">—</option>
+                      <td v-if="mostrarColumnaTipoArete">
+                        <select v-if="animal.identificador && animal.identificador.trim() && (isSA(animal.identificador) || animal.en_base_datos === false)" v-model="animal.tipo_arete" class="form-select form-control-sm text-center" style="min-width: 90px;" :disabled="!animal.identificador || !animal.identificador.trim()" required>
                           <option value="IN">IN</option>
                           <option value="RA">RA</option>
                         </select>
                         <span v-else></span>
                       </td>
-                      <td data-label="Edad (m)">
+                      <td>
                         <input type="number" v-model.number="animal.edad_meses" class="form-control form-control-sm" placeholder="Meses" min="0" />
                       </td>
-                      <td data-label="Raza">
+                      <td>
                         <input type="text" v-model="animal.raza" class="form-control form-control-sm" placeholder="Raza" />
                       </td>
-                      <td data-label="Sexo">
+                      <td>
                         <select v-model="animal.sexo" class="form-select form-control-sm text-center">
-                          <option value="Hembra">H</option>
-                          <option value="Macho">M</option>
+                          <option value="H">H</option>
+                          <option value="M">M</option>
                         </select>
                       </td>
-                      <td data-label="Fierro" class="fierro-cell text-center">
+                      <td class="text-center">
                         <input type="checkbox" v-model="animal.fierro" class="form-check-input" true-value="Si" false-value="No" />
                       </td>
-                      <td data-label="Resultado">
-                        <select v-model="animal.resultado" class="form-select form-control-sm fw-bold" :class="getResultadoClass(animal.resultado)">
+                      <td>
+                        <select v-model="animal.resultado" class="form-select form-control-sm fw-bold" :class="getResultadoClass(animal.resultado)" :disabled="!puedoEditarResultados()">
                           <option value="Pendiente" class="text-secondary">Pendiente</option>
                           <option value="Negativo" class="text-success">Negativo</option>
                           <option value="Positivo" class="text-danger">Positivo</option>
                           <option value="Sospechoso" class="text-warning">Sospechoso</option>
                         </select>
                       </td>
-                      <td data-label="Observaciones">
+                      <td>
                         <input type="text" v-model="animal.observaciones" class="form-control form-control-sm" placeholder="Detalles..." />
                       </td>
-                      <td class="text-center remove-btn-cell" data-label="Acción">
+                      <td class="text-center">
                         <button type="button" class="btn btn-link text-danger p-0" @click="removeAnimal(index)" title="Eliminar">
                           <i class="bi bi-trash fs-5"></i>
                         </button>
@@ -555,10 +564,101 @@
                 </table>
               </div>
 
+              <!-- Vista de Tarjetas para Móviles (Responsivo) -->
+              <div v-if="form.animales.length > 0" class="d-block d-lg-none px-3 py-2 bg-light-card-container">
+                <div 
+                  v-for="(animal, index) in form.animales" 
+                  :key="index" 
+                  class="animal-mobile-card mb-3 position-relative"
+                  :class="{ 'positivo-card': animal.resultado === 'Positivo' }"
+                >
+                  <!-- Card Header: Animal Number & Delete -->
+                  <div class="card-header-custom d-flex justify-content-between align-items-center mb-2.5 pb-2 border-bottom">
+                    <span class="fw-bold text-slate-700 fs-7-5">ANIMAL #{{ index + 1 }}</span>
+                    <button type="button" class="btn btn-link text-danger p-0 d-flex align-items-center gap-1 text-decoration-none fs-7-5" @click="removeAnimal(index)">
+                      <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                  </div>
+
+                  <!-- Fields Grid -->
+                  <div class="row g-2.5">
+                    <!-- Identificador -->
+                    <div class="col-12">
+                      <label class="form-label-custom">IDENTIFICADOR (ARETE)</label>
+                      <div class="d-flex gap-2">
+                        <input 
+                          type="text" 
+                          v-model="animal.identificador" 
+                          class="form-control form-control-custom text-uppercase flex-grow-1" 
+                          :class="{ 'is-valid-custom': animal.identificador && animal.identificador.trim() && animal.en_base_datos }" 
+                          placeholder="SINIIGA o SA" 
+                          required 
+                          @change="onIdentificadorChange(animal)" 
+                        />
+                        <button class="btn-camera-prominent" type="button" @click="scanSingleAnimal(index)" title="Escanear Arete">
+                          <i class="bi bi-camera-fill"></i> Escanear
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Tipo Arete (conditional) -->
+                    <div class="col-12" v-if="animal.identificador && animal.identificador.trim() && (isSA(animal.identificador) || animal.en_base_datos === false)">
+                      <label class="form-label-custom">TIPO ARETE</label>
+                      <select v-model="animal.tipo_arete" class="form-select form-control-custom" :disabled="!animal.identificador || !animal.identificador.trim()" required>
+                        <option value="IN">IN</option>
+                        <option value="RA">RA</option>
+                      </select>
+                    </div>
+
+                    <!-- Edad (Meses) & Raza (Side by Side) -->
+                    <div class="col-6">
+                      <label class="form-label-custom">EDAD (M)</label>
+                      <input type="number" v-model.number="animal.edad_meses" class="form-control form-control-custom" placeholder="Meses" min="0" />
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label-custom">RAZA</label>
+                      <input type="text" v-model="animal.raza" class="form-control form-control-custom" placeholder="Raza" />
+                    </div>
+
+                    <!-- Sexo & Fierro (Side by Side) -->
+                    <div class="col-6">
+                      <label class="form-label-custom">SEXO</label>
+                      <select v-model="animal.sexo" class="form-select form-control-custom text-center">
+                        <option value="H">H</option>
+                        <option value="M">M</option>
+                      </select>
+                    </div>
+                    <div class="col-6 d-flex align-items-center justify-content-between px-2">
+                      <label class="form-label-custom mb-0">FIERRO</label>
+                      <div class="form-check form-switch pt-1">
+                        <input type="checkbox" v-model="animal.fierro" class="form-check-input custom-switch-scale" true-value="Si" false-value="No" />
+                      </div>
+                    </div>
+
+                    <!-- Resultado -->
+                    <div class="col-12">
+                      <label class="form-label-custom">RESULTADO</label>
+                      <select v-model="animal.resultado" class="form-select form-control-custom fw-bold" :class="getResultadoClass(animal.resultado)" :disabled="!puedoEditarResultados()">
+                        <option value="Pendiente" class="text-secondary">Pendiente</option>
+                        <option value="Negativo" class="text-success">Negativo</option>
+                        <option value="Positivo" class="text-danger">Positivo</option>
+                        <option value="Sospechoso" class="text-warning">Sospechoso</option>
+                      </select>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div class="col-12">
+                      <label class="form-label-custom">OBSERVACIONES</label>
+                      <input type="text" v-model="animal.observaciones" class="form-control form-control-custom" placeholder="Detalles..." />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Agregar rápido por input inferior -->
               <div class="p-3 border-top bg-light" v-if="form.animales.length > 0">
                 <div class="d-flex gap-2">
-                  <input v-model="quickArete" type="text" class="form-control form-control-sm" placeholder="Agregar arete manualmente..." @keyup.enter="addQuickAnimal" />
+                  <input v-model="quickArete" type="text" class="form-control form-control-sm text-uppercase" placeholder="Agregar arete manualmente..." @keyup.enter="addQuickAnimal" />
                   <button type="button" class="btn btn-outline w-auto px-3 py-1.5" @click="addQuickAnimal">+</button>
                 </div>
               </div>
@@ -573,8 +673,8 @@
           <textarea v-model="form.observaciones" class="form-control rounded-3" rows="3" placeholder="Redacte cualquier observación importante del dictamen..."></textarea>
         </div>
 
-        <!-- Botones de Acción (Side-by-side Clones matching mockup) -->
-        <div class="d-flex align-items-stretch gap-3 mt-4 mb-5">
+        <!-- Botones de Acción para Escritorio -->
+        <div class="d-none d-lg-flex align-items-stretch gap-3 mt-4 mb-5">
           <!-- Borrador Button (Card Style) -->
           <button type="button" class="btn-borrador-card" @click="saveInspeccion('borrador')">
             <i class="bi bi-box-arrow-in-down fs-4"></i>
@@ -582,11 +682,55 @@
           </button>
 
           <!-- Finalizar Button (Long Blue Button) -->
-          <button type="button" class="btn-finalizar-row flex-grow-1" @click="saveInspeccion('sincronizado')">
-            <i class="bi bi-check-circle"></i>
-            <span>Finalizar</span>
+          <button 
+            type="button" 
+            class="btn-finalizar-row flex-grow-1" 
+            :class="{ 'blocked': esBotonFinalizarBloqueado }" 
+            :disabled="esBotonFinalizarBloqueado"
+            @click="saveInspeccion('sincronizado')"
+          >
+            <template v-if="esBotonFinalizarBloqueado">
+              <i class="bi bi-lock-fill"></i> Finalizar Inyección (Bloqueado)
+            </template>
+            <template v-else-if="!puedoEditarResultados()">
+              <i class="bi bi-check-circle-fill"></i> Finalizar Inyección
+            </template>
+            <template v-else>
+              <i class="bi bi-check-circle"></i> Finalizar
+            </template>
           </button>
         </div>
+
+        <!-- Sticky Bottom Actions for Mobile -->
+        <div class="mobile-sticky-actions d-flex d-lg-none">
+          <button type="button" class="btn-mobile-borrador" @click="saveInspeccion('borrador')">
+            <i class="bi bi-box-arrow-in-down fs-4"></i>
+            <span>Borrador</span>
+          </button>
+          
+          <button 
+            type="button" 
+            class="btn-mobile-finalizar flex-grow-1" 
+            :class="{ 'blocked': esBotonFinalizarBloqueado }" 
+            :disabled="esBotonFinalizarBloqueado"
+            @click="saveInspeccion('sincronizado')"
+          >
+            <template v-if="esBotonFinalizarBloqueado">
+              <i class="bi bi-lock-fill"></i> Finalizar Inyección (Bloqueado)
+            </template>
+            <template v-else-if="!puedoEditarResultados()">
+              <i class="bi bi-check-circle-fill"></i> Finalizar Inyección
+            </template>
+            <template v-else>
+              <i class="bi bi-cloud-arrow-up-fill"></i> Finalizar Dictamen
+            </template>
+          </button>
+        </div>
+
+        <!-- Floating Action Button for Adding Animals on Mobile -->
+        <button type="button" class="btn-fab-add d-lg-none" @click="addEmptyAnimal" title="Añadir Animal">
+          <i class="bi bi-plus-lg fs-4"></i>
+        </button>
       </div>
     </main>
 
@@ -609,6 +753,20 @@
         <span>Más</span>
       </a>
     </nav>
+
+    <!-- Scanner Modal Overlay -->
+    <div v-if="scannerActive" class="scanner-modal-overlay">
+      <div class="scanner-modal-content">
+        <div class="scanner-modal-header">
+          <h5 class="m-0"><i class="bi bi-qr-code-scan me-2"></i> Escanear Arete</h5>
+          <button type="button" class="btn-close-scanner" @click="stopFormScanner">✕</button>
+        </div>
+        <div class="scanner-modal-body">
+          <div id="form-reader" class="scanner-preview-box"></div>
+          <p class="scanner-instruction-text mt-2 mb-0">Apunta la cámara al código de barras del arete.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -618,12 +776,14 @@ import api from '../services/api.js';
 import { Geolocation } from '@capacitor/geolocation';
 import db from '../services/db.js';
 import backgroundSync from '../services/backgroundSync.js';
+import { Html5Qrcode } from 'html5-qrcode';
 
 export default {
   name: 'InspeccionFormView',
   data() {
     return {
       predios: [],
+      visitas: [],
       selectedPredio: null,
       selectedProductor: null,
       quickArete: '',
@@ -634,6 +794,9 @@ export default {
       isOnline: true,
       networkListener: null,
       originalFolio: '',
+      scannerActive: false,
+      activeScanIndex: -1,
+      html5QrCode: null,
       form: {
         folio: '',
         predio_id: '',
@@ -670,6 +833,12 @@ export default {
     totalRows() {
       return this.form.animales.length;
     },
+    mostrarColumnaTipoArete() {
+      return this.form.animales.some(a => {
+        const id = (a.identificador || '').trim();
+        return id !== '' && (this.isSA(id) || a.en_base_datos === false);
+      });
+    },
     conAreteCount() {
       return this.form.animales.filter(a => {
         const id = (a.identificador || '').trim().toUpperCase();
@@ -698,10 +867,23 @@ export default {
       return !!this.form.predio_id;
     },
     isSection3Complete() {
-      return !!(this.form.fecha_inyeccion && this.form.hora_inyeccion && this.form.fecha_lectura && this.form.hora_lectura);
+      return !!(this.form.motivo_prueba && this.form.fecha_inyeccion && this.form.hora_inyeccion && this.form.fecha_lectura && this.form.hora_lectura);
     },
     isSection4Complete() {
       return this.form.animales.length > 0 && this.form.animales.every(a => a.identificador && a.identificador.trim());
+    },
+    esBotonFinalizarBloqueado() {
+      if (!this.form.visita_id) return false;
+      const visita = this.visitas.find(v => String(v.id) === String(this.form.visita_id));
+      if (!visita || !visita.fecha_programada) return false;
+      
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      
+      const fechaProg = new Date(visita.fecha_programada);
+      fechaProg.setHours(0, 0, 0, 0);
+      
+      return hoy.getTime() < fechaProg.getTime();
     },
     userFolio: {
       get() {
@@ -756,6 +938,9 @@ export default {
         this.form.becerras = becerras;
         this.form.becerros = becerros;
       }
+    },
+    'form.fecha_inyeccion'(newVal) {
+      this.calcularFechaLectura();
     }
   },
   async mounted() {
@@ -767,6 +952,7 @@ export default {
 
     // Cargar predios de base local
     this.predios = await db.getPredios();
+    this.visitas = await db.getVisitas();
 
     try {
       const status = await Network.getStatus();
@@ -785,55 +971,25 @@ export default {
       try {
         const res = await api.getInspeccion(inspeccionId);
         const data = res.data || {};
-
-        this.form.folio = data.folio || this.form.folio;
-        this.originalFolio = data.folio || '';
-        this.form.predio_id = data.predio_id || '';
-        this.form.fecha = data.fecha || this.form.fecha;
-        this.form.fecha_inyeccion = data.fecha_inyeccion || this.form.fecha_inyeccion;
-        this.form.hora_inyeccion = data.hora_inyeccion || this.form.hora_inyeccion;
-        this.form.fecha_lectura = data.fecha_lectura || this.form.fecha_lectura;
-        this.form.hora_lectura = data.hora_lectura || this.form.hora_lectura;
-        this.form.tipo_prueba = data.tipo_prueba || this.form.tipo_prueba;
-        this.form.motivo_prueba = data.motivo_prueba || this.form.motivo_prueba;
-        this.form.funcion_zootecnica = data.funcion_zootecnica || this.form.funcion_zootecnica;
-        this.form.latitud = data.predio?.latitud || data.latitud || this.form.latitud;
-        this.form.longitud = data.predio?.longitud || data.longitud || this.form.longitud;
-        this.form.observaciones = data.observaciones || this.form.observaciones;
-        this.form.vigencia_fecha = data.vigencia_fecha || this.form.vigencia_fecha;
-        this.form.sementales = data.sementales ?? 0;
-        this.form.vacas = data.vacas ?? 0;
-        this.form.vaquillas = data.vaquillas ?? 0;
-        this.form.becerras = data.becerras ?? 0;
-        this.form.becerros = data.becerros ?? 0;
-        this.form.visita_id = data.visita_id || this.form.visita_id;
-        this.form.fecha_prueba_anterior = data.fecha_prueba_anterior || '';
-        this.form.dictamen_anterior_no = data.dictamen_anterior_no || '';
-        this.form.exencion_no = data.exencion_no || '';
-        this.form.exencion_fecha = data.exencion_fecha || '';
-        this.form.hato_libre_no = data.hato_libre_no || '';
-        this.form.hato_libre_fecha = data.hato_libre_fecha || '';
-        this.form.estado = data.estado || this.form.estado;
-
-        if (Array.isArray(data.detalles)) {
-          this.form.animales = data.detalles.map(detalle => ({
-            identificador: detalle.animal?.numero_arete_siniiga || '',
-            tipo_arete: detalle.tipo_arete || 'SINIIGA',
-            edad_meses: detalle.edad_meses ?? detalle.animal?.edad ?? null,
-            raza: detalle.raza || detalle.animal?.raza || '',
-            sexo: detalle.sexo === 'H' ? 'Hembra' : (detalle.sexo === 'M' ? 'Macho' : (detalle.sexo || 'Hembra')),
-            fierro: detalle.fierro || 'Si',
-            resultado: detalle.resultado_prueba || 'Pendiente',
-            observaciones: detalle.observaciones_animal || ''
-          }));
-        }
-
+        this.cargarDictamenData(data);
         this.activeSection = 4;
         if (this.form.predio_id) {
           this.onPredioSelect();
         }
       } catch (e) {
-        console.warn('No se pudo cargar el dictamen existente desde la API:', e);
+        console.warn('No se pudo cargar el dictamen existente desde la API, buscando localmente:', e);
+        // Fallback local
+        const pendientes = await db.getInspeccionesPendientes();
+        const localInsp = pendientes.find(i => String(i.id) === String(inspeccionId) || i.folio === inspeccionId);
+        if (localInsp) {
+          this.form = { ...localInsp };
+          this.originalFolio = localInsp.folio || '';
+          if (this.form.predio_id) {
+            this.onPredioSelect();
+          }
+          this.activeSection = 4;
+          alert('💾 Dictamen local cargado.');
+        }
       }
     }
 
@@ -844,13 +1000,15 @@ export default {
       this.onPredioSelect();
 
       // Buscar si hay un borrador guardado para este predio
-      const listas = await db.getInspeccionesPendientes();
-      const borradorExistente = listas.find(i => i.predio_id === this.form.predio_id && i.estado === 'borrador');
-      if (borradorExistente) {
-        this.form = { ...borradorExistente };
-        this.originalFolio = borradorExistente.folio || '';
-        this.onPredioSelect();
-        alert('💾 Borrador cargado con éxito. Puedes continuar la captura.');
+      if (!this.$route.query.visita_id) {
+        const listas = await db.getInspeccionesPendientes();
+        const borradorExistente = listas.find(i => i.predio_id === this.form.predio_id && i.estado === 'borrador' && !i.visita_id);
+        if (borradorExistente) {
+          this.form = { ...borradorExistente };
+          this.originalFolio = borradorExistente.folio || '';
+          this.onPredioSelect();
+          alert('💾 Borrador cargado con éxito. Puedes continuar la captura.');
+        }
       }
     }
 
@@ -898,8 +1056,44 @@ export default {
 
     // Si viene ID de visita
     const visitaId = this.$route.query.visita_id;
-    if (visitaId) {
+    if (visitaId && !inspeccionId && !draft) {
       this.form.visita_id = parseInt(visitaId);
+      
+      const visita = this.visitas.find(v => String(v.id) === String(visitaId));
+      if (visita) {
+        if (visita.predio_id) {
+          this.form.predio_id = visita.predio_id;
+          this.onPredioSelect();
+        }
+
+        // Buscar si hay un dictamen local para esta visita
+        const pendientes = await db.getInspeccionesPendientes();
+        const localInsp = pendientes.find(i => String(i.visita_id) === String(visitaId));
+        
+        if (localInsp) {
+          this.form = { ...localInsp };
+          this.originalFolio = localInsp.folio || '';
+          if (this.form.predio_id) {
+            this.onPredioSelect();
+          }
+          this.activeSection = 4;
+          alert('💾 Dictamen local de la visita cargado para continuar.');
+        } else if (visita.inspeccion?.id) {
+          // Si tiene inspección en el servidor, cargarla
+          try {
+            const res = await api.getInspeccion(visita.inspeccion.id);
+            const data = res.data || {};
+            this.cargarDictamenData(data);
+            if (this.form.predio_id) {
+              this.onPredioSelect();
+            }
+            this.activeSection = 4;
+            alert('💾 Dictamen recuperado del servidor para continuar.');
+          } catch (err) {
+            console.warn('No se pudo cargar el dictamen del servidor para esta visita:', err);
+          }
+        }
+      }
     }
 
     // Calcular la fecha de lectura inicial
@@ -911,8 +1105,53 @@ export default {
     if (this.networkListener) {
       this.networkListener.remove();
     }
+    this.stopFormScanner();
   },
   methods: {
+    cargarDictamenData(data) {
+      this.form.folio = data.folio || this.form.folio;
+      this.originalFolio = data.folio || '';
+      this.form.predio_id = data.predio_id || '';
+      this.form.fecha = data.fecha || this.form.fecha;
+      this.form.fecha_inyeccion = data.fecha_inyeccion || this.form.fecha_inyeccion;
+      this.form.hora_inyeccion = data.hora_inyeccion || this.form.hora_inyeccion;
+      this.form.fecha_lectura = data.fecha_lectura || this.form.fecha_lectura;
+      this.form.hora_lectura = data.hora_lectura || this.form.hora_lectura;
+      this.form.tipo_prueba = data.tipo_prueba || this.form.tipo_prueba;
+      this.form.motivo_prueba = data.motivo_prueba || this.form.motivo_prueba;
+      this.form.funcion_zootecnica = data.funcion_zootecnica || this.form.funcion_zootecnica;
+      this.form.latitud = data.predio?.latitud || data.latitud || this.form.latitud;
+      this.form.longitud = data.predio?.longitud || data.longitud || this.form.longitud;
+      this.form.observaciones = data.observaciones || this.form.observaciones;
+      this.form.vigencia_fecha = data.vigencia_fecha || this.form.vigencia_fecha;
+      this.form.sementales = data.sementales ?? 0;
+      this.form.vacas = data.vacas ?? 0;
+      this.form.vaquillas = data.vaquillas ?? 0;
+      this.form.becerras = data.becerras ?? 0;
+      this.form.becerros = data.becerros ?? 0;
+      this.form.visita_id = data.visita_id || this.form.visita_id;
+      this.form.fecha_prueba_anterior = data.fecha_prueba_anterior || '';
+      this.form.dictamen_anterior_no = data.dictamen_anterior_no || '';
+      this.form.exencion_no = data.exencion_no || '';
+      this.form.exencion_fecha = data.exencion_fecha || '';
+      this.form.hato_libre_no = data.hato_libre_no || '';
+      this.form.hato_libre_fecha = data.hato_libre_fecha || '';
+      this.form.estado = data.estado || this.form.estado;
+
+      if (Array.isArray(data.detalles)) {
+        this.form.animales = data.detalles.map(detalle => ({
+          identificador: detalle.animal?.numero_arete_siniiga || '',
+          tipo_arete: detalle.tipo_arete || 'SINIIGA',
+          edad_meses: detalle.edad_meses ?? detalle.animal?.edad ?? null,
+          raza: detalle.raza || detalle.animal?.raza || '',
+          sexo: (detalle.sexo === 'Hembra' || detalle.sexo === 'H') ? 'H' : 'M',
+          fierro: detalle.fierro || 'Si',
+          resultado: detalle.resultado_prueba || 'Pendiente',
+          observaciones: detalle.observaciones_animal || '',
+          en_base_datos: (detalle.tipo_arete && detalle.tipo_arete !== 'SINIIGA') ? false : true
+        }));
+      }
+    },
     toggleSection(num) {
       this.activeSection = this.activeSection === num ? null : num;
     },
@@ -945,6 +1184,11 @@ export default {
       fInyeccion.setDate(fInyeccion.getDate() + 3);
       this.form.fecha_lectura = fInyeccion.toISOString().split('T')[0];
     },
+    puedoEditarResultados() {
+      if (!this.form.fecha_lectura) return false;
+      const hoy = new Date().toISOString().split('T')[0];
+      return hoy >= this.form.fecha_lectura;
+    },
     async obtenerCoordenadasGPS() {
       try {
         const coordinates = await Geolocation.getCurrentPosition({
@@ -961,14 +1205,18 @@ export default {
     addEmptyAnimal() {
       this.form.animales.push({
         identificador: '',
-        tipo_arete: 'SINIIGA',
+        tipo_arete: 'IN',
         edad_meses: null,
         raza: '',
-        sexo: 'Hembra',
+        sexo: 'H',
         fierro: 'Si',
         resultado: 'Pendiente',
-        observaciones: ''
+        observaciones: '',
+        en_base_datos: false
       });
+      // Abrir la cámara automáticamente para comenzar a escanear
+      const newIndex = this.form.animales.length - 1;
+      this.startFormScanner(newIndex);
     },
     addQuickAnimal() {
       if (!this.quickArete.trim()) return;
@@ -981,13 +1229,14 @@ export default {
 
       this.form.animales.push({
         identificador: this.quickArete.trim().toUpperCase(),
-        tipo_arete: 'SINIIGA',
+        tipo_arete: 'IN',
         edad_meses: null,
         raza: '',
-        sexo: 'Hembra',
+        sexo: 'H',
         fierro: 'Si',
         resultado: 'Pendiente',
-        observaciones: ''
+        observaciones: '',
+        en_base_datos: false
       });
 
       this.quickArete = '';
@@ -1002,10 +1251,51 @@ export default {
       return 'text-secondary bg-light';
     },
     scanSingleAnimal(index) {
-      // Guardar índice de escáner individual y navegar al escáner
-      sessionStorage.setItem('scan_target_index', index.toString());
-      sessionStorage.setItem('inspeccion_draft', JSON.stringify(this.form));
-      this.$router.push('/scan');
+      this.startFormScanner(index);
+    },
+    async startFormScanner(index) {
+      this.activeScanIndex = index;
+      this.scannerActive = true;
+      
+      this.$nextTick(async () => {
+        try {
+          this.html5QrCode = new Html5Qrcode("form-reader");
+          const config = { 
+            fps: 10, 
+            qrbox: { width: 260, height: 160 }
+          };
+          await this.html5QrCode.start(
+            { facingMode: "environment" }, 
+            config, 
+            this.onFormScanSuccess
+          );
+        } catch (err) {
+          console.error("Error starting camera scanner:", err);
+          alert("⚠️ No se pudo iniciar la cámara. Verifique los permisos de cámara de la aplicación.");
+          this.scannerActive = false;
+        }
+      });
+    },
+    onFormScanSuccess(decodedText) {
+      if (this.activeScanIndex !== -1 && this.form.animales[this.activeScanIndex]) {
+        this.form.animales[this.activeScanIndex].identificador = decodedText.trim().toUpperCase();
+        this.onIdentificadorChange(this.form.animales[this.activeScanIndex]);
+      }
+      this.stopFormScanner();
+    },
+    async stopFormScanner() {
+      this.scannerActive = false;
+      this.activeScanIndex = -1;
+      if (this.html5QrCode) {
+        if (this.html5QrCode.isScanning) {
+          try {
+            await this.html5QrCode.stop();
+          } catch (err) {
+            console.error("Error stopping scanner:", err);
+          }
+        }
+        this.html5QrCode = null;
+      }
     },
     isSA(val) {
       if (!val) return false;
@@ -1019,30 +1309,54 @@ export default {
       // Auto-detectar SA
       if (numero.toUpperCase() === 'SA' || numero.toUpperCase() === 'S/A') {
         animal.identificador = 'SA';
-        animal.tipo_arete = 'SINIIGA'; // default
+        animal.tipo_arete = 'IN'; // default
+        animal.en_base_datos = false;
         return;
       }
       
-      // Si tiene longitud >= 5 y estamos online, intentar buscar datos
-      if (numero.length >= 5 && this.isOnline) {
+      // Si tiene longitud >= 5, intentar buscar datos
+      if (numero.length >= 5) {
         try {
           const res = await api.buscarArete(numero);
           if (res.success && res.data) {
             const data = res.data;
-            if (data.edad_meses !== undefined && data.edad_meses !== null) {
+            animal.en_base_datos = true;
+            
+            // Establecer edad en base a la fecha de nacimiento, o fallback a edad_meses
+            if (data.fecha_nacimiento) {
+              const birthDate = new Date(data.fecha_nacimiento);
+              if (!isNaN(birthDate.getTime())) {
+                const today = new Date();
+                let months = (today.getFullYear() - birthDate.getFullYear()) * 12;
+                months -= birthDate.getMonth();
+                months += today.getMonth();
+                if (today.getDate() < birthDate.getDate()) {
+                  months--;
+                }
+                animal.edad_meses = Math.max(0, months);
+              } else if (data.edad_meses !== undefined && data.edad_meses !== null) {
+                animal.edad_meses = data.edad_meses;
+              }
+            } else if (data.edad_meses !== undefined && data.edad_meses !== null) {
               animal.edad_meses = data.edad_meses;
             }
+            
             if (data.raza) {
               animal.raza = data.raza;
             }
             if (data.sexo) {
               const s = data.sexo.charAt(0).toUpperCase();
-              animal.sexo = (s === 'H' || s === 'F') ? 'Hembra' : 'Macho';
+              animal.sexo = (s === 'H' || s === 'F') ? 'H' : 'M';
             }
+          } else {
+            animal.en_base_datos = false;
           }
         } catch (e) {
           console.warn('No se pudo encontrar datos del arete:', e);
+          animal.en_base_datos = false;
         }
+      } else {
+        animal.en_base_datos = false;
       }
     },
     async saveInspeccion(estado) {
@@ -1052,24 +1366,82 @@ export default {
         return;
       }
 
-      if (!this.form.fecha_inyeccion || !this.form.fecha_lectura) {
-        alert('⚠️ Las fechas de inyección y lectura son obligatorias.');
-        this.activeSection = 3;
+      if (!this.form.fecha) {
+        alert('⚠️ La fecha del dictamen es obligatoria.');
+        this.activeSection = 1;
         return;
       }
 
-      if (estado === 'sincronizado' && this.form.animales.length === 0) {
-        alert('⚠️ Debe capturar al menos un animal con su resultado individual para finalizar el dictamen.');
-        this.activeSection = 4;
-        return;
+      let saveEstado = estado;
+      
+      // Si el usuario presiona "Finalizar" (sincronizado) pero aún no es la fecha de lectura:
+      // se le advierte y se guarda como borrador con la inyección completada.
+      if (saveEstado === 'sincronizado' && !this.puedoEditarResultados()) {
+        const confirmar = confirm("Fase de Inyección: El dictamen se guardará como BORRADOR local y la visita se marcará con inyección realizada.\n\nPodrá ingresar los resultados en la fase de lectura (72 horas después).\n\n¿Desea continuar?");
+        if (!confirmar) return;
+        saveEstado = 'borrador';
       }
 
-      // Validar si algún arete no tiene folio
-      const hasEmptyAretes = this.form.animales.some(a => !a.identificador.trim());
-      if (hasEmptyAretes) {
-        alert('⚠️ Hay animales en la lista con número de arete vacío. Rellene los campos o elimine las filas vacías.');
-        this.activeSection = 4;
-        return;
+      if (saveEstado === 'sincronizado') {
+        if (!this.form.fecha_inyeccion || !this.form.hora_inyeccion || !this.form.fecha_lectura || !this.form.hora_lectura) {
+          alert('⚠️ Las fechas y horas de inyección y lectura son obligatorias para finalizar el dictamen.');
+          this.activeSection = 3;
+          return;
+        }
+
+        if (this.form.animales.length === 0) {
+          alert('⚠️ Debe capturar al menos un animal con su resultado individual para finalizar el dictamen.');
+          this.activeSection = 4;
+          return;
+        }
+
+        const hasEmptyAretes = this.form.animales.some(a => !a.identificador || !a.identificador.trim());
+        if (hasEmptyAretes) {
+          alert('⚠️ Hay animales en la lista con número de arete vacío. Rellene los campos o elimine las filas vacías.');
+          this.activeSection = 4;
+          return;
+        }
+
+        const hasPendientes = this.form.animales.some(a => !a.resultado || a.resultado === 'Pendiente');
+        if (hasPendientes && this.puedoEditarResultados()) {
+          alert('⚠️ Todos los animales deben tener un resultado asignado (Negativo, Positivo o Sospechoso) para poder finalizar el dictamen.');
+          this.activeSection = 4;
+          return;
+        }
+
+        // Reglas temporales:
+        // 1. Inyección no antes de la visita
+        if (this.form.visita_id) {
+          const visita = this.visitas.find(v => String(v.id) === String(this.form.visita_id));
+          if (visita && visita.fecha_programada) {
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            
+            const fechaProg = new Date(visita.fecha_programada);
+            fechaProg.setHours(0, 0, 0, 0);
+            
+            if (hoy.getTime() < fechaProg.getTime()) {
+              const formattedDate = fechaProg.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+              alert(`⚠️ No se puede finalizar la inyección antes de la fecha programada de la visita (${formattedDate}).`);
+              return;
+            }
+          }
+        }
+
+        // 2. Dictamen no antes de la lectura
+        if (this.form.fecha_lectura) {
+          const hoy = new Date();
+          hoy.setHours(0, 0, 0, 0);
+          
+          const fechaLectura = new Date(this.form.fecha_lectura);
+          fechaLectura.setHours(0, 0, 0, 0);
+          
+          if (hoy.getTime() < fechaLectura.getTime()) {
+            const formattedLectura = fechaLectura.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            alert(`⚠️ No se puede finalizar el dictamen antes de la fecha programada de la lectura (${formattedLectura}).`);
+            return;
+          }
+        }
       }
 
       // Generar folio automático si quedó vacío al guardar
@@ -1079,7 +1451,7 @@ export default {
         this.form.folio = `TEMP-${timestamp}-${rand}`;
       }
       
-      this.form.estado = estado;
+      this.form.estado = saveEstado;
 
       try {
         // Remover el folio original de IndexedDB si el folio cambió
@@ -1091,7 +1463,21 @@ export default {
         
         this.originalFolio = this.form.folio;
 
-        if (estado === 'sincronizado') {
+        // Actualizar visita local en IndexedDB si corresponde
+        if (this.form.visita_id) {
+          const localVisitas = await db.getVisitas();
+          const vIdx = localVisitas.findIndex(v => String(v.id) === String(this.form.visita_id));
+          if (vIdx >= 0) {
+            localVisitas[vIdx].inyeccion = true;
+            localVisitas[vIdx].estado = 'completada';
+            await db.saveVisitas(localVisitas);
+          }
+        }
+
+        if (estado === 'sincronizado' && saveEstado === 'borrador') {
+          alert('🎉 Fase de Inyección registrada con éxito.\nEl dictamen se guardó como borrador local y la visita se marcó con inyección realizada. Se sincronizará automáticamente al detectar conexión.');
+          backgroundSync.syncIfConnected().catch(e => console.error(e));
+        } else if (saveEstado === 'sincronizado') {
           alert('🎉 Dictamen finalizado con éxito.\nQueda almacenado de manera local y seguro en tu dispositivo. Se sincronizará automáticamente cuando tengas conexión.');
           backgroundSync.syncIfConnected().catch(e => console.error(e));
         } else {
@@ -1808,7 +2194,382 @@ export default {
   
   .main-content {
     padding: 1rem;
-    padding-bottom: 90px;
+    padding-bottom: 160px;
   }
+}
+
+/* --- ESTILOS ADICIONALES PARA APARTADO 4 MÓVIL Y RESPONSIVO --- */
+
+/* Badge por definir */
+.badge-por-definir {
+  background-color: #fee2e2;
+  color: #ef4444;
+  border: 1px solid #fca5a5;
+  border-radius: 50px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Badge completo */
+.badge-completo-outline {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  border-radius: 50px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Results Blocked Banner */
+.results-blocked-banner {
+  background-color: #fffbeb;
+  border: 1.5px dashed #f59e0b;
+  border-radius: 16px;
+}
+
+.banner-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Animal Mobile Card */
+.animal-mobile-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 4px 8px rgba(15, 23, 42, 0.02);
+  transition: border-color 0.2s ease;
+}
+
+.animal-mobile-card.positivo-card {
+  border-color: #fca5a5;
+  background-color: #fffdfd;
+}
+
+.card-header-custom {
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+/* Custom labels and inputs for card */
+.form-label-custom {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.input-group-custom {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid #e2e8f0;
+  background: white;
+}
+
+.input-group-custom .form-control-custom {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.form-control-custom {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  outline: none;
+  background-color: white;
+  width: 100%;
+}
+
+.form-control-custom:focus {
+  border-color: #3b82f6;
+}
+
+/* Valid custom check */
+.is-valid-custom {
+  border-color: #10b981 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2310b981' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 36px;
+}
+
+.btn-camera-custom {
+  border: none;
+  background-color: #2563eb;
+  color: white;
+  padding: 0 16px;
+  cursor: pointer;
+}
+
+.btn-camera-custom:active {
+  background-color: #1d4ed8;
+}
+
+.custom-switch-scale {
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+/* Sticky Action Bar Mobile */
+.mobile-sticky-actions {
+  position: fixed;
+  bottom: 70px;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 12px 16px;
+  border-top: 1px solid #eef2f7;
+  z-index: 75;
+  display: flex;
+  gap: 12px;
+  box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.btn-mobile-borrador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 8px 16px;
+  color: #334155;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-mobile-borrador:active {
+  background-color: #f1f5f9;
+}
+
+.btn-mobile-finalizar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+}
+
+.btn-mobile-finalizar.blocked {
+  background: #94a3b8 !important;
+  color: #f1f5f9 !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+
+.btn-mobile-finalizar:active:not(.blocked) {
+  background: #1d4ed8;
+}
+
+/* Floating Action Button */
+.btn-fab-add {
+  position: fixed;
+  bottom: 160px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+  z-index: 76;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-fab-add:active {
+  transform: scale(0.9);
+  background-color: #1d4ed8;
+}
+
+/* Contenedor de Indicadores */
+.indicators-row-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Badges e indicadores */
+.custom-indicator-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Botón Añadir Animal en la fila de indicadores */
+.custom-indicator-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+}
+
+.custom-indicator-btn:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+/* Colores correspondientes a la maqueta */
+.badge-blue {
+  background-color: #2563eb;
+  color: white;
+}
+
+.badge-green {
+  background-color: #107c41;
+  color: white;
+}
+
+.badge-yellow {
+  background-color: #f59e0b;
+  color: #451a03;
+}
+
+.badge-cyan {
+  background-color: #06b6d4;
+  color: white;
+}
+
+.badge-red {
+  background-color: #ef4444;
+  color: white;
+}
+
+.btn-add-animal {
+  background-color: #2563eb;
+  color: white;
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.15);
+}
+
+/* Scanner Modal Overlay */
+.scanner-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+}
+
+.scanner-modal-content {
+  background: white;
+  width: 100%;
+  max-width: 450px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.scanner-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #2563eb;
+  color: white;
+}
+
+.btn-close-scanner {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.scanner-modal-body {
+  padding: 20px;
+  text-align: center;
+  background-color: #f8fafc;
+}
+
+.scanner-preview-box {
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: black;
+  border: 2px solid #e2e8f0;
+}
+
+.scanner-instruction-text {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.btn-camera-prominent {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 0 16px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  height: 45px; /* Aligns nicely with the input height */
+}
+
+.btn-camera-prominent:active {
+  background-color: #1d4ed8;
+  transform: scale(0.96);
 }
 </style>

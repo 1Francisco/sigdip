@@ -409,6 +409,14 @@ export default {
         alert('⚠️ Por favor completa los campos requeridos (*) en el Paso 1.');
         return;
       }
+
+      const curpVal = this.form.curp.trim().toUpperCase();
+      const curpRegex = /^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/;
+      if (curpVal.length !== 18 || !curpRegex.test(curpVal)) {
+        alert('⚠️ La CURP debe tener exactamente 18 caracteres y un formato válido (Ej: AAAA111111HXXYYY01).');
+        return;
+      }
+
       this.currentStep = 2;
     },
 
@@ -457,6 +465,33 @@ export default {
         latitud: this.mode === 'create' && this.registrarPredio ? this.form.latitud : null,
         longitud: this.mode === 'create' && this.registrarPredio ? this.form.longitud : null
       };
+
+      // Validar duplicados locales
+      try {
+        const prediosLocales = await db.getPredios();
+        
+        const duplicateCurp = prediosLocales.some(p => p.productor && p.productor.curp && p.productor.curp.toUpperCase() === body.curp && String(p.productor.id) !== String(this.productorId));
+        if (duplicateCurp) {
+          alert('⚠️ Ya existe un productor registrado con esta CURP localmente.');
+          return;
+        }
+
+        const duplicateUpp = prediosLocales.some(p => p.productor && p.productor.upp && p.productor.upp === body.upp && String(p.productor.id) !== String(this.productorId));
+        if (duplicateUpp) {
+          alert('⚠️ Ya existe un productor registrado con esta UPP localmente.');
+          return;
+        }
+
+        if (body.registrar_predio) {
+          const duplicatePredioUpp = prediosLocales.some(p => p.upp && p.upp === body.clave_unidad_produccion && String(p.productor_id) !== String(this.productorId));
+          if (duplicatePredioUpp) {
+            alert('⚠️ Ya existe un Rancho/Predio registrado con esta UPP localmente.');
+            return;
+          }
+        }
+      } catch (dbErr) {
+        console.warn('Error al verificar duplicados locales:', dbErr);
+      }
 
       try {
         let serverProductor = null;

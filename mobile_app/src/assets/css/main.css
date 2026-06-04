@@ -578,6 +578,11 @@ body {
 .bg-warning-subtle { background-color: #fef3c7 !important; border-color: #fde68a !important; color: #92400e !important; }
 .bg-primary-soft { background-color: var(--color-primary-light) !important; color: var(--color-primary) !important; }
 .bg-info-subtle { background-color: #e0f2fe !important; border-color: #bae6fd !important; color: #075985 !important; }
+.bg-success { background-color: #10b981 !important; color: #fff !important; }
+.bg-danger { background-color: #ef4444 !important; color: #fff !important; }
+.bg-warning { background-color: #f59e0b !important; color: #000 !important; }
+.text-white { color: #fff !important; }
+.text-capitalize { text-transform: capitalize !important; }
 
 .btn {
   display: inline-flex;

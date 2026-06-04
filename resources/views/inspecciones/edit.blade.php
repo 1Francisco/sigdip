@@ -478,7 +478,7 @@
                                     <thead class="bg-light text-center small fw-bold">
                                         <tr>
                                             <th style="width: 220px;">Identificación (Arete)</th>
-                                            <th style="width: 180px;">Tipo Arete</th>
+                                            <th style="width: 180px;" class="tipo-arete-header">Tipo Arete</th>
                                             <th style="width: 120px;">Edad (m)</th>
                                             <th style="width: 120px;">Raza</th>
                                             <th style="width: 100px;">Sexo</th>
@@ -1013,6 +1013,37 @@
                 headerPending.classList.add('d-none');
             }
         }
+        actualizarColumnaTipoArete();
+    }
+
+    function actualizarColumnaTipoArete() {
+        let showColumn = false;
+        const rows = document.querySelectorAll('#tablaAnimales tbody tr');
+        rows.forEach(row => {
+            const areteInput = row.querySelector('.arete-input');
+            if (areteInput && areteInput.value.trim() !== '') {
+                const tipoAreteSelect = row.querySelector('.tipo-arete-select');
+                if (tipoAreteSelect && !tipoAreteSelect.classList.contains('d-none')) {
+                    showColumn = true;
+                }
+            }
+        });
+
+        const header = document.querySelector('.tipo-arete-header');
+        if (header) {
+            if (showColumn) {
+                header.classList.remove('d-none');
+            } else {
+                header.classList.add('d-none');
+            }
+        }
+        document.querySelectorAll('.tipo-arete-cell').forEach(cell => {
+            if (showColumn) {
+                cell.classList.remove('d-none');
+            } else {
+                cell.classList.add('d-none');
+            }
+        });
     }
 
     function updateMotivoPrueba() {
@@ -1308,12 +1339,28 @@
 
         input.classList.add('is-loading');
 
-        fetch(`/api/buscar-arete/${numero}`)
+        fetch(`{{ url('/api/buscar-arete') }}/${numero}`)
             .then(response => response.json())
             .then(res => {
                 if (res.success) {
                     const data = res.data;
-                    if (data.edad_meses) edadInput.value = data.edad_meses;
+                    let edadMeses = data.edad_meses;
+                    if (data.fecha_nacimiento) {
+                        const birthDate = new Date(data.fecha_nacimiento);
+                        if (!isNaN(birthDate.getTime())) {
+                            const today = new Date();
+                            let months = (today.getFullYear() - birthDate.getFullYear()) * 12;
+                            months -= birthDate.getMonth();
+                            months += today.getMonth();
+                            if (today.getDate() < birthDate.getDate()) {
+                                months--;
+                            }
+                            edadMeses = Math.max(0, months);
+                        }
+                    }
+                    if (edadMeses !== null && edadMeses !== undefined) {
+                        edadInput.value = edadMeses;
+                    }
                     if (data.raza) razaInput.value = data.raza;
                     if (data.sexo) {
                         const s = data.sexo.charAt(0).toUpperCase();

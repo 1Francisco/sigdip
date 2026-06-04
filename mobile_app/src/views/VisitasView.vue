@@ -169,7 +169,9 @@
                     <th class="ps-4 text-secondary fw-bold text-uppercase fs-7 tracking-wider">Fecha Programada</th>
                     <th class="text-secondary fw-bold text-uppercase fs-7 tracking-wider">Productor / Predio</th>
                     <th class="text-secondary fw-bold text-uppercase fs-7 tracking-wider">Médico Veterinario</th>
-                    <th class="text-secondary fw-bold text-uppercase fs-7 tracking-wider">Estado</th>
+                    <th class="text-center text-secondary fw-bold text-uppercase fs-7 tracking-wider">Inyección</th>
+                    <th class="text-center text-secondary fw-bold text-uppercase fs-7 tracking-wider">Lectura</th>
+                    <th class="text-secondary fw-bold text-uppercase fs-7 tracking-wider">Estado Visita</th>
                     <th class="text-center text-secondary fw-bold text-uppercase fs-7 tracking-wider">Acciones</th>
                   </tr>
                 </thead>
@@ -184,9 +186,38 @@
                       <small class="text-secondary fs-7">{{ visita.predio?.nombre_rancho }} ({{ visita.predio?.localidad }})</small>
                     </td>
                     <td class="text-secondary">{{ visita.veterinario?.name || 'Administrador Central' }}</td>
+                    <!-- Inyección -->
+                    <td class="text-center">
+                      <span class="badge rounded-pill px-2-5 py-1-5 fw-semibold" :class="visita.inyeccion ? 'bg-success text-white' : 'bg-danger text-white'">
+                        <i class="bi" :class="visita.inyeccion ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+                        {{ visita.inyeccion ? 'Realizada' : 'Pendiente' }}
+                      </span>
+                      <div v-if="visita.inyeccion && visita.inspeccion?.fecha_inyeccion" class="small text-secondary mt-1" style="font-size: 0.75rem;">
+                        {{ formatDateTime(visita.inspeccion.fecha_inyeccion, visita.inspeccion.hora_inyeccion) }}
+                      </div>
+                    </td>
+                    <!-- Lectura -->
+                    <td class="text-center">
+                      <span class="badge rounded-pill px-2-5 py-1-5 fw-semibold" :class="(visita.inspeccion?.id && visita.inspeccion?.estado !== 'borrador') ? 'bg-success text-white' : 'bg-danger text-white'">
+                        <i class="bi" :class="(visita.inspeccion?.id && visita.inspeccion?.estado !== 'borrador') ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+                        {{ (visita.inspeccion?.id && visita.inspeccion?.estado !== 'borrador') ? 'Realizada' : 'Pendiente' }}
+                      </span>
+                      <div v-if="visita.inspeccion?.id && visita.inspeccion?.estado !== 'borrador' && visita.inspeccion?.fecha_lectura" class="small text-secondary mt-1" style="font-size: 0.75rem;">
+                        {{ formatDateTime(visita.inspeccion.fecha_lectura, visita.inspeccion.hora_lectura) }}
+                      </div>
+                      <div v-else-if="!(visita.inspeccion?.id && visita.inspeccion?.estado !== 'borrador')" class="small text-muted mt-1" style="font-size: 0.75rem; font-weight: 500;">
+                        <template v-if="visita.inyeccion && visita.inspeccion?.fecha_inyeccion">
+                          Estimada: {{ estimatedLecturaDate(visita.inspeccion.fecha_inyeccion) }}
+                        </template>
+                        <template v-else-if="visita.fecha_programada">
+                          Estimada: {{ estimatedLecturaDate(visita.fecha_programada) }}
+                        </template>
+                      </div>
+                    </td>
+                    <!-- Estado Visita -->
                     <td>
-                      <span class="badge rounded-3 px-2-5 py-1-5 d-inline-flex align-items-center gap-1 fw-bold fs-7-5" :class="badgeClass(visita.estado)">
-                        {{ (visita.estado || 'pendiente').toUpperCase() }}
+                      <span class="badge rounded-pill px-2-5 py-1-5 fw-semibold text-capitalize" :class="badgeClass(visita.estado)">
+                        {{ visita.estado || 'pendiente' }}
                       </span>
                     </td>
                     <td>
@@ -263,14 +294,22 @@
                     <span class="field-value text-dark fs-6">{{ visita.veterinario?.name || 'Administrador Central' }}</span>
                   </div>
 
+                  <!-- Estado Visita Field -->
+                  <div class="card-field">
+                    <span class="field-label">ESTADO VISITA</span>
+                    <div class="badge rounded-3 py-2 px-3 fs-7.5 w-100 d-flex align-items-center justify-content-center gap-1.5 fw-bold text-capitalize" :class="badgeClass(visita.estado)">
+                      {{ visita.estado || 'pendiente' }}
+                    </div>
+                  </div>
+
                   <!-- Inyeccion Status Field -->
                   <div class="card-field">
                     <span class="field-label">INYECCIÓN</span>
-                    <div class="badge rounded-3 py-2 px-3 fs-7.5 w-100 d-flex align-items-center justify-content-center gap-1.5" :class="visita.inspeccion?.id ? 'bg-success text-white' : 'bg-danger text-white'">
-                      <i class="bi" :class="visita.inspeccion?.id ? 'bi-check-lg' : 'bi-x-lg'"></i>
-                      {{ visita.inspeccion?.id ? 'Realizada' : 'Pendiente' }}
+                    <div class="badge rounded-3 py-2 px-3 fs-7.5 w-100 d-flex align-items-center justify-content-center gap-1.5" :class="visita.inyeccion ? 'bg-success text-white' : 'bg-danger text-white'">
+                      <i class="bi" :class="visita.inyeccion ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+                      {{ visita.inyeccion ? 'Realizada' : 'Pendiente' }}
                     </div>
-                    <span v-if="visita.inspeccion?.fecha_inyeccion" class="field-subtitle text-center text-secondary fs-7.5 mt-1.5">
+                    <span v-if="visita.inyeccion && visita.inspeccion?.fecha_inyeccion" class="field-subtitle text-center text-secondary fs-7.5 mt-1.5">
                       {{ formatDateTime(visita.inspeccion.fecha_inyeccion, visita.inspeccion.hora_inyeccion) }}
                     </span>
                   </div>
@@ -278,12 +317,21 @@
                   <!-- Lectura Status Field -->
                   <div class="card-field">
                     <span class="field-label">LECTURA</span>
-                    <div class="badge rounded-3 py-2 px-3 fs-7.5 w-100 d-flex align-items-center justify-content-center gap-1.5" :class="(visita.inspeccion?.id && visita.inspeccion?.fecha_lectura) ? 'bg-success text-white' : 'bg-danger text-white'">
-                      <i class="bi" :class="(visita.inspeccion?.id && visita.inspeccion?.fecha_lectura) ? 'bi-check-lg' : 'bi-x-lg'"></i>
-                      {{ (visita.inspeccion?.id && visita.inspeccion?.fecha_lectura) ? 'Realizada' : 'Pendiente' }}
+                    <div class="badge rounded-3 py-2 px-3 fs-7.5 w-100 d-flex align-items-center justify-content-center gap-1.5" :class="(visita.inspeccion?.id && visita.inspeccion?.estado !== 'borrador') ? 'bg-success text-white' : 'bg-danger text-white'">
+                      <i class="bi" :class="(visita.inspeccion?.id && visita.inspeccion?.estado !== 'borrador') ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+                      {{ (visita.inspeccion?.id && visita.inspeccion?.estado !== 'borrador') ? 'Realizada' : 'Pendiente' }}
                     </div>
-                    <span v-if="visita.inspeccion?.fecha_lectura" class="field-subtitle text-center text-secondary fs-7.5 mt-1.5">
+                    <span v-if="visita.inspeccion?.id && visita.inspeccion?.estado !== 'borrador' && visita.inspeccion?.fecha_lectura" class="field-subtitle text-center text-secondary fs-7.5 mt-1.5">
                       {{ formatDateTime(visita.inspeccion.fecha_lectura, visita.inspeccion.hora_lectura) }}
+                    </span>
+                    <!-- Estimated lectura date when pending -->
+                    <span v-else-if="!(visita.inspeccion?.id && visita.inspeccion?.estado !== 'borrador')" class="field-subtitle text-center text-muted fs-7.5 mt-1" style="font-weight: 500;">
+                      <template v-if="visita.inyeccion && visita.inspeccion?.fecha_inyeccion">
+                        Estimada: {{ estimatedLecturaDate(visita.inspeccion.fecha_inyeccion) }}
+                      </template>
+                      <template v-else-if="visita.fecha_programada">
+                        Estimada: {{ estimatedLecturaDate(visita.fecha_programada) }}
+                      </template>
                     </span>
                   </div>
                 </div>
@@ -603,6 +651,21 @@ export default {
       if (estado === 'cancelada') return 'bg-danger text-white';
       return 'bg-warning text-dark';
     },
+    estimatedLecturaDate(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      let d;
+      if (parts.length === 3) {
+        d = new Date(parts[0], parts[1] - 1, parts[2]);
+      } else {
+        d = new Date(dateStr);
+      }
+      d.setDate(d.getDate() + 3);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    },
     formatDate(dateStr) {
       if (!dateStr) return '';
       // Safe YYYY-MM-DD parsing
@@ -841,11 +904,30 @@ export default {
 }
 
 .bg-success {
-  background-color: #10b981;
+  background-color: #10b981 !important;
+  color: #fff !important;
 }
 
 .bg-danger {
-  background-color: #ef4444;
+  background-color: #ef4444 !important;
+  color: #fff !important;
+}
+
+.bg-warning {
+  background-color: #f59e0b !important;
+  color: #000 !important;
+}
+
+.text-white {
+  color: #fff !important;
+}
+
+.text-dark {
+  color: #1e293b !important;
+}
+
+.text-capitalize {
+  text-transform: capitalize !important;
 }
 
 /* Web Badges */

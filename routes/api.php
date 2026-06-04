@@ -72,6 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/inspecciones/{id}/pdf', [InspeccionesApiController::class, 'pdf']);
     Route::patch('/inspecciones/{id}', [InspeccionesApiController::class, 'update']);
     Route::get('/reportes/sábana-excel', [\App\Http\Controllers\ReporteController::class, 'exportExcel']);
+    Route::get('/censo/buscar-arete/{numero}', [\App\Http\Controllers\InspeccionController::class, 'buscarArete']);
 
     // Médicos desde la App Móvil
     Route::get('/medicos', [MedicosApiController::class, 'index']);
