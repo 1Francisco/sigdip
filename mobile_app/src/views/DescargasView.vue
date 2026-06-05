@@ -105,10 +105,10 @@
     <main class="app-content main-content bg-light">
       
       <!-- Top Action Bar -->
-      <div class="welcome-header mb-4 text-start d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+      <div class="welcome-header mb-3 text-start d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
         <div>
-          <h2 class="h4 fw-bold mb-1 text-dark">Descargas</h2>
-          <p class="text-secondary small mb-0">Archivos locales descargados en el dispositivo (PDFs y Excel)</p>
+          <h2 class="h4 fw-bold mb-1 text-dark"><i class="bi bi-folder2-open me-2 text-primary"></i>Mis Descargas</h2>
+          <p class="text-secondary small mb-0">Archivos PDF y Excel guardados en tu dispositivo</p>
         </div>
         
         <!-- Web Badges -->
@@ -124,130 +124,186 @@
         </div>
       </div>
 
+      <!-- Stats Cards Row -->
+      <div class="row g-3 mb-4">
+        <div class="col-4">
+          <div class="dl-stat-card">
+            <div class="dl-stat-icon" style="background: linear-gradient(135deg, #eff6ff, #dbeafe);">
+              <i class="bi bi-files text-primary fs-4"></i>
+            </div>
+            <div class="dl-stat-value">{{ files.length }}</div>
+            <div class="dl-stat-label">Total</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="dl-stat-card">
+            <div class="dl-stat-icon" style="background: linear-gradient(135deg, #fef2f2, #fecaca);">
+              <i class="bi bi-file-earmark-pdf-fill text-danger fs-4"></i>
+            </div>
+            <div class="dl-stat-value">{{ pdfCount }}</div>
+            <div class="dl-stat-label">PDFs</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="dl-stat-card">
+            <div class="dl-stat-icon" style="background: linear-gradient(135deg, #ecfdf5, #a7f3d0);">
+              <i class="bi bi-file-earmark-spreadsheet-fill text-success fs-4"></i>
+            </div>
+            <div class="dl-stat-value">{{ excelCount }}</div>
+            <div class="dl-stat-label">Excel</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Notification Alerts -->
-      <div v-if="errorMsg" class="alert alert-danger alert-dismissible fade show text-start shadow-sm border-0 d-flex align-items-center gap-2" role="alert">
+      <div v-if="errorMsg" class="alert alert-danger alert-dismissible fade show text-start shadow-sm border-0 d-flex align-items-center gap-2 rounded-3" role="alert">
         <i class="bi bi-exclamation-octagon-fill text-danger fs-5"></i>
-        <div>{{ errorMsg }}</div>
+        <div class="flex-grow-1">{{ errorMsg }}</div>
         <button type="button" class="btn-close" @click="errorMsg = ''" aria-label="Close"></button>
       </div>
 
-      <div v-if="successMsg" class="alert alert-success alert-dismissible fade show text-start shadow-sm border-0 d-flex align-items-center gap-2" role="alert">
+      <div v-if="successMsg" class="alert alert-success alert-dismissible fade show text-start shadow-sm border-0 d-flex align-items-center gap-2 rounded-3" role="alert">
         <i class="bi bi-check-circle-fill text-success fs-5"></i>
-        <div>{{ successMsg }}</div>
+        <div class="flex-grow-1">{{ successMsg }}</div>
         <button type="button" class="btn-close" @click="successMsg = ''" aria-label="Close"></button>
       </div>
 
-      <!-- Search and filters -->
-      <div class="card border-0 shadow-sm mb-4">
-        <div class="p-3">
-          <div class="input-group search-input-group">
-            <span class="input-group-text bg-white border-end-0 border-slate-200">
-              <i class="bi bi-search text-secondary"></i>
-            </span>
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              class="form-control border-start-0 border-slate-200 ps-1 py-2" 
-              placeholder="Buscar por nombre de archivo..."
-            >
-            <button v-if="searchQuery" class="btn btn-link text-secondary border-end border-slate-200" @click="searchQuery = ''" style="position: absolute; right: 10px; top: 5px; z-index: 10;">
-              <i class="bi bi-x-lg"></i>
-            </button>
-          </div>
+      <!-- Search Bar -->
+      <div class="dl-search-wrapper mb-4" v-if="files.length > 0">
+        <div class="position-relative">
+          <i class="bi bi-search dl-search-icon"></i>
+          <input 
+            v-model="searchQuery" 
+            type="text" 
+            class="dl-search-input" 
+            placeholder="Buscar archivo..."
+          >
+          <button v-if="searchQuery" class="dl-search-clear" @click="searchQuery = ''">
+            <i class="bi bi-x-circle-fill"></i>
+          </button>
         </div>
       </div>
 
       <!-- Files List -->
       <div class="position-relative">
         <!-- Loader -->
-        <div v-if="loading" class="text-center p-5">
-          <div class="spinner-border text-primary" role="status">
+        <div v-if="loading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
             <span class="visually-hidden">Cargando...</span>
           </div>
-          <p class="text-muted mt-2">Cargando archivos locales...</p>
+          <p class="text-muted mt-3 fw-semibold">Escaneando archivos locales...</p>
         </div>
 
         <!-- Empty State -->
-        <div v-else-if="filteredFiles.length === 0" class="text-center p-5 card border-0 shadow-sm">
-          <div class="my-4">
-            <i class="bi bi-download display-3 text-secondary opacity-50"></i>
+        <div v-else-if="filteredFiles.length === 0" class="dl-empty-state">
+          <div class="dl-empty-icon-wrapper">
+            <i class="bi bi-folder2-open"></i>
           </div>
-          <h5 class="fw-bold text-dark mb-2">No se encontraron descargas</h5>
-          <p class="text-secondary px-3 mb-4">
-            {{ searchQuery ? 'No hay descargas que coincidan con la búsqueda.' : 'Aún no has descargado ningún dictamen PDF o sábana Excel en este dispositivo.' }}
+          <h5 class="fw-bold text-dark mb-2">{{ searchQuery ? 'Sin resultados' : 'No hay descargas' }}</h5>
+          <p class="text-secondary mb-4 px-2">
+            {{ searchQuery ? 'No se encontraron archivos que coincidan con tu búsqueda.' : 'Descarga dictámenes en PDF o la sábana Excel desde la sección de Inspecciones para verlos aquí.' }}
           </p>
           <button 
             v-if="!searchQuery"
-            class="btn btn-primary px-4 py-2 mx-auto rounded-pill d-flex align-items-center gap-2"
+            class="btn dl-btn-go-inspections"
             @click="$router.push('/inspecciones')"
-            style="background: #2563eb; width: fit-content;"
           >
-            <i class="bi bi-clipboard-check"></i>
-            Ir a Dictámenes para descargar
+            <i class="bi bi-clipboard-check me-2"></i>
+            Ir a Dictámenes
           </button>
         </div>
 
-        <!-- Cards View -->
-        <div v-else class="row g-3">
+        <!-- File Cards -->
+        <div v-else>
           <div 
             v-for="file in filteredFiles" 
             :key="file.name" 
-            class="col-12"
+            class="dl-file-card"
+            @click="openFile(file)"
           >
-            <div class="card p-3 border-0 shadow-sm text-start hover-lift position-relative overflow-hidden mb-0">
-              <!-- Accent border left -->
-              <div 
-                class="position-absolute start-0 top-0 bottom-0" 
-                :style="{ width: '4px', backgroundColor: isExcel(file.name) ? '#10b981' : '#ef4444' }"
-              ></div>
-              
+            <!-- File type color bar -->
+            <div class="dl-file-color-bar" :class="isExcel(file.name) ? 'bg-success' : 'bg-danger'"></div>
+            
+            <div class="dl-file-body">
+              <!-- Top row: icon + info -->
               <div class="d-flex align-items-center gap-3">
-                <!-- File Icon -->
-                <div 
-                  class="rounded-3 p-3 d-flex align-items-center justify-content-center"
-                  :style="{ backgroundColor: isExcel(file.name) ? '#eff6ff' : '#fee2e2', color: isExcel(file.name) ? '#10b981' : '#ef4444' }"
-                  style="width: 50px; height: 50px; flex-shrink: 0;"
-                >
-                  <i :class="isExcel(file.name) ? 'bi bi-file-earmark-spreadsheet-fill fs-3' : 'bi bi-file-earmark-pdf-fill fs-3'"></i>
+                <div class="dl-file-icon" :class="isExcel(file.name) ? 'dl-file-icon-excel' : 'dl-file-icon-pdf'">
+                  <i :class="isExcel(file.name) ? 'bi bi-file-earmark-spreadsheet-fill' : 'bi bi-file-earmark-pdf-fill'"></i>
                 </div>
-
-                <!-- Info -->
                 <div class="flex-grow-1 min-w-0">
-                  <h6 class="fw-bold text-dark text-truncate mb-1" :title="file.name">
-                    {{ file.name }}
-                  </h6>
-                  <div class="d-flex align-items-center gap-2 text-secondary small">
-                    <span>{{ formatBytes(file.size) }}</span>
-                    <span>•</span>
-                    <span>{{ formatDate(file.mtime) }}</span>
+                  <h6 class="dl-file-name" :title="file.name">{{ file.name }}</h6>
+                  <div class="dl-file-meta">
+                    <span><i class="bi bi-hdd me-1"></i>{{ formatBytes(file.size) }}</span>
+                    <span class="dl-file-meta-dot">•</span>
+                    <span><i class="bi bi-clock me-1"></i>{{ formatDate(file.mtime) }}</span>
                   </div>
                 </div>
               </div>
 
-              <!-- Action Buttons footer style -->
-              <div class="producer-mobile-footer d-flex align-items-center justify-content-between mt-3 pt-3 border-top border-slate-100">
-                <div class="footer-actions-label fw-bold text-secondary mb-0">ACCIONES</div>
+              <!-- Actions row -->
+              <div class="dl-file-actions">
+                <span class="dl-actions-label">ACCIONES</span>
                 <div class="d-flex gap-2">
                   <button 
-                    @click="shareFile(file)" 
-                    class="btn btn-sm d-flex align-items-center justify-content-center bg-transparent border text-primary" 
-                    :class="isExcel(file.name) ? 'border-success text-success' : 'border-primary text-primary'"
-                    title="Compartir o Abrir"
-                    style="width: 44px; height: 44px; border-radius: 12px;"
+                    @click.stop="openFile(file)" 
+                    class="dl-action-btn dl-action-open"
+                    :title="isPdf(file.name) ? 'Ver PDF' : 'Descargar Excel'"
                   >
-                    <i class="bi bi-share"></i>
+                    <i :class="isPdf(file.name) ? 'bi bi-eye-fill' : 'bi bi-box-arrow-up-right'"></i>
+                    <span>{{ isPdf(file.name) ? 'Ver' : 'Abrir' }}</span>
                   </button>
                   <button 
-                    @click="deleteFile(file)" 
-                    class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center bg-transparent border-danger text-danger" 
-                    title="Eliminar"
-                    style="width: 44px; height: 44px; border-radius: 12px;"
+                    @click.stop="shareFile(file)" 
+                    class="dl-action-btn dl-action-share"
+                    title="Compartir"
                   >
-                    <i class="bi bi-trash"></i>
+                    <i class="bi bi-share-fill"></i>
+                    <span>Enviar</span>
+                  </button>
+                  <button 
+                    @click.stop="deleteFile(file)" 
+                    class="dl-action-btn dl-action-delete"
+                    title="Eliminar"
+                  >
+                    <i class="bi bi-trash3-fill"></i>
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <!-- PDF Preview Modal -->
+      <div v-if="previewVisible" class="dl-preview-overlay" @click.self="closePreview">
+        <div class="dl-preview-modal">
+          <div class="dl-preview-header">
+            <div class="d-flex align-items-center gap-2 min-w-0">
+              <i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i>
+              <span class="fw-bold text-truncate">{{ previewFileName }}</span>
+            </div>
+            <div class="d-flex gap-2">
+              <a v-if="previewBlobUrl" :href="previewBlobUrl" target="_blank" class="dl-preview-btn-external" title="Abrir en pestaña nueva">
+                <i class="bi bi-box-arrow-up-right"></i>
+              </a>
+              <button class="dl-preview-btn-close" @click="closePreview">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
+          <div class="dl-preview-body">
+            <div v-if="previewLoading" class="d-flex flex-column align-items-center justify-content-center h-100">
+              <div class="spinner-border text-primary mb-3" role="status"></div>
+              <p class="text-muted">Cargando vista previa...</p>
+            </div>
+            <iframe 
+              v-else-if="previewBlobUrl"
+              :src="previewBlobUrl" 
+              class="dl-preview-iframe"
+            ></iframe>
+            <div v-else class="d-flex flex-column align-items-center justify-content-center h-100 text-center p-4">
+              <i class="bi bi-exclamation-triangle display-4 text-warning mb-3"></i>
+              <p class="text-secondary">No se pudo cargar la vista previa del archivo.</p>
             </div>
           </div>
         </div>
@@ -283,7 +339,7 @@
 <script>
 import { Network } from '@capacitor/network';
 import api from '../services/api.js';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
 export default {
@@ -299,7 +355,12 @@ export default {
       searchQuery: '',
       files: [],
       errorMsg: '',
-      successMsg: ''
+      successMsg: '',
+      // Preview modal state
+      previewVisible: false,
+      previewLoading: false,
+      previewBlobUrl: null,
+      previewFileName: ''
     };
   },
   computed: {
@@ -307,6 +368,12 @@ export default {
       if (!this.searchQuery) return this.files;
       const q = this.searchQuery.toLowerCase();
       return this.files.filter(f => f.name.toLowerCase().includes(q));
+    },
+    pdfCount() {
+      return this.files.filter(f => this.isPdf(f.name)).length;
+    },
+    excelCount() {
+      return this.files.filter(f => this.isExcel(f.name)).length;
     }
   },
   async mounted() {
@@ -332,6 +399,7 @@ export default {
     if (this.networkListener) {
       this.networkListener.remove();
     }
+    this.cleanPreviewUrl();
   },
   methods: {
     alertWebOnly(seccion) {
@@ -352,8 +420,11 @@ export default {
     isExcel(filename) {
       return filename.toLowerCase().endsWith('.xlsx');
     },
-    formatBytes(bytes, decimals = 2) {
-      if (!bytes || bytes === 0) return '0 Bytes';
+    isPdf(filename) {
+      return filename.toLowerCase().endsWith('.pdf');
+    },
+    formatBytes(bytes, decimals = 1) {
+      if (!bytes || bytes === 0) return '—';
       const k = 1024;
       const dm = decimals < 0 ? 0 : decimals;
       const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -361,12 +432,12 @@ export default {
       return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     },
     formatDate(dateVal) {
-      if (!dateVal) return '-';
+      if (!dateVal) return '—';
       const d = new Date(dateVal);
-      if (isNaN(d.getTime())) return '-';
+      if (isNaN(d.getTime())) return '—';
       return d.toLocaleDateString('es-MX', {
         day: '2-digit',
-        month: '2-digit',
+        month: 'short',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
@@ -400,13 +471,21 @@ export default {
             };
           }).filter(f => f !== null);
 
-          // Sort by mtime descending (newest first)
           this.files.sort((a, b) => b.mtime - a.mtime);
         } else {
-          // Web browser fallback
+          // Web browser fallback — show demo data so the view isn't empty during dev
           const mockData = localStorage.getItem('local_downloads_mock');
-          this.files = mockData ? JSON.parse(mockData) : [];
-          // Sort by date/mtime descending
+          if (mockData) {
+            this.files = JSON.parse(mockData);
+          } else {
+            // Seed some demo files for development preview
+            this.files = [
+              { name: 'dictamenes_pecuarios_5-6-2026.xlsx', size: 245760, mtime: Date.now() - 3600000, isNative: false },
+              { name: 'dictamen_DP-2026-001_5-6-2026.pdf', size: 189432, mtime: Date.now() - 7200000, isNative: false },
+              { name: 'dictamen_DP-2026-002_4-6-2026.pdf', size: 203145, mtime: Date.now() - 86400000, isNative: false },
+            ];
+            localStorage.setItem('local_downloads_mock', JSON.stringify(this.files));
+          }
           this.files.sort((a, b) => b.mtime - a.mtime);
         }
       } catch (e) {
@@ -416,6 +495,78 @@ export default {
         this.loading = false;
       }
     },
+
+    // ---- OPEN / PREVIEW ----
+    async openFile(file) {
+      this.errorMsg = '';
+      this.successMsg = '';
+
+      if (file.isNative) {
+        // Native: read file content and create blob URL for preview
+        if (this.isPdf(file.name)) {
+          this.previewFileName = file.name;
+          this.previewVisible = true;
+          this.previewLoading = true;
+          try {
+            const fileData = await Filesystem.readFile({
+              path: file.name,
+              directory: Directory.Documents
+            });
+            const byteCharacters = atob(fileData.data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'application/pdf' });
+            this.cleanPreviewUrl();
+            this.previewBlobUrl = URL.createObjectURL(blob);
+          } catch (err) {
+            console.error('Error reading PDF:', err);
+            this.previewBlobUrl = null;
+          } finally {
+            this.previewLoading = false;
+          }
+        } else {
+          // Excel: open via Share (no in-app preview possible)
+          try {
+            await Share.share({
+              title: file.name,
+              url: file.uri,
+              dialogTitle: 'Abrir archivo Excel'
+            });
+          } catch (e) {
+            // User cancelled
+          }
+        }
+      } else {
+        // Browser fallback — open demo/mock
+        if (this.isPdf(file.name)) {
+          this.previewFileName = file.name;
+          this.previewVisible = true;
+          this.previewLoading = false;
+          // In browser dev mode, show a placeholder message since there's no real file
+          this.previewBlobUrl = null;
+        } else {
+          alert(`En el dispositivo nativo, se abrirá "${file.name}" con la aplicación de hojas de cálculo instalada.`);
+        }
+      }
+    },
+
+    cleanPreviewUrl() {
+      if (this.previewBlobUrl) {
+        URL.revokeObjectURL(this.previewBlobUrl);
+        this.previewBlobUrl = null;
+      }
+    },
+
+    closePreview() {
+      this.previewVisible = false;
+      this.previewFileName = '';
+      this.cleanPreviewUrl();
+    },
+
+    // ---- SHARE ----
     async shareFile(file) {
       this.errorMsg = '';
       this.successMsg = '';
@@ -424,31 +575,24 @@ export default {
           await Share.share({
             title: file.name,
             url: file.uri,
-            dialogTitle: 'Abrir / Compartir archivo'
+            dialogTitle: 'Compartir archivo'
           });
         } else {
-          // Trigger browser download of mock data
-          if (file.dataUrl) {
-            const link = document.createElement('a');
-            link.href = file.dataUrl;
-            link.download = file.name;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            this.successMsg = `Archivo "${file.name}" descargado en el navegador.`;
-          } else {
-            alert('Datos no disponibles para este simulacro.');
-          }
+          alert(`En el dispositivo nativo, podrás enviar "${file.name}" por WhatsApp, Correo, etc.`);
         }
       } catch (e) {
-        console.error('Error sharing file:', e);
-        this.errorMsg = 'No se pudo compartir/abrir el archivo: ' + e.message;
+        if (e.message && !e.message.includes('cancel')) {
+          console.error('Error sharing file:', e);
+          this.errorMsg = 'No se pudo compartir el archivo: ' + e.message;
+        }
       }
     },
+
+    // ---- DELETE ----
     async deleteFile(file) {
       this.errorMsg = '';
       this.successMsg = '';
-      if (confirm(`¿Estás seguro de que deseas eliminar el archivo "${file.name}" de este dispositivo?`)) {
+      if (confirm(`¿Eliminar "${file.name}" del dispositivo?\n\nEsta acción no se puede deshacer.`)) {
         try {
           if (file.isNative) {
             await Filesystem.deleteFile({
@@ -460,7 +604,7 @@ export default {
             mockFiles = mockFiles.filter(f => f.name !== file.name);
             localStorage.setItem('local_downloads_mock', JSON.stringify(mockFiles));
           }
-          this.successMsg = `Archivo "${file.name}" eliminado con éxito.`;
+          this.successMsg = `"${file.name}" eliminado correctamente.`;
           await this.loadFiles();
         } catch (e) {
           console.error('Error deleting file:', e);
@@ -479,26 +623,340 @@ export default {
 .bg-light-page {
   background-color: var(--bg-primary);
 }
-.hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+/* ===== Stats Cards ===== */
+.dl-stat-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px 12px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1px solid #f1f5f9;
+  transition: transform 0.2s ease;
 }
-.hover-lift:hover {
+.dl-stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md) !important;
 }
-.search-input-group .input-group-text,
-.search-input-group .form-control {
-  border-color: #e2e8f0;
+.dl-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
 }
-.search-input-group .form-control:focus {
-  box-shadow: none;
-  border-color: var(--color-primary);
+.dl-stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
 }
-.producer-mobile-footer {
-  border-top: 1px solid #e2e8f0;
+.dl-stat-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
 }
-.footer-actions-label {
+
+/* ===== Search ===== */
+.dl-search-wrapper {
+  position: relative;
+}
+.dl-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 0.9rem;
+  z-index: 2;
+}
+.dl-search-input {
+  width: 100%;
+  padding: 12px 44px 12px 44px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+  outline: none;
+}
+.dl-search-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.dl-search-input::placeholder {
+  color: #cbd5e1;
+}
+.dl-search-clear {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 1rem;
+  z-index: 2;
+}
+.dl-search-clear:hover { color: #64748b; }
+
+/* ===== Empty State ===== */
+.dl-empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1px solid #f1f5f9;
+}
+.dl-empty-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 2rem;
+  color: #2563eb;
+}
+.dl-btn-go-inspections {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+}
+.dl-btn-go-inspections:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37,99,235,0.4);
+}
+
+/* ===== File Card ===== */
+.dl-file-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1px solid #f1f5f9;
+  overflow: hidden;
+  margin-bottom: 12px;
+  display: flex;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.dl-file-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+.dl-file-card:active {
+  transform: scale(0.99);
+}
+.dl-file-color-bar {
+  width: 5px;
+  flex-shrink: 0;
+}
+.dl-file-body {
+  flex: 1;
+  padding: 16px;
+  min-width: 0;
+}
+.dl-file-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+.dl-file-icon-pdf {
+  background: linear-gradient(135deg, #fef2f2, #fecaca);
+  color: #dc2626;
+}
+.dl-file-icon-excel {
+  background: linear-gradient(135deg, #ecfdf5, #a7f3d0);
+  color: #059669;
+}
+.dl-file-name {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #1e293b;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dl-file-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.72rem;
-  letter-spacing: 0.8px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+.dl-file-meta-dot {
+  color: #cbd5e1;
+}
+
+/* ===== File Actions ===== */
+.dl-file-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+.dl-actions-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 1px;
+}
+.dl-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1.5px solid;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+  font-family: inherit;
+}
+.dl-action-open {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+.dl-action-open:hover {
+  background: #2563eb;
+  color: #fff;
+}
+.dl-action-share {
+  border-color: #059669;
+  color: #059669;
+  background: #ecfdf5;
+}
+.dl-action-share:hover {
+  background: #059669;
+  color: #fff;
+}
+.dl-action-delete {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
+  padding: 8px 10px;
+}
+.dl-action-delete:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+/* ===== PDF Preview Modal ===== */
+.dl-preview-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: dlFadeIn 0.2s ease;
+}
+@keyframes dlFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.dl-preview-modal {
+  width: 100%;
+  max-width: 900px;
+  height: 85vh;
+  background: #fff;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: dlSlideUp 0.25s ease;
+}
+@keyframes dlSlideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.dl-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  gap: 12px;
+}
+.dl-preview-btn-external {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eff6ff;
+  color: #2563eb;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-decoration: none;
+}
+.dl-preview-btn-external:hover { background: #dbeafe; }
+.dl-preview-btn-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fef2f2;
+  color: #ef4444;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.dl-preview-btn-close:hover { background: #fecaca; }
+.dl-preview-body {
+  flex: 1;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+.dl-preview-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
 }
 </style>
