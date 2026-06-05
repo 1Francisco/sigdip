@@ -78,21 +78,25 @@
     </main>
 
     <nav class="bottom-nav">
-      <a @click.prevent="$router.push('/dashboard')">
-        <span class="nav-icon">🏠</span>
-        Inicio
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
+        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
+        <span>Inicio</span>
       </a>
-      <a class="active" @click.prevent>
-        <span class="nav-icon">📷</span>
-        Escanear
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
+        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
+        <span>Productores</span>
       </a>
-      <a @click.prevent="$router.push('/inspeccion')">
-        <span class="nav-icon">📝</span>
-        Dictamen
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
+        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
+        <span>Predios</span>
       </a>
-      <a @click.prevent="$router.push('/sync')">
-        <span class="nav-icon">🔄</span>
-        Sync
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
+        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
+        <span>Dictámenes</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
+        <i class="bi bi-arrow-repeat"></i>
+        <span>Sincronizar</span>
       </a>
     </nav>
   </div>

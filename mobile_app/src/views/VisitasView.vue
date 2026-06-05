@@ -35,6 +35,9 @@
             <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
           </a>
           <hr class="mx-3 text-slate-200">
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
+          </a>
           <a class="nav-link" @click.prevent="$router.push('/inspecciones?downloadExcel=true')">
             <i class="bi bi-file-earmark-excel"></i> Sábana Excel
           </a>
@@ -57,6 +60,9 @@
           </a>
           <a class="nav-link" @click.prevent="$router.push('/inspeccion')">
             <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
           </a>
           <a class="nav-link" @click.prevent="$router.push('/sync')">
             <i class="bi bi-arrow-repeat"></i> Sincronizar
@@ -99,14 +105,14 @@
     <main class="app-content main-content bg-light">
       
       <!-- Top Action Bar (Premium Web Replica) -->
-      <div class="welcome-header mb-4 text-start d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+      <div class="welcome-header mb-4 text-start d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
         <div>
           <h2 class="h4 fw-bold mb-1 text-dark">Agenda de Campo</h2>
           <p class="text-secondary small mb-0">Programe y gestione las visitas a los predios</p>
         </div>
         
         <!-- Web Badges (Conectado / Administrador Central) -->
-        <div class="d-none d-md-flex align-items-center gap-2">
+        <div class="d-none d-lg-flex align-items-center gap-2">
           <span class="web-connectivity-pill">
             <span class="dot" :class="isOnline ? 'bg-success' : 'bg-danger'"></span>
             {{ isOnline ? 'Conectado' : 'Desconectado' }}
@@ -123,8 +129,8 @@
       <div v-if="successMsg" class="alert alert-success shadow-sm rounded-4 border-0 text-start">{{ successMsg }}</div>
 
       <!-- Card Container for Visitas Header -->
-      <div class="card border-0 shadow-sm p-4 bg-white rounded-4 mb-4 card-outer-mobile-flat text-center text-md-start">
-        <h5 class="fw-bold fs-4 text-dark mb-3 text-center text-md-start">Visitas Programadas</h5>
+      <div class="card border-0 shadow-sm p-4 bg-white rounded-4 mb-4 card-outer-mobile-flat text-center text-lg-start">
+        <h5 class="fw-bold fs-4 text-dark mb-3 text-center text-lg-start">Visitas Programadas</h5>
         
         <div class="d-flex flex-column gap-3 w-100 mb-4">
           <button class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2-5 bg-primary text-white border-0 rounded-3" @click="openCreate">
@@ -136,7 +142,7 @@
           <div class="small fw-semibold text-secondary mb-2 d-flex align-items-center gap-1">
             <i class="bi bi-funnel"></i> Filtrar por Fecha
           </div>
-          <div class="d-flex flex-column flex-md-row gap-2">
+          <div class="d-flex flex-column flex-lg-row gap-2">
             <input v-model="filters.fecha" type="date" class="form-control rounded-3 py-2 px-3 text-dark border-slate-200" style="outline: none;" @change="loadVisitas">
             <div class="d-flex gap-2">
               <button class="btn btn-primary px-4 py-2 rounded-3 d-flex align-items-center gap-1.5" @click="loadVisitas">
@@ -162,7 +168,7 @@
 
           <div v-else>
             <!-- 1. DESKTOP VIEW: Beautiful Table layout -->
-            <div class="table-responsive d-none d-md-block">
+            <div class="table-responsive d-none d-lg-block">
               <table class="table table-hover align-middle mb-0">
                 <thead>
                   <tr>
@@ -262,13 +268,14 @@
             </div>
 
             <!-- 2. MOBILE VIEW: Floating cards with light gray box details matching screens exactly -->
-            <div class="d-block d-md-none px-3 py-2">
-              <div 
-                v-for="visita in paginatedVisitas" 
-                :key="visita.id" 
-                class="producer-mobile-card shadow-sm mb-3 position-relative"
-                style="border-left-color: #2563eb;"
-              >
+            <div class="d-block d-lg-none px-3 py-2">
+              <div class="mobile-cards-grid">
+                <div 
+                  v-for="visita in paginatedVisitas" 
+                  :key="visita.id" 
+                  class="producer-mobile-card shadow-sm mb-3 position-relative"
+                  style="border-left-color: #2563eb;"
+                >
                 <div class="card-fields-box">
                   <!-- Fecha Field -->
                   <div class="card-field">
@@ -376,17 +383,18 @@
                   </div>
                 </div>
               </div>
+              </div>
             </div>
 
             <!-- PAGINATION FOOTER: Custom chevron styles matching mockup -->
             <div class="pagination-footer-custom d-flex justify-content-between align-items-center flex-wrap gap-3 p-4 bg-white">
               <!-- Left: Pagination Info (Desktop only or responsive) -->
-              <div class="text-secondary small d-none d-md-block">
+              <div class="text-secondary small d-none d-lg-block">
                 Mostrando <strong class="text-dark">{{ startResult }}</strong> a <strong class="text-dark">{{ endResult }}</strong> de <strong class="text-dark">{{ totalResults }}</strong> registros
               </div>
               
               <!-- Center/Right: Beautiful Custom Chevrons Pagination -->
-              <div class="pagination-custom-wrapper d-flex align-items-center justify-content-center w-100 w-md-auto gap-4 py-2">
+              <div class="pagination-custom-wrapper d-flex align-items-center justify-content-center w-100 w-lg-auto gap-4 py-2">
                 <button 
                   class="pagination-custom-btn prev-btn" 
                   :disabled="currentPage === 1" 
@@ -415,21 +423,25 @@
 
     <!-- Bottom Nav -->
     <nav class="bottom-nav">
-      <a class="bottom-nav-link" @click.prevent="$router.push('/dashboard')">
-        <i class="bi bi-grid-1x2"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
+        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
         <span>Inicio</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/inspecciones')">
-        <i class="bi bi-clipboard-check"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
+        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
+        <span>Productores</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
+        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
+        <span>Predios</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
+        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
         <span>Dictámenes</span>
       </a>
-      <a class="bottom-nav-link active" @click.prevent>
-        <i class="bi bi-calendar-event-fill"></i>
-        <span>Agenda</span>
-      </a>
-      <a class="bottom-nav-link" @click.prevent="sidebarActive = true">
-        <i class="bi bi-people"></i>
-        <span>Más</span>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
+        <i class="bi bi-arrow-repeat"></i>
+        <span>Sincronizar</span>
       </a>
     </nav>
 
@@ -1112,38 +1124,6 @@ export default {
 }
 
 /* Bottom Nav bar */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 70px;
-  background: #fff;
-  border-top: 1px solid #e9eef5;
-  display: flex;
-  z-index: 80;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.bottom-nav-link {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-  text-decoration: none;
-  font-size: 0.78rem;
-  gap: 0.2rem;
-}
-
-.bottom-nav-link i {
-  font-size: 1.15rem;
-}
-
-.bottom-nav-link.active {
-  color: #2563eb;
-}
 
 /* Modals */
 .form-group-custom {
@@ -1232,7 +1212,20 @@ export default {
 }
 
 /* Responsive configurations */
-@media (min-width: 769px) {
+.mobile-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .mobile-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 992px) {
   .mobile-header,
   .bottom-nav {
     display: none;
@@ -1255,7 +1248,7 @@ export default {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 991.98px) {
   .sidebar {
     display: flex;
   }

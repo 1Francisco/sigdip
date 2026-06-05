@@ -34,6 +34,9 @@
             <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
           </a>
           <hr class="mx-3 text-slate-200">
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
+          </a>
           <a class="nav-link" @click.prevent="$router.push('/inspecciones?downloadExcel=true')">
             <i class="bi bi-file-earmark-excel"></i> Sábana Excel
           </a>
@@ -56,6 +59,9 @@
           </a>
           <a class="nav-link" @click.prevent="$router.push('/inspeccion')">
             <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
           </a>
           <a class="nav-link" @click.prevent="$router.push('/sync')">
             <i class="bi bi-arrow-repeat"></i> Sincronizar
@@ -107,46 +113,47 @@
 
       <div v-if="errorMsg" class="alert alert-danger shadow-sm border-0 rounded-4">{{ errorMsg }}</div>
 
-      <div class="mobile-cards d-md-none">
+      <div class="mobile-cards d-lg-none">
         <div v-if="paginatedPredios.length === 0" class="empty-state-card shadow-sm">
           <i class="bi bi-house-x display-6 d-block mb-2 text-muted"></i>
           <div class="text-muted">No hay predios para mostrar</div>
         </div>
 
-        <article v-for="predio in paginatedPredios" :key="predio.id" class="predio-mobile-card shadow-sm">
-          <div class="predio-accent"></div>
-          <div class="predio-content">
-            <div class="field-block">
-              <span class="field-label">RANCHO</span>
-              <span class="field-value">{{ predio.nombre_rancho || predio.nombre || 'Sin nombre' }}</span>
+        <div class="mobile-cards-grid">
+          <article v-for="predio in paginatedPredios" :key="predio.id" class="predio-mobile-card shadow-sm">
+            <div class="predio-content">
+              <div class="field-block">
+                <span class="field-label">RANCHO</span>
+                <span class="field-value">{{ predio.nombre_rancho || predio.nombre || 'Sin nombre' }}</span>
+              </div>
+
+              <div class="field-block">
+                <span class="field-label">UPP</span>
+                <span class="field-value predio-upp">{{ predio.clave_unidad_produccion || predio.upp || 'N/A' }}</span>
+              </div>
+
+              <div class="field-block">
+                <span class="field-label">LOCALIDAD</span>
+                <span class="field-value">{{ predio.localidad || 'General' }}</span>
+              </div>
+
+              <div class="field-block">
+                <span class="field-label">PRODUCTOR</span>
+                <span class="field-value">{{ formatProductorName(predio.productor) }}</span>
+              </div>
             </div>
 
-            <div class="field-block">
-              <span class="field-label">UPP</span>
-              <span class="field-value predio-upp">{{ predio.clave_unidad_produccion || predio.upp || 'N/A' }}</span>
+            <div class="predio-mobile-footer">
+              <span class="footer-actions-label">Acciones</span>
+              <button class="btn-icon-square-gray" @click="editPredio(predio)" title="Editar predio">
+                <i class="bi bi-pencil"></i>
+              </button>
             </div>
-
-            <div class="field-block">
-              <span class="field-label">LOCALIDAD</span>
-              <span class="field-value">{{ predio.localidad || 'General' }}</span>
-            </div>
-
-            <div class="field-block">
-              <span class="field-label">PRODUCTOR</span>
-              <span class="field-value">{{ formatProductorName(predio.productor) }}</span>
-            </div>
-          </div>
-
-          <div class="predio-actions">
-            <span class="actions-label">ACCIONES</span>
-            <button class="btn-edit-mobile" @click="editPredio(predio)" title="Editar predio">
-              <i class="bi bi-pencil"></i>
-            </button>
-          </div>
-        </article>
+          </article>
+        </div>
       </div>
 
-      <div class="desktop-card card border-0 shadow-sm overflow-hidden predios-card d-none d-md-block">
+      <div class="desktop-card card border-0 shadow-sm overflow-hidden predios-card d-none d-lg-block">
         <div class="card-header bg-white d-flex justify-content-between align-items-center p-3 p-md-4 border-bottom border-slate-100">
           <h5 class="mb-0 fw-bold fs-5 text-dark">Listado de Predios</h5>
           <button class="btn btn-primary btn-sm-custom d-flex align-items-center gap-1-5 px-3 py-2" @click="$router.push('/predios/nuevo')">
@@ -221,22 +228,27 @@
       </div>
     </main>
 
+    <!-- Bottom Nav -->
     <nav class="bottom-nav">
-      <a class="bottom-nav-link" @click.prevent="$router.push('/dashboard')">
-        <i class="bi bi-grid-1x2"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
+        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
         <span>Inicio</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/inspecciones')">
-        <i class="bi bi-journal-text"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
+        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
+        <span>Productores</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
+        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
+        <span>Predios</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
+        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
         <span>Dictámenes</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/visitas')">
-        <i class="bi bi-calendar-event"></i>
-        <span>Agenda</span>
-      </a>
-      <a class="bottom-nav-link" @click.prevent="sidebarActive = true">
-        <i class="bi bi-three-dots"></i>
-        <span>Más</span>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
+        <i class="bi bi-arrow-repeat"></i>
+        <span>Sincronizar</span>
       </a>
     </nav>
   </div>
@@ -470,44 +482,45 @@ export default {
 }
 
 .predio-mobile-card {
-  position: relative;
-  display: flex;
   background: #fff;
   border-radius: 1rem;
-  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-left: 5px solid #2563eb;
+  padding: 20px 20px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
   margin-bottom: 0.95rem;
-  min-height: 290px;
-}
-
-.predio-accent {
-  width: 4px;
-  background: #2563eb;
-  flex: 0 0 auto;
 }
 
 .predio-content {
-  flex: 1;
-  padding: 1.15rem 0.95rem 0.95rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .field-block {
-  margin-bottom: 1.35rem;
+  margin-bottom: 0;
+  text-align: left;
 }
 
 .field-label {
   display: block;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
   color: #64748b;
-  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
 .field-value {
   display: block;
-  font-size: 1.03rem;
-  color: #0f172a;
-  line-height: 1.2;
+  font-size: 0.95rem;
+  color: #1e293b;
+  line-height: 1.3;
 }
 
 .predio-upp {
@@ -515,33 +528,47 @@ export default {
   font-weight: 700;
 }
 
-.predio-actions {
-  min-width: 116px;
+.predio-mobile-footer {
+  margin-left: -20px;
+  margin-right: -20px;
+  margin-bottom: -16px;
+  padding: 12px 20px;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  padding: 0.95rem 0.85rem;
-  background: #f8fafc;
-  flex-direction: column;
-  gap: 0.7rem;
 }
 
 .actions-label {
-  font-size: 0.78rem;
-  font-weight: 800;
+  font-size: 0.75rem;
+  font-weight: 700;
   color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 
-.btn-edit-mobile {
-  width: 64px;
-  height: 52px;
-  border-radius: 0.8rem;
-  border: 1.5px solid #9aa4b2;
-  background: #fff;
-  color: #6b7280;
+.btn-icon-square-gray {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #64748b;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.btn-icon-square-gray:active {
+  background-color: #f8fafc;
+  transform: scale(0.95);
 }
 
 .empty-state-card {
@@ -628,34 +655,7 @@ export default {
   color: white;
 }
 
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 70px;
-  background: #fff;
-  border-top: 1px solid #e9eef5;
-  display: flex;
-  z-index: 80;
-  padding-bottom: env(safe-area-inset-bottom);
-}
 
-.bottom-nav-link {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-  text-decoration: none;
-  font-size: 0.78rem;
-  gap: 0.2rem;
-}
-
-.bottom-nav-link i {
-  font-size: 1.15rem;
-}
 
 .desktop-card {
   max-width: 1180px;
@@ -729,7 +729,20 @@ export default {
   color: #a0a8b7;
 }
 
-@media (min-width: 769px) {
+.mobile-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .mobile-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 992px) {
   .mobile-header,
   .mobile-panel,
   .mobile-cards,
@@ -752,21 +765,13 @@ export default {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 991.98px) {
   .page-header {
     padding-top: 0.8rem;
   }
 
   .predio-mobile-card {
-    min-height: 300px;
-  }
-
-  .field-value {
-    font-size: 1.02rem;
-  }
-
-  .predio-actions {
-    min-width: 96px;
+    margin-bottom: 0 !important;
   }
 }
 </style>

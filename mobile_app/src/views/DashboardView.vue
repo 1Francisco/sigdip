@@ -35,6 +35,9 @@
             <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
           </a>
           <hr class="mx-3 text-slate-200">
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
+          </a>
           <a class="nav-link" @click.prevent="$router.push('/inspecciones?downloadExcel=true')">
             <i class="bi bi-file-earmark-excel"></i> Sábana Excel
           </a>
@@ -57,6 +60,9 @@
           </a>
           <a class="nav-link" @click.prevent="$router.push('/inspeccion')">
             <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
           </a>
           <a class="nav-link" @click.prevent="$router.push('/sync')">
             <i class="bi bi-arrow-repeat"></i> Sincronizar
@@ -277,21 +283,27 @@
         <!-- Acciones Rápidas Táctiles Gigantes -->
         <div class="section-title text-start mb-2">Acciones Rápidas</div>
         <div class="row g-3 mb-4 touch-cards-grid-row">
-          <div class="col-6">
+          <div class="col-4">
             <a @click.prevent="$router.push('/inspeccion')" class="text-decoration-none action-card-link-new">
-              <div class="card p-4 border-0 shadow-sm text-center bg-primary text-white h-100 hover-lift d-flex flex-column align-items-center justify-content-center gap-2 rounded-4">
-                <i class="bi bi-file-earmark-plus-fill display-5 mb-1 text-white"></i>
-                <h4 class="fw-bold mb-1 fs-6 tracking-wide text-white">NUEVO DICTAMEN</h4>
-                <p class="text-white-50 small-desc mb-0">Crear una inspección de prueba desde cero</p>
+              <div class="card p-3 border-0 shadow-sm text-center bg-primary text-white h-100 hover-lift d-flex flex-column align-items-center justify-content-center gap-2 rounded-4">
+                <i class="bi bi-file-earmark-plus-fill display-6 mb-1 text-white"></i>
+                <h4 class="fw-bold mb-0 fs-7 tracking-wide text-white">NUEVO DICTAMEN</h4>
               </div>
             </a>
           </div>
-          <div class="col-6">
+          <div class="col-4">
+            <a @click.prevent="$router.push('/descargas')" class="text-decoration-none action-card-link-new">
+              <div class="card p-3 border-0 shadow-sm text-center bg-white border border-slate-100 h-100 hover-lift d-flex flex-column align-items-center justify-content-center gap-2 rounded-4">
+                <i class="bi bi-download text-success display-6 mb-1"></i>
+                <h4 class="fw-bold text-dark mb-0 fs-7 tracking-wide">DESCARGAS</h4>
+              </div>
+            </a>
+          </div>
+          <div class="col-4">
             <a @click.prevent="$router.push('/sync')" class="text-decoration-none action-card-link-new">
-              <div class="card p-4 border-0 shadow-sm text-center bg-white border border-slate-100 h-100 hover-lift d-flex flex-column align-items-center justify-content-center gap-2 rounded-4">
-                <i class="bi bi-arrow-repeat text-primary display-5 mb-1"></i>
-                <h4 class="fw-bold text-dark mb-1 fs-6 tracking-wide">SINCRONIZAR DATOS</h4>
-                <p class="text-secondary small-desc mb-0">Sincronizar visitas e inspecciones locales</p>
+              <div class="card p-3 border-0 shadow-sm text-center bg-white border border-slate-100 h-100 hover-lift d-flex flex-column align-items-center justify-content-center gap-2 rounded-4">
+                <i class="bi bi-arrow-repeat text-primary display-6 mb-1"></i>
+                <h4 class="fw-bold text-dark mb-0 fs-7 tracking-wide">SINCRONIZAR</h4>
               </div>
             </a>
           </div>
@@ -372,19 +384,23 @@
 
     <!-- Bottom Nav -->
     <nav class="bottom-nav">
-      <a class="bottom-nav-link active" @click.prevent>
-        <i class="bi bi-grid-1x2-fill"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
+        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
         <span>Inicio</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/scan')">
-        <i class="bi bi-qr-code-scan"></i>
-        <span>Escanear</span>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
+        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
+        <span>Productores</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/inspeccion')">
-        <i class="bi bi-clipboard-check-fill"></i>
-        <span>Dictamen</span>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
+        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
+        <span>Predios</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/sync')">
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
+        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
+        <span>Dictámenes</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
         <i class="bi bi-arrow-repeat"></i>
         <span>Sincronizar</span>
       </a>
@@ -1026,9 +1042,6 @@ export default {
 }
 
 /* Bottom Navigation adjustments */
-.bottom-nav-link i {
-  font-size: 1.25rem;
-}
 
 /* ===== Pure HTML/CSS/SVG Premium Charting ===== */
 .pure-bar-chart {

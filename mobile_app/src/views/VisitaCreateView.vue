@@ -35,6 +35,9 @@
             <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
           </a>
           <hr class="mx-3 text-slate-200">
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
+          </a>
           <a class="nav-link" @click.prevent="$router.push('/inspecciones?downloadExcel=true')">
             <i class="bi bi-file-earmark-excel"></i> Sábana Excel
           </a>
@@ -57,6 +60,9 @@
           </a>
           <a class="nav-link" @click.prevent="$router.push('/inspeccion')">
             <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
           </a>
           <a class="nav-link" @click.prevent="$router.push('/sync')">
             <i class="bi bi-arrow-repeat"></i> Sincronizar
@@ -216,21 +222,25 @@
 
     <!-- Bottom Nav -->
     <nav class="bottom-nav">
-      <a class="bottom-nav-link" @click.prevent="$router.push('/dashboard')">
-        <i class="bi bi-grid-1x2"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
+        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
         <span>Inicio</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/inspecciones')">
-        <i class="bi bi-clipboard-check"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
+        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
+        <span>Productores</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
+        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
+        <span>Predios</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
+        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
         <span>Dictámenes</span>
       </a>
-      <a class="bottom-nav-link active" @click.prevent="$router.push('/visitas')">
-        <i class="bi bi-calendar-event-fill"></i>
-        <span>Agenda</span>
-      </a>
-      <a class="bottom-nav-link" @click.prevent="sidebarActive = true">
-        <i class="bi bi-people"></i>
-        <span>Más</span>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
+        <i class="bi bi-arrow-repeat"></i>
+        <span>Sincronizar</span>
       </a>
     </nav>
   </div>
@@ -786,41 +796,9 @@ export default {
 }
 
 /* Bottom Nav bar */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 70px;
-  background: #fff;
-  border-top: 1px solid #e9eef5;
-  display: flex;
-  z-index: 80;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.bottom-nav-link {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-  text-decoration: none;
-  font-size: 0.78rem;
-  gap: 0.2rem;
-}
-
-.bottom-nav-link i {
-  font-size: 1.15rem;
-}
-
-.bottom-nav-link.active {
-  color: #2563eb;
-}
 
 /* Responsive configurations */
-@media (min-width: 769px) {
+@media (min-width: 992px) {
   .mobile-header,
   .bottom-nav {
     display: none;
@@ -838,7 +816,7 @@ export default {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 991.98px) {
   .sidebar {
     display: flex;
   }

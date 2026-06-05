@@ -35,6 +35,9 @@
             <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
           </a>
           <hr class="mx-3 text-slate-200">
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
+          </a>
           <a class="nav-link" @click.prevent="$router.push('/inspecciones?downloadExcel=true')">
             <i class="bi bi-file-earmark-excel"></i> Sábana Excel
           </a>
@@ -57,6 +60,9 @@
           </a>
           <a class="nav-link" @click.prevent="$router.push('/inspeccion')">
             <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
           </a>
           <a class="nav-link" @click.prevent="$router.push('/sync')">
             <i class="bi bi-arrow-repeat"></i> Sincronizar
@@ -146,8 +152,8 @@
           </div>
 
           <div v-else>
-            <!-- 1. TABLE VIEW: Horizontally scrollable on mobile to match screenshot -->
-            <div class="table-responsive">
+            <!-- 1. TABLE VIEW: Horizontally scrollable on mobile to match screenshot (Hidden on mobile) -->
+            <div class="table-responsive d-none d-lg-block">
               <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                   <tr>
@@ -189,6 +195,42 @@
               </table>
             </div>
 
+            <!-- 2. MOBILE CARDS VIEW (Mobile only) -->
+            <div class="mobile-cards d-lg-none">
+              <div class="mobile-cards-grid">
+                <article v-for="medico in paginatedMedicos" :key="medico.id" class="medico-mobile-card shadow-sm">
+                  <div class="medico-content">
+                    <div class="field-block">
+                      <span class="field-label">MÉDICO VERIFICADOR</span>
+                      <span class="field-value fw-bold text-dark fs-6">{{ medico.name }}</span>
+                      <small class="text-secondary d-block mt-0.5">Rol: Médico de Campo</small>
+                    </div>
+
+                    <div class="field-block">
+                      <span class="field-label">CORREO DE ACCESO</span>
+                      <span class="field-value text-dark" style="word-break: break-all;">{{ medico.email }}</span>
+                    </div>
+
+                    <div class="field-block">
+                      <span class="field-label">FECHA REGISTRO</span>
+                      <span class="field-value text-dark">{{ medico.created_at }}</span>
+                    </div>
+                  </div>
+
+                  <div class="medico-mobile-footer">
+                    <span class="footer-actions-label">Acciones</span>
+                    <button 
+                      @click="deleteMedico(medico)" 
+                      class="btn-icon-square-red" 
+                      title="Eliminar médico"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </article>
+              </div>
+            </div>
+
             <!-- PAGINATION FOOTER: Custom chevron styles matching mockup -->
             <div class="pagination-footer-custom d-flex justify-content-between align-items-center flex-wrap gap-3 p-4 bg-white">
               <!-- Left: Pagination Info (Desktop only) -->
@@ -226,21 +268,25 @@
 
     <!-- Bottom Nav -->
     <nav class="bottom-nav">
-      <a class="bottom-nav-link" @click.prevent="$router.push('/dashboard')">
-        <i class="bi bi-grid-1x2"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
+        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
         <span>Inicio</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/inspecciones')">
-        <i class="bi bi-clipboard-check"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
+        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
+        <span>Productores</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
+        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
+        <span>Predios</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
+        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
         <span>Dictámenes</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/visitas')">
-        <i class="bi bi-calendar-event"></i>
-        <span>Agenda</span>
-      </a>
-      <a class="bottom-nav-link active" @click.prevent="sidebarActive = true">
-        <i class="bi bi-people"></i>
-        <span>Más</span>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
+        <i class="bi bi-arrow-repeat"></i>
+        <span>Sincronizar</span>
       </a>
     </nav>
 
@@ -688,38 +734,7 @@ export default {
 }
 
 /* Bottom Nav bar */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 70px;
-  background: #fff;
-  border-top: 1px solid #e9eef5;
-  display: flex;
-  z-index: 80;
-  padding-bottom: env(safe-area-inset-bottom);
-}
 
-.bottom-nav-link {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-  text-decoration: none;
-  font-size: 0.78rem;
-  gap: 0.2rem;
-}
-
-.bottom-nav-link i {
-  font-size: 1.15rem;
-}
-
-.bottom-nav-link.active {
-  color: #2563eb;
-}
 
 /* Modals */
 .form-group-custom {
@@ -808,7 +823,7 @@ export default {
 }
 
 /* Responsive configurations */
-@media (min-width: 769px) {
+@media (min-width: 992px) {
   .mobile-header,
   .bottom-nav {
     display: none;
@@ -831,7 +846,7 @@ export default {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 991.98px) {
   .sidebar {
     display: flex;
   }
@@ -862,6 +877,108 @@ export default {
     border: 1px solid #e2e8f0 !important;
     margin-top: 16px !important;
     padding: 16px !important;
+  }
+
+  .mobile-cards {
+    padding: 0 0.95rem 1rem;
+  }
+
+  .mobile-cards-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  @media (min-width: 576px) and (max-width: 991.98px) {
+    .mobile-cards-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .medico-mobile-card {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    border-left: 5px solid #2563eb;
+    padding: 20px 20px 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+    margin-bottom: 0.95rem;
+  }
+
+  .medico-content {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .field-block {
+    margin-bottom: 0;
+    text-align: left;
+  }
+
+  .field-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .field-value {
+    display: block;
+    font-size: 0.95rem;
+    color: #1e293b;
+    line-height: 1.3;
+  }
+
+  .medico-mobile-footer {
+    margin-left: -20px;
+    margin-right: -20px;
+    margin-bottom: -16px;
+    padding: 12px 20px;
+    background-color: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-actions-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .btn-icon-square-red {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1.5px solid #ef4444;
+    background-color: #ffffff;
+    color: #ef4444;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+  }
+
+  .btn-icon-square-red:active {
+    background-color: #fee2e2;
+    transform: scale(0.95);
   }
 }
 </style>

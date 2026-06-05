@@ -107,6 +107,12 @@ const routes = [
     name: 'NuevoMedico',
     component: () => import('../views/MedicoCreateView.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/descargas',
+    name: 'Descargas',
+    component: () => import('../views/DescargasView.vue'),
+    meta: { requiresAuth: true }
   }
 ];
 

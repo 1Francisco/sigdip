@@ -1,22 +1,114 @@
 <template>
-  <div class="app-container bg-light">
-    <!-- Header (Premium Web Style) -->
-    <header class="app-header shadow-sm">
-      <div class="d-flex align-items-center gap-2">
-        <button class="btn-back" @click="$router.push('/dashboard')">
-          <i class="bi bi-arrow-left fs-4 text-white"></i>
+  <div class="app-container">
+    <!-- Sidebar (Drawer) -->
+    <div class="sidebar-overlay" :class="{ active: sidebarActive }" @click="sidebarActive = false"></div>
+    
+    <aside class="sidebar" :class="{ active: sidebarActive }">
+      <div class="sidebar-brand">
+        <img src="/icon_png.png" alt="SIGDIP" style="width: 22px; height: 22px; object-fit: contain;">
+        <span>SIGDIP</span>
+        <button class="btn-close-sidebar" @click="sidebarActive = false">
+          <i class="bi bi-x-lg"></i>
         </button>
-        <div>
-          <h1>Sincronización</h1>
-          <div class="subtitle">Gestión de datos offline</div>
-        </div>
       </div>
-      <button @click="$router.push('/dashboard')" class="btn-close-form">
-        <i class="bi bi-x-lg text-white"></i>
+      <nav class="nav flex-column">
+        <template v-if="isAdmin">
+          <a class="nav-link" @click.prevent="$router.push('/dashboard')">
+            <i class="bi bi-grid-1x2"></i> Dashboard
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/productores')">
+            <i class="bi bi-people"></i> Productores
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/predios')">
+            <i class="bi bi-house-door"></i> Predios
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/inspecciones')">
+            <i class="bi bi-clipboard-check"></i> Inspecciones
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/visitas')">
+            <i class="bi bi-calendar-event"></i> Agenda / Visitas
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/medicos')">
+            <i class="bi bi-person-badge"></i> Médicos
+          </a>
+          <a class="nav-link" @click.prevent="alertWebOnly('Importar Excel')">
+            <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
+          </a>
+          <hr class="mx-3 text-slate-200">
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/inspecciones?downloadExcel=true')">
+            <i class="bi bi-file-earmark-excel"></i> Sábana Excel
+          </a>
+        </template>
+        <template v-else>
+          <a class="nav-link" @click.prevent="$router.push('/dashboard')">
+            <i class="bi bi-grid-1x2"></i> Dashboard
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/productores')">
+            <i class="bi bi-people"></i> Productores
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/predios')">
+            <i class="bi bi-house-door"></i> Predios
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/visitas')">
+            <i class="bi bi-calendar-event"></i> Agenda / Visitas
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/inspecciones')">
+            <i class="bi bi-clipboard-check"></i> Inspecciones
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/inspeccion')">
+            <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
+          </a>
+          <a class="nav-link active" @click.prevent="sidebarActive = false">
+            <i class="bi bi-arrow-repeat"></i> Sincronizar
+          </a>
+        </template>
+
+        <hr class="mx-3 text-slate-200">
+        <a class="nav-link text-danger logout-btn" @click.prevent="doLogout">
+          <i class="bi bi-box-arrow-left"></i> Salir
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header shadow-sm">
+      <button class="header-hamburger-btn rounded-circle" @click="sidebarActive = true">
+        <i class="bi bi-list fs-4"></i>
       </button>
+      
+      <div class="brand-title flex-grow-1 text-center">
+        <img src="/icon_png.png" alt="SIGDIP" style="width: 20px; height: 20px; object-fit: contain; vertical-align: -3px; margin-right: 6px;">
+        <span class="fw-bold">SIGDIP</span>
+      </div>
+
+      <!-- Connectivity Badge Mobile -->
+      <div 
+        class="badge rounded-pill px-2-5 py-1-5 d-flex align-items-center gap-1.5 fw-semibold me-2 border connectivity-badge shadow-sm"
+        :class="isOnline ? 'bg-success-subtle text-success border-success-subtle' : 'bg-danger-subtle text-danger border-danger-subtle'"
+      >
+        <span class="pulse-dot" :class="isOnline ? 'bg-success' : 'bg-danger'"></span>
+        <span class="badge-text">{{ isOnline ? 'Online' : 'Offline' }}</span>
+      </div>
+
+      <div class="avatar-circle rounded-circle" @click="sidebarActive = true">
+        <i class="bi bi-person"></i>
+      </div>
     </header>
 
-    <main class="app-content main-content">
+    <main class="app-content main-content bg-light">
+      <!-- Welcome Header -->
+      <div class="welcome-header d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3 mb-4">
+        <div>
+          <h1 class="welcome-title text-primary fs-3 fw-bold mb-1">Sincronización</h1>
+          <p class="welcome-subtitle text-secondary">Gestión de datos offline y catálogos locales</p>
+        </div>
+      </div>
       <!-- Status de conexión dinámico (Clon de la web) -->
       <div 
         class="card shadow-sm border-0 mb-4 p-4 rounded-4" 
@@ -128,19 +220,23 @@
 
     <!-- Bottom Nav -->
     <nav class="bottom-nav">
-      <a class="bottom-nav-link" @click.prevent="$router.push('/dashboard')">
-        <i class="bi bi-grid-1x2"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
+        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
         <span>Inicio</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/scan')">
-        <i class="bi bi-qr-code-scan"></i>
-        <span>Escanear</span>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
+        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
+        <span>Productores</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/inspeccion')">
-        <i class="bi bi-clipboard-check-fill"></i>
-        <span>Dictamen</span>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
+        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
+        <span>Predios</span>
       </a>
-      <a class="bottom-nav-link active" @click.prevent>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
+        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
+        <span>Dictámenes</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
         <i class="bi bi-arrow-repeat"></i>
         <span>Sincronizar</span>
       </a>
@@ -156,6 +252,8 @@ export default {
   name: 'SyncView',
   data() {
     return {
+      sidebarActive: false,
+      isAdmin: false,
       isOnline: navigator.onLine,
       prediosCount: 0,
       visitasCount: 0,
@@ -177,6 +275,9 @@ export default {
       this.resultado = `Sincronizados ${e.detail.procesados} dictámenes automáticamente en segundo plano.`;
     };
     window.addEventListener('sigdip-sync-complete', this._syncListener);
+
+    const user = api.getCurrentUser();
+    this.isAdmin = user?.roles && user.roles.includes('Administrador');
 
     await this.refreshStats();
   },
@@ -246,6 +347,21 @@ export default {
         await this.refreshStats();
         this.resultado = 'Caché y catálogos locales eliminados con éxito.';
       }
+    },
+    alertWebOnly(seccion) {
+      alert(`La sección de ${seccion} es una función administrativa disponible en la web de escritorio.`);
+      this.sidebarActive = false;
+    },
+    async doLogout() {
+      try { 
+        await api.logout(); 
+      } catch (e) { 
+        // Silenciar errores en offline
+      }
+      localStorage.removeItem('sigdip_token');
+      localStorage.removeItem('sigdip_user');
+      sessionStorage.clear();
+      this.$router.push('/login');
     }
   }
 };
@@ -258,27 +374,21 @@ export default {
   min-height: 100vh;
 }
 
-.app-header {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: white;
-  padding: 12px 16px;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
+@media (min-width: 992px) {
+  .mobile-header {
+    display: none !important;
+  }
 
-.btn-back, .btn-close-form {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-}
+  .main-content {
+    margin-left: 270px;
+    padding: 2.5rem !important;
+    min-height: 100vh;
+  }
 
-.btn-close-form {
-  margin-left: auto;
+  .welcome-header {
+    padding: 0;
+    margin-bottom: 2rem;
+  }
 }
 
 /* Status Conexión colors */
@@ -360,9 +470,6 @@ export default {
   font-weight: 600;
 }
 
-.bottom-nav-link {
-  flex-grow: 1;
-}
 
 .loader {
   display: inline-block;

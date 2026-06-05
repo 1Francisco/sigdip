@@ -104,6 +104,8 @@
 
 <script>
 import api from '../services/api.js';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 export default {
   name: 'InspeccionDetailView',
@@ -148,11 +150,42 @@ export default {
       this.$router.push(`/inspeccion/${this.inspeccion.predio_id}?inspeccion_id=${this.inspeccion.id}${this.inspeccion.visita_id ? `&visita_id=${this.inspeccion.visita_id}` : ''}`);
     },
     async openPdf() {
+      this.errorMsg = '';
       try {
         const blob = await api.getInspectionPdf(this.inspeccion.id);
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        const fileName = `dictamen_${this.inspeccion.folio || this.inspeccion.id}_${new Date().getDate()}-${new Date().getMonth() + 1}-${new Date().getFullYear()}.pdf`;
+
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = async () => {
+            try {
+              const base64data = reader.result.split(',')[1];
+              const result = await Filesystem.writeFile({
+                path: fileName,
+                data: base64data,
+                directory: Directory.Documents,
+                recursive: true
+              });
+              try {
+                await Share.share({
+                  title: fileName,
+                  url: result.uri,
+                  dialogTitle: 'Abrir / Compartir PDF'
+                });
+              } catch (shareErr) {
+                // User may cancel share dialog
+              }
+            } catch (err) {
+              console.error('Error saving PDF native:', err);
+              this.errorMsg = 'No se pudo guardar el PDF: ' + err.message;
+            }
+          };
+        } else {
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        }
       } catch (e) {
         this.errorMsg = e.message || 'No se pudo abrir el PDF.';
       }

@@ -35,6 +35,9 @@
             <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
           </a>
           <hr class="mx-3 text-slate-200">
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
+          </a>
           <a class="nav-link" @click.prevent="$router.push('/inspecciones?downloadExcel=true')">
             <i class="bi bi-file-earmark-excel"></i> Sábana Excel
           </a>
@@ -57,6 +60,9 @@
           </a>
           <a class="nav-link" @click.prevent="$router.push('/inspeccion')">
             <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
           </a>
           <a class="nav-link" @click.prevent="$router.push('/sync')">
             <i class="bi bi-arrow-repeat"></i> Sincronizar
@@ -99,14 +105,14 @@
     <main class="app-content main-content bg-light">
       
       <!-- Top Action Bar (Premium Web Replica) -->
-      <div class="welcome-header mb-4 text-start d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+      <div class="welcome-header mb-4 text-start d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
         <div>
           <h2 class="h4 fw-bold mb-1 text-dark">Productores</h2>
           <p class="text-secondary small mb-0">Administre la información de los dueños de ganado</p>
         </div>
         
         <!-- Web Badges (Conectado / Administrador Central) Cloned -->
-        <div class="d-none d-md-flex align-items-center gap-2">
+        <div class="d-none d-lg-flex align-items-center gap-2">
           <span class="web-connectivity-pill">
             <span class="dot" :class="isOnline ? 'bg-success' : 'bg-danger'"></span>
             {{ isOnline ? 'Conectado' : 'Desconectado' }}
@@ -152,7 +158,7 @@
 
           <div v-else>
             <!-- 1. DESKTOP VIEW: Beautiful and precise Table replica -->
-            <div class="table-responsive d-none d-md-block">
+            <div class="table-responsive d-none d-lg-block">
               <table class="table table-hover align-middle mb-0">
                 <thead>
                   <tr>
@@ -204,12 +210,13 @@
             </div>
 
             <!-- 2. MOBILE VIEW: Modern responsive high-fidelity cards exactly like screenshot -->
-            <div class="d-block d-md-none px-0 py-2">
-              <div 
-                v-for="p in paginatedProductores" 
-                :key="p.id" 
-                class="producer-mobile-card shadow-sm mb-3 position-relative"
-              >
+            <div class="d-block d-lg-none px-0 py-2">
+              <div class="mobile-cards-grid">
+                <div 
+                  v-for="p in paginatedProductores" 
+                  :key="p.id" 
+                  class="producer-mobile-card shadow-sm mb-3 position-relative"
+                >
                 <!-- Productor Field -->
                 <div class="card-field">
                   <span class="field-label">Productor</span>
@@ -264,6 +271,7 @@
                   </div>
                 </div>
               </div>
+              </div>
             </div>
 
             <!-- 3. PAGINATION FOOTER: Precise design match to web screenshot -->
@@ -305,19 +313,23 @@
 
     <!-- Bottom Nav -->
     <nav class="bottom-nav">
-      <a class="bottom-nav-link" @click.prevent="$router.push('/dashboard')">
-        <i class="bi bi-grid-1x2"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
+        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
         <span>Inicio</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/scan')">
-        <i class="bi bi-qr-code-scan"></i>
-        <span>Escanear</span>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
+        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
+        <span>Productores</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/inspeccion')">
-        <i class="bi bi-clipboard-check-fill"></i>
-        <span>Dictamen</span>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
+        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
+        <span>Predios</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/sync')">
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
+        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
+        <span>Dictámenes</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
         <i class="bi bi-arrow-repeat"></i>
         <span>Sincronizar</span>
       </a>
@@ -1568,7 +1580,21 @@ export default {
   border-color: #94a3b8;
 }
 
-@media (max-width: 768px) {
+/* Mobile Cards Grid Layout for horizontal view */
+.mobile-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .mobile-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 991.98px) {
   .card-outer-mobile-flat {
     background: transparent !important;
     box-shadow: none !important;
@@ -1726,10 +1752,6 @@ export default {
   font-size: 0.85rem !important;
 }
 
-/* Bottom Nav navigation consistency */
-.bottom-nav-link {
-  flex-grow: 1;
-}
 
 .mx-3 {
   margin-left: 1rem !important;
@@ -1751,7 +1773,7 @@ export default {
   border-top: 1px solid #f1f5f9;
 }
 
-@media(min-width: 768px) {
+@media(min-width: 992px) {
   .pagination-container {
     flex-direction: row;
     gap: 0;

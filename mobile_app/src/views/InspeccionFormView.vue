@@ -35,6 +35,9 @@
             <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
           </a>
           <hr class="mx-3 text-slate-200">
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
+          </a>
           <a class="nav-link" @click.prevent="$router.push('/inspecciones?downloadExcel=true')">
             <i class="bi bi-file-earmark-excel"></i> Sábana Excel
           </a>
@@ -57,6 +60,9 @@
           </a>
           <a class="nav-link active" @click.prevent="sidebarActive = false">
             <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
           </a>
           <a class="nav-link" @click.prevent="$router.push('/sync')">
             <i class="bi bi-arrow-repeat"></i> Sincronizar
@@ -184,7 +190,7 @@
                 </div>
                 <div class="col-md-6 col-sm-12">
                   <label class="form-label fw-semibold">Fecha Dictamen</label>
-                  <input type="date" v-model="form.fecha" class="form-control" required>
+                  <input type="date" v-model="form.fecha" class="form-control bg-light" readonly style="pointer-events: none;" tabindex="-1" required>
                 </div>
                 <div class="col-md-6 col-sm-12">
                   <label class="form-label fw-bold text-dark">Folio Dictamen</label>
@@ -232,9 +238,9 @@
                   </div>
                   <div class="input-group">
                     <span class="input-group-text bg-light text-muted small px-2">Lat</span>
-                    <input type="text" v-model="form.latitud" class="form-control bg-white" placeholder="No definida">
+                    <input type="text" v-model="form.latitud" class="form-control bg-light" placeholder="No definida" readonly style="pointer-events: none;" tabindex="-1">
                     <span class="input-group-text bg-light text-muted small px-2">Lon</span>
-                    <input type="text" v-model="form.longitud" class="form-control bg-white" placeholder="No definida">
+                    <input type="text" v-model="form.longitud" class="form-control bg-light" placeholder="No definida" readonly style="pointer-events: none;" tabindex="-1">
                   </div>
                 </div>
                 <div class="col-md-6 col-sm-12">
@@ -667,11 +673,6 @@
 
         </div>
 
-        <!-- Observaciones Generales (Card Web Like) -->
-        <div class="card shadow-sm mt-3 p-4 bg-white rounded-4 border-0 card-outer-mobile-flat">
-          <div class="fw-bold mb-2 text-dark fs-7-5 text-uppercase"><i class="bi bi-chat-left-text-fill text-muted me-1"></i> OBSERVACIONES GENERALES</div>
-          <textarea v-model="form.observaciones" class="form-control rounded-3" rows="3" placeholder="Redacte cualquier observación importante del dictamen..."></textarea>
-        </div>
 
         <!-- Botones de Acción para Escritorio -->
         <div class="d-none d-lg-flex align-items-stretch gap-3 mt-4 mb-5">
@@ -736,21 +737,25 @@
 
     <!-- Bottom Nav -->
     <nav class="bottom-nav">
-      <a class="bottom-nav-link" @click.prevent="$router.push('/dashboard')">
-        <i class="bi bi-grid-1x2"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
+        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
         <span>Inicio</span>
       </a>
-      <a class="bottom-nav-link active" @click.prevent="$router.push('/inspecciones')">
-        <i class="bi bi-clipboard-check"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
+        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
+        <span>Productores</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
+        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
+        <span>Predios</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
+        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
         <span>Dictámenes</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/visitas')">
-        <i class="bi bi-calendar-event"></i>
-        <span>Agenda</span>
-      </a>
-      <a class="bottom-nav-link" @click.prevent="sidebarActive = true">
-        <i class="bi bi-people"></i>
-        <span>Más</span>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
+        <i class="bi bi-arrow-repeat"></i>
+        <span>Sincronizar</span>
       </a>
     </nav>
 
@@ -1888,39 +1893,7 @@ export default {
   box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
 }
 
-/* Bottom Nav bar */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 70px;
-  background: #fff;
-  border-top: 1px solid #e9eef5;
-  display: flex;
-  z-index: 80;
-  padding-bottom: env(safe-area-inset-bottom);
-}
 
-.bottom-nav-link {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-  text-decoration: none;
-  font-size: 0.78rem;
-  gap: 0.2rem;
-}
-
-.bottom-nav-link i {
-  font-size: 1.15rem;
-}
-
-.bottom-nav-link.active {
-  color: #2563eb;
-}
 
 /* Tablas Responsivas para Aretes Móviles */
 .table-mobile-cards {
@@ -2169,7 +2142,7 @@ export default {
 }
 
 /* Responsive configurations */
-@media (min-width: 769px) {
+@media (min-width: 992px) {
   .mobile-header,
   .bottom-nav {
     display: none;
@@ -2187,7 +2160,7 @@ export default {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 991.98px) {
   .sidebar {
     display: flex;
   }

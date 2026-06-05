@@ -19,16 +19,18 @@ class SyncController extends Controller
      */
     public function catalogos(Request $request)
     {
-        $veterinarioId = $request->user()->id ?? auth()->id() ?? 1;
+        $user = $request->user();
+        $veterinarioId = $user->id ?? auth()->id() ?? 1;
 
         // Obtener predios con sus productores
         $predios = Predio::with('productor')->get();
 
-        // Obtener visitas pendientes asignadas a este veterinario
-        $visitas = Visita::with('predio')
-            ->where('veterinario_id', $veterinarioId)
-            ->where('estado', 'pendiente')
-            ->get();
+        // Obtener visitas pendientes asignadas a este veterinario (o todas si es Administrador)
+        $query = Visita::with('predio')->where('estado', 'pendiente');
+        if ($user && !$user->hasRole('Administrador')) {
+            $query->where('veterinario_id', $veterinarioId);
+        }
+        $visitas = $query->get();
 
         return response()->json([
             'status' => 'success',

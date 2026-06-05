@@ -35,6 +35,9 @@
             <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
           </a>
           <hr class="mx-3 text-slate-200">
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
+          </a>
           <a class="nav-link" @click.prevent="downloadSábana()">
             <i class="bi bi-file-earmark-excel"></i> Sábana Excel
           </a>
@@ -57,6 +60,9 @@
           </a>
           <a class="nav-link" @click.prevent="$router.push('/inspeccion')">
             <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
+          </a>
+          <a class="nav-link" @click.prevent="$router.push('/descargas')">
+            <i class="bi bi-download"></i> Descargas
           </a>
           <a class="nav-link" @click.prevent="$router.push('/sync')">
             <i class="bi bi-arrow-repeat"></i> Sincronizar
@@ -99,14 +105,14 @@
     <main class="app-content main-content bg-light">
       
       <!-- Top Action Bar (Premium Web Replica) -->
-      <div class="welcome-header mb-4 text-start d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+      <div class="welcome-header mb-4 text-start d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
         <div>
           <h2 class="h4 fw-bold mb-1 text-dark">Inspecciones Pecuarias</h2>
-          <p class="text-secondary small mb-0">Historial de registros y seguimiento</p>
+          <p class="text-secondary small mb-0">Historial de registros and seguimiento</p>
         </div>
         
         <!-- Web Badges (Conectado / Administrador Central) -->
-        <div class="d-none d-md-flex align-items-center gap-2">
+        <div class="d-none d-lg-flex align-items-center gap-2">
           <span class="web-connectivity-pill">
             <span class="dot" :class="isOnline ? 'bg-success' : 'bg-danger'"></span>
             {{ isOnline ? 'Conectado' : 'Desconectado' }}
@@ -125,13 +131,13 @@
       <!-- Card Container for Inspections List -->
       <div class="card border-0 shadow-sm p-0 overflow-hidden card-outer-mobile-flat bg-white rounded-4">
         <div class="card-header bg-white p-3 p-md-4 border-bottom border-slate-100">
-          <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 w-100">
-            <h5 class="mb-0 fw-bold fs-5 text-dark text-center text-md-start w-100 w-md-auto">Dictámenes Registrados</h5>
-            <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
-              <button v-if="isAdmin" @click="downloadSábana()" class="btn btn-outline-success btn-sm-custom d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 fw-semibold border-success text-success bg-transparent rounded-3 w-100 w-md-auto">
+          <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3 w-100">
+            <h5 class="mb-0 fw-bold fs-5 text-dark text-center text-lg-start w-100 w-lg-auto">Dictámenes Registrados</h5>
+            <div class="d-flex flex-column flex-lg-row gap-2 w-100 w-lg-auto">
+              <button v-if="isAdmin" @click="downloadSábana()" class="btn btn-outline-success btn-sm-custom d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 fw-semibold border-success text-success bg-transparent rounded-3 w-100 w-lg-auto">
                 <i class="bi bi-file-earmark-excel"></i> Descargar Sábana
               </button>
-              <button @click="$router.push('/inspeccion')" class="btn btn-primary btn-sm-custom d-flex align-items-center justify-content-center gap-1-5 px-3 py-2 bg-primary text-white border-0 rounded-3 w-100 w-md-auto">
+              <button @click="$router.push('/inspeccion')" class="btn btn-primary btn-sm-custom d-flex align-items-center justify-content-center gap-1-5 px-3 py-2 bg-primary text-white border-0 rounded-3 w-100 w-lg-auto">
                 <i class="bi bi-plus-lg"></i> Nuevo Dictamen
               </button>
             </div>
@@ -147,7 +153,7 @@
 
           <div v-else>
             <!-- 1. DESKTOP VIEW: Beautiful and precise Table replica matching screenshot exactly -->
-            <div class="table-responsive d-none d-md-block">
+            <div class="table-responsive d-none d-lg-block">
               <table class="table table-hover align-middle mb-0">
                 <thead>
                   <tr>
@@ -218,13 +224,14 @@
             </div>
 
             <!-- 2. MOBILE VIEW: Modern responsive high-fidelity cards matching screenshots exactly -->
-            <div class="d-block d-md-none px-3 py-2">
-              <div 
-                v-for="inspeccion in paginatedInspecciones" 
-                :key="inspeccion.id" 
-                class="producer-mobile-card shadow-sm mb-3 position-relative"
-                style="border-left-color: #2563eb;"
-              >
+            <div class="d-block d-lg-none px-3 py-2">
+              <div class="mobile-cards-grid">
+                <div 
+                  v-for="inspeccion in paginatedInspecciones" 
+                  :key="inspeccion.id" 
+                  class="producer-mobile-card shadow-sm mb-3 position-relative"
+                  style="border-left-color: #2563eb;"
+                >
                 <div class="card-fields-box">
                   <!-- Folio Field -->
                   <div class="card-field">
@@ -296,17 +303,18 @@
                   </div>
                 </div>
               </div>
+              </div>
             </div>
 
             <!-- PAGINATION FOOTER: Precise design match to screenshot -->
             <div class="pagination-footer-custom d-flex justify-content-between align-items-center flex-wrap gap-3 p-4 bg-white">
               <!-- Left: Pagination Info (Desktop only or responsive) -->
-              <div class="text-secondary small d-none d-md-block">
+              <div class="text-secondary small d-none d-lg-block">
                 Mostrando <strong class="text-dark">{{ startResult }}</strong> a <strong class="text-dark">{{ endResult }}</strong> de <strong class="text-dark">{{ totalResults }}</strong> registros
               </div>
               
               <!-- Center/Right: Beautiful Custom Chevrons Pagination -->
-              <div class="pagination-custom-wrapper d-flex align-items-center justify-content-center w-100 w-md-auto gap-4 py-2">
+              <div class="pagination-custom-wrapper d-flex align-items-center justify-content-center w-100 w-lg-auto gap-4 py-2">
                 <button 
                   class="pagination-custom-btn prev-btn" 
                   :disabled="currentPage === 1" 
@@ -335,19 +343,23 @@
 
     <!-- Bottom Nav -->
     <nav class="bottom-nav">
-      <a class="bottom-nav-link" @click.prevent="$router.push('/dashboard')">
-        <i class="bi bi-grid-1x2"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
+        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
         <span>Inicio</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/visitas')">
-        <i class="bi bi-calendar-event"></i>
-        <span>Visitas</span>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
+        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
+        <span>Productores</span>
       </a>
-      <a class="bottom-nav-link active" @click.prevent>
-        <i class="bi bi-clipboard-check-fill"></i>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
+        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
+        <span>Predios</span>
+      </a>
+      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
+        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
         <span>Dictámenes</span>
       </a>
-      <a class="bottom-nav-link" @click.prevent="$router.push('/sync')">
+      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
         <i class="bi bi-arrow-repeat"></i>
         <span>Sincronizar</span>
       </a>
@@ -359,6 +371,8 @@
 import { Network } from '@capacitor/network';
 import api from '../services/api.js';
 import db from '../services/db.js';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 export default {
   name: 'InspeccionesView',
@@ -533,11 +547,45 @@ export default {
       this.$router.push('/inspecciones/' + inspeccion.id);
     },
     async openPdf(inspeccion) {
+      this.errorMsg = '';
+      this.successMsg = '';
       try {
         const blob = await api.getInspectionPdf(inspeccion.id);
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        const fileName = `dictamen_${inspeccion.folio || inspeccion.id}_${new Date().getDate()}-${new Date().getMonth() + 1}-${new Date().getFullYear()}.pdf`;
+
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = async () => {
+            try {
+              const base64data = reader.result.split(',')[1];
+              const result = await Filesystem.writeFile({
+                path: fileName,
+                data: base64data,
+                directory: Directory.Documents,
+                recursive: true
+              });
+              this.successMsg = `PDF guardado en Documentos: ${fileName}`;
+              // Open/share the file
+              try {
+                await Share.share({
+                  title: fileName,
+                  url: result.uri,
+                  dialogTitle: 'Abrir / Compartir PDF'
+                });
+              } catch (shareErr) {
+                // User may cancel share dialog, that's ok
+              }
+            } catch (err) {
+              console.error('Error saving PDF native:', err);
+              this.errorMsg = 'No se pudo guardar el PDF en el dispositivo: ' + err.message;
+            }
+          };
+        } else {
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        }
       } catch (e) {
         this.errorMsg = e.message || 'No se pudo abrir el PDF.';
       }
@@ -551,18 +599,45 @@ export default {
       this.successMsg = '';
       try {
         const blob = await api.getSábanaExcel();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `dictamenes_pecuarios_${new Date().getDate()}-${new Date().getMonth() + 1}-${new Date().getFullYear()}.xlsx`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(url), 15000);
-        this.successMsg = 'Sábana Excel descargada con éxito.';
+        const fileName = `dictamenes_pecuarios_${new Date().getDate()}-${new Date().getMonth() + 1}-${new Date().getFullYear()}.xlsx`;
+
+        // Check if we are running in a Capacitor Native context (Android/iOS)
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = async () => {
+            try {
+              const base64data = reader.result.split(',')[1];
+              const result = await Filesystem.writeFile({
+                path: fileName,
+                data: base64data,
+                directory: Directory.Documents,
+                recursive: true
+              });
+              this.successMsg = `Sábana Excel guardada con éxito en Documentos: ${fileName}`;
+              alert(`¡Archivo descargado con éxito!\n\nSe ha guardado en la carpeta de Documentos de tu dispositivo:\n\n${fileName}`);
+            } catch (err) {
+              console.error('Error saving file native:', err);
+              this.errorMsg = 'No se pudo guardar el archivo en el dispositivo móvil: ' + err.message;
+            } finally {
+              this.loading = false;
+            }
+          };
+        } else {
+          // Standard browser download
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(url), 15000);
+          this.successMsg = 'Sábana Excel descargada con éxito.';
+          this.loading = false;
+        }
       } catch (e) {
         this.errorMsg = e.message || 'No se pudo descargar la sábana Excel.';
-      } finally {
         this.loading = false;
       }
     },
@@ -947,39 +1022,7 @@ export default {
   cursor: not-allowed;
 }
 
-/* Bottom Nav bar */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 70px;
-  background: #fff;
-  border-top: 1px solid #e9eef5;
-  display: flex;
-  z-index: 80;
-  padding-bottom: env(safe-area-inset-bottom);
-}
 
-.bottom-nav-link {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-  text-decoration: none;
-  font-size: 0.78rem;
-  gap: 0.2rem;
-}
-
-.bottom-nav-link i {
-  font-size: 1.15rem;
-}
-
-.bottom-nav-link.active {
-  color: #2563eb;
-}
 
 .pagination-footer-custom {
   border-bottom-left-radius: 16px;
@@ -988,7 +1031,20 @@ export default {
 }
 
 /* Responsive configurations */
-@media (min-width: 769px) {
+.mobile-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .mobile-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 992px) {
   .mobile-header,
   .bottom-nav {
     display: none;
@@ -1011,7 +1067,7 @@ export default {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 991.98px) {
   .sidebar {
     display: flex;
   }
