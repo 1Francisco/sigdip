@@ -86,7 +86,10 @@ export default {
       this.loading = true;
       this.errorMsg = '';
       try {
-        await api.login(this.email, this.password);
+        const res = await api.login(this.email, this.password);
+        if (res && res.offline) {
+          alert('🔑 Inicio de sesión local (Modo Offline). Podrás trabajar en campo sin internet y los datos se sincronizarán al recuperar la conexión.');
+        }
         this.$router.push('/dashboard');
       } catch (err) {
         this.errorMsg = err.message || 'Credenciales incorrectas';

@@ -104,6 +104,7 @@
 
 <script>
 import { Html5Qrcode } from 'html5-qrcode';
+import { Camera } from '@capacitor/camera';
 
 export default {
   name: 'ScanView',
@@ -116,7 +117,7 @@ export default {
       html5QrCode: null
     };
   },
-  mounted() {
+  async mounted() {
     // Check if we're in single-scan mode (coming from a specific animal row)
     const targetIndex = sessionStorage.getItem('scan_target_index');
     if (targetIndex !== null) {
@@ -128,8 +129,14 @@ export default {
       if (saved) this.scannedAnimals = JSON.parse(saved);
     }
     
-    // Start camera stream immediately
-    this.startCamera();
+    // Check and request camera permission first
+    const hasPermission = await this.checkAndRequestCameraPermission();
+    if (hasPermission) {
+      this.startCamera();
+    } else {
+      alert("❌ Permiso de cámara no concedido. No se puede iniciar el escáner.");
+      this.goBack();
+    }
   },
   beforeUnmount() {
     this.stopCamera();
@@ -184,6 +191,41 @@ export default {
         this.$router.push('/inspeccion');
       } else {
         this.$router.push('/dashboard');
+      }
+    },
+    async checkAndRequestCameraPermission() {
+      try {
+        let status = await Camera.checkPermissions();
+        if (status.camera === 'prompt' || status.camera === 'prompt-with-rationale') {
+          status = await Camera.requestPermissions({ permissions: ['camera'] });
+        }
+        if (status.camera === 'denied') {
+          const retry = confirm("⚠️ El permiso de cámara está denegado en este dispositivo.\n\n¿Deseas intentar solicitar el permiso de nuevo?");
+          if (retry) {
+            status = await Camera.requestPermissions({ permissions: ['camera'] });
+          }
+        }
+        return status.camera === 'granted';
+      } catch (e) {
+        console.warn("Permisos nativos de cámara no soportados, usando fallback de navegador:", e);
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          stream.getTracks().forEach(track => track.stop());
+          return true;
+        } catch (err) {
+          console.error("Browser camera permission denied:", err);
+          const retry = confirm("⚠️ No se pudo acceder a la cámara o el permiso fue denegado.\n\n¿Deseas volver a intentar solicitar el permiso?");
+          if (retry) {
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+              stream.getTracks().forEach(track => track.stop());
+              return true;
+            } catch (err2) {
+              console.error("Retry browser camera permission denied:", err2);
+            }
+          }
+          return false;
+        }
       }
     },
     async startCamera() {

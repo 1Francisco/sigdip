@@ -186,6 +186,7 @@
                     <td class="ps-4">
                       <div class="fw-bold text-dark fs-6">{{ formatDate(visita.fecha_programada) }}</div>
                       <small class="text-secondary small fst-italic">{{ getRelativeTime(visita.fecha_programada) }}</small>
+                      <div v-if="visita.codigo" class="text-primary fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.3px; margin-top: 2px;">{{ visita.codigo }}</div>
                     </td>
                     <td>
                       <div class="fw-bold text-dark">{{ visita.predio?.productor?.nombre || 'Sin productor' }} {{ visita.predio?.productor?.apellido_paterno }}</div>
@@ -282,6 +283,7 @@
                     <span class="field-label">FECHA</span>
                     <span class="field-value text-dark fw-bold fs-5">{{ formatDate(visita.fecha_programada) }}</span>
                     <span class="field-subtitle text-secondary fst-italic fs-7.5 mt-0.5">{{ getRelativeTime(visita.fecha_programada) }}</span>
+                    <span v-if="visita.codigo" class="text-primary fw-semibold fs-7 mt-0.5 d-block">{{ visita.codigo }}</span>
                   </div>
 
                   <!-- Productor Field -->

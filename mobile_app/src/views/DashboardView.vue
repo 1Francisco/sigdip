@@ -539,7 +539,7 @@ export default {
       this.$router.push(`/inspeccion/${visita.predio_id}?visita_id=${visita.id}`);
     },
     continueBorrador(borrador) {
-      this.$router.push(`/inspeccion/${borrador.predio_id}?visita_id=${borrador.visita_id || ''}`);
+      this.$router.push(`/inspeccion/${borrador.predio_id}?inspeccion_id=${borrador.id || borrador.folio}${borrador.visita_id ? `&visita_id=${borrador.visita_id}` : ''}`);
     },
     async doLogout() {
       try { 

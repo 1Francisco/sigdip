@@ -14,6 +14,14 @@ class InspeccionesApiController extends Controller
         $user = $request->user();
         $query = Inspeccion::with(['predio.productor', 'veterinario', 'visita']);
 
+        if ($request->filled('folio')) {
+            $query->where('folio', $request->folio);
+        }
+
+        if ($request->filled('visita_id')) {
+            $query->where('visita_id', $request->visita_id);
+        }
+
         if (!$user->hasRole('Administrador')) {
             $query->where('veterinario_id', $user->id);
         }

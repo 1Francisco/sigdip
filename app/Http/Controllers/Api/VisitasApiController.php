@@ -46,6 +46,7 @@ class VisitasApiController extends Controller
     {
         $user = $request->user();
         $validated = $request->validate([
+            'codigo' => 'nullable|string|unique:visitas,codigo',
             'predio_id' => 'required|exists:predios,id',
             'veterinario_id' => 'nullable|exists:users,id',
             'fecha_programada' => 'required|date',
@@ -53,6 +54,7 @@ class VisitasApiController extends Controller
         ]);
 
         $visita = Visita::create([
+            'codigo' => $validated['codigo'] ?? null,
             'predio_id' => $validated['predio_id'],
             'veterinario_id' => $user->hasRole('Administrador') && !empty($validated['veterinario_id'])
                 ? $validated['veterinario_id']
@@ -78,6 +80,7 @@ class VisitasApiController extends Controller
         $this->authorizeVisita($request, $visita);
 
         $validated = $request->validate([
+            'codigo' => 'nullable|string|unique:visitas,codigo,' . $id,
             'predio_id' => 'required|exists:predios,id',
             'veterinario_id' => 'nullable|exists:users,id',
             'fecha_programada' => 'required|date',
@@ -88,6 +91,7 @@ class VisitasApiController extends Controller
         $user = $request->user();
 
         $visita->update([
+            'codigo' => $validated['codigo'] ?? $visita->codigo,
             'predio_id' => $validated['predio_id'],
             'veterinario_id' => $user->hasRole('Administrador') && !empty($validated['veterinario_id'])
                 ? $validated['veterinario_id']
@@ -157,6 +161,7 @@ class VisitasApiController extends Controller
     {
         return [
             'id' => $visita->id,
+            'codigo' => $visita->codigo,
             'predio_id' => $visita->predio_id,
             'veterinario_id' => $visita->veterinario_id,
             'fecha_programada' => optional($visita->fecha_programada)->format('Y-m-d'),

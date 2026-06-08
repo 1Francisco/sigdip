@@ -531,7 +531,7 @@ export default {
       }
     },
     continueDraft(item) {
-      this.$router.push(`/inspeccion/${item.predio_id}?visita_id=${item.visita_id || ''}`);
+      this.$router.push(`/inspeccion/${item.predio_id}?inspeccion_id=${item.id || item.folio}${item.visita_id ? `&visita_id=${item.visita_id}` : ''}`);
     },
     continueFromServer(inspeccion) {
       this.$router.push(`/inspeccion/${inspeccion.predio?.id}?inspeccion_id=${inspeccion.id}${inspeccion.visita_id ? `&visita_id=${inspeccion.visita_id}` : ''}`);

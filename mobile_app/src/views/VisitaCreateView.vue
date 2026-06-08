@@ -268,6 +268,7 @@ export default {
       medicos: [],
       selectedProductorId: '',
       form: {
+        codigo: null,
         predio_id: '',
         fecha_programada: '',
         veterinario_id: '',
@@ -366,6 +367,7 @@ export default {
         this.form.fecha_programada = visita.fecha_programada || '';
         this.form.veterinario_id = visita.veterinario_id || '';
         this.form.observaciones = visita.observaciones || '';
+        this.form.codigo = visita.codigo || null;
         
         // Find productor id from selected predio
         const pred = this.predios.find(p => p.id === visita.predio_id);
@@ -410,17 +412,40 @@ export default {
             predio_id: this.form.predio_id,
             fecha_programada: this.form.fecha_programada,
             veterinario_id: this.form.veterinario_id,
-            observaciones: this.form.observaciones
+            observaciones: this.form.observaciones,
+            codigo: this.form.codigo || null
           });
           this.successMsg = 'Visita programada actualizada con éxito.';
         } else {
+          // Generate unique code based on doctor name and date
+          const user = api.getCurrentUser();
+          const vet = this.medicos.find(m => String(m.id) === String(this.form.veterinario_id)) || user;
+          const vetName = vet ? (vet.name || 'VET') : 'VET';
+          
+          // Sanitize veterinarian name to uppercase, letters/numbers and underscores only
+          const cleanName = vetName
+            .toUpperCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^A-Z0-9]/g, "_")
+            .replace(/_+/g, "_")
+            .replace(/(^_|_$)/g, "");
+
+          // Format date as YYYYMMDD
+          const dateStr = this.form.fecha_programada.replace(/-/g, "");
+
+          // Short random string to ensure uniqueness
+          const randSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+
+          const generatedCodigo = `V-${cleanName}-${dateStr}-${randSuffix}`;
+
           await api.createVisita({
+            codigo: generatedCodigo,
             predio_id: this.form.predio_id,
             fecha_programada: this.form.fecha_programada,
             veterinario_id: this.form.veterinario_id,
             observaciones: this.form.observaciones
           });
-          this.successMsg = 'Visita de campo programada con éxito.';
+          this.successMsg = `Visita programada con éxito.\nCódigo: ${generatedCodigo}`;
         }
 
         setTimeout(() => {

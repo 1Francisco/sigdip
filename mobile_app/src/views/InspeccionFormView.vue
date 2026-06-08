@@ -143,7 +143,7 @@
             <div class="accordion-body-content" :class="{ show: activeSection === 1 }">
               <div class="form-group mb-3">
                 <label class="form-label fw-bold text-dark fs-7-5 text-uppercase">Productor (Persona)</label>
-                <select v-model="form.predio_id" class="form-select form-control" @change="onPredioSelect" required>
+                <select v-model="form.predio_id" class="form-select form-control" @change="onPredioSelect" :disabled="!!$route.params.predioId || !!$route.query.inspeccion_id || !!$route.query.visita_id" required>
                   <option value="">Seleccione un predio...</option>
                   <option v-for="p in predios" :key="p.id" :value="p.id">
                     {{ p.productor?.nombre }} {{ p.productor?.apellido_paterno }} ({{ p.nombre }})
@@ -154,43 +154,43 @@
               <div class="row g-3">
                 <div class="col-md-4 col-sm-12">
                   <label class="form-label small text-muted">APELLIDO PATERNO</label>
-                  <input type="text" :value="selectedProductor?.apellido_paterno || ''" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedProductor?.apellido_paterno || ''" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-4 col-sm-12">
                   <label class="form-label small text-muted">APELLIDO MATERNO</label>
-                  <input type="text" :value="selectedProductor?.apellido_materno || ''" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedProductor?.apellido_materno || ''" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-4 col-sm-12">
                   <label class="form-label small text-muted">NOMBRE(S)</label>
-                  <input type="text" :value="selectedProductor?.nombre || ''" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedProductor?.nombre || ''" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-4 col-sm-12">
                   <label class="form-label small text-muted">TELÉFONO</label>
-                  <input type="text" :value="selectedProductor?.telefono || ''" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedProductor?.telefono || ''" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-4 col-sm-12">
                   <label class="form-label small text-muted">DOMICILIO</label>
-                  <input type="text" :value="selectedProductor?.domicilio || ''" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedProductor?.domicilio || ''" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-4 col-sm-12">
                   <label class="form-label small text-muted">MUNICIPIO</label>
-                  <input type="text" :value="selectedProductor?.municipio || ''" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedProductor?.municipio || ''" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-4 col-sm-12">
                   <label class="form-label small text-muted">LOCALIDAD</label>
-                  <input type="text" :value="selectedProductor?.localidad || ''" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedProductor?.localidad || ''" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-4 col-sm-12">
                   <label class="form-label small text-muted">ESTADO</label>
-                  <input type="text" :value="selectedProductor?.estado || 'NAYARIT'" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedProductor?.estado || 'NAYARIT'" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-4 col-sm-12">
                   <label class="form-label small text-muted">CORREO ELECTRÓNICO</label>
-                  <input type="text" :value="selectedProductor?.email || ''" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedProductor?.email || ''" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-6 col-sm-12">
                   <label class="form-label fw-semibold">Fecha Dictamen</label>
-                  <input type="date" v-model="form.fecha" class="form-control bg-light" readonly style="pointer-events: none;" tabindex="-1" required>
+                  <input type="date" v-model="form.fecha" class="form-control bg-light" disabled style="pointer-events: none;" tabindex="-1" required>
                 </div>
                 <div class="col-md-6 col-sm-12">
                   <label class="form-label fw-bold text-dark">Folio Dictamen</label>
@@ -227,7 +227,7 @@
               <div class="row g-3">
                 <div class="col-md-6 col-sm-12">
                   <label class="form-label small text-muted">NOMBRE DE LA UNIDAD O PREDIO</label>
-                  <input type="text" :value="selectedPredio?.nombre || ''" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedPredio?.nombre_rancho || selectedPredio?.nombre || ''" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-6 col-sm-12">
                   <div class="d-flex justify-content-between align-items-center mb-1">
@@ -245,23 +245,23 @@
                 </div>
                 <div class="col-md-6 col-sm-12">
                   <label class="form-label small text-muted">CLAVE UPP / PSG</label>
-                  <input type="text" :value="selectedPredio?.upp || ''" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedPredio?.clave_unidad_produccion || selectedPredio?.upp || ''" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-6 col-sm-12">
                   <label class="form-label small text-muted">DOMICILIO</label>
-                  <input type="text" :value="selectedPredio?.domicilio || ''" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedPredio?.domicilio || ''" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-4 col-sm-12">
                   <label class="form-label small text-muted">MUNICIPIO</label>
-                  <input type="text" :value="selectedPredio?.municipio || ''" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedPredio?.municipio || ''" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-4 col-sm-12">
                   <label class="form-label small text-muted">LOCALIDAD/POBLACIÓN</label>
-                  <input type="text" :value="selectedPredio?.localidad || ''" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedPredio?.localidad || ''" class="form-control bg-light" disabled tabindex="-1">
                 </div>
                 <div class="col-md-4 col-sm-12">
                   <label class="form-label small text-muted">ESTADO</label>
-                  <input type="text" :value="selectedPredio?.estado || 'NAYARIT'" class="form-control bg-light" readonly tabindex="-1">
+                  <input type="text" :value="selectedPredio?.estado || 'NAYARIT'" class="form-control bg-light" disabled tabindex="-1">
                 </div>
               </div>
             </div>
@@ -491,19 +491,75 @@
                 </button>
               </div>
 
+              <!-- Buscador de aretes -->
+              <div v-if="form.animales.length > 0" class="search-animals-container p-3 border-bottom bg-white">
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+                  <input 
+                    v-model="animalSearchQuery" 
+                    type="text" 
+                    class="form-control border-start-0" 
+                    placeholder="Buscar arete por número (escribe para filtrar)..."
+                    @input="onSearchInput"
+                  />
+                  <button v-if="animalSearchQuery" class="btn btn-outline-secondary py-0 px-2.5" type="button" @click="clearAnimalSearch">✕</button>
+                </div>
+              </div>
+
               <!-- Empty State -->
               <div v-if="form.animales.length === 0" class="empty-state bg-white p-4 text-center">
                 <div class="empty-icon text-muted mb-2"><i class="bi bi-tag fs-2"></i></div>
                 <p class="mb-0 fw-semibold text-secondary">No hay animales registrados</p>
                 <p class="text-muted small mb-3">Agrega de forma manual o escaneando los códigos QR/SINIIGA.</p>
-                <button class="btn btn-accent w-auto px-4 py-2" @click="$router.push('/scan')">
+                <button class="btn btn-accent w-auto px-4 py-2" @click="addEmptyAnimal">
                   <i class="bi bi-camera"></i> Escanear Arete
                 </button>
               </div>
 
               <!-- Tabla responsiva (Desktop) -->
-              <div v-else class="table-responsive d-none d-lg-block">
-                <table class="table table-bordered align-middle mb-0">
+              <div v-else class="table-responsive d-none d-lg-block scrollable-animals-container">
+                <!-- Modo Lectura: Arete, Resultado y Observaciones Primero (Compacto) -->
+                <table v-if="puedoEditarResultados()" class="table table-bordered align-middle mb-0">
+                  <thead class="bg-light text-center small fw-bold">
+                    <tr>
+                      <th style="width: 200px;">Identificación (Arete)</th>
+                      <th style="width: 160px;">Resultado</th>
+                      <th>Observaciones</th>
+                      <th style="width: 40px;"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(animal, localIdx) in filteredAnimales" :key="animal" :class="{ 'positivo-row': animal.resultado === 'Positivo' }">
+                      <td>
+                        <div class="input-group">
+                          <input type="text" v-model="animal.identificador" class="form-control form-control-sm text-uppercase" placeholder="SINIIGA o SA" required @change="onIdentificadorChange(animal)" />
+                          <button class="btn btn-primary py-0 px-2" type="button" @click="scanSingleAnimal(animal)" title="Escanear">
+                            <i class="bi bi-camera"></i>
+                          </button>
+                        </div>
+                      </td>
+                      <td>
+                        <select v-model="animal.resultado" class="form-select form-control-sm fw-bold" :class="getResultadoClass(animal.resultado)">
+                          <option value="Pendiente" class="text-secondary">Pendiente</option>
+                          <option value="Negativo" class="text-success">Negativo</option>
+                          <option value="Positivo" class="text-danger">Positivo</option>
+                          <option value="Sospechoso" class="text-warning">Sospechoso</option>
+                        </select>
+                      </td>
+                      <td>
+                        <input type="text" v-model="animal.observaciones" class="form-control form-control-sm" placeholder="Detalles..." />
+                      </td>
+                      <td class="text-center">
+                        <button type="button" class="btn btn-link text-danger p-0" @click="removeAnimal(animal)" title="Eliminar">
+                          <i class="bi bi-trash fs-5"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <!-- Modo Inyección: Formulario Completo -->
+                <table v-else class="table table-bordered align-middle mb-0">
                   <thead class="bg-light text-center small fw-bold">
                     <tr>
                       <th style="width: 180px;">Identificación (Arete)</th>
@@ -518,11 +574,11 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(animal, index) in form.animales" :key="index" :class="{ 'positivo-row': animal.resultado === 'Positivo' }">
+                    <tr v-for="(animal, localIdx) in filteredAnimales" :key="animal" :class="{ 'positivo-row': animal.resultado === 'Positivo' }">
                       <td>
                         <div class="input-group">
                           <input type="text" v-model="animal.identificador" class="form-control form-control-sm text-uppercase" placeholder="SINIIGA o SA" required @change="onIdentificadorChange(animal)" />
-                          <button class="btn btn-primary py-0 px-2" type="button" @click="scanSingleAnimal(index)" title="Escanear">
+                          <button class="btn btn-primary py-0 px-2" type="button" @click="scanSingleAnimal(animal)" title="Escanear">
                             <i class="bi bi-camera"></i>
                           </button>
                         </div>
@@ -550,7 +606,7 @@
                         <input type="checkbox" v-model="animal.fierro" class="form-check-input" true-value="Si" false-value="No" />
                       </td>
                       <td>
-                        <select v-model="animal.resultado" class="form-select form-control-sm fw-bold" :class="getResultadoClass(animal.resultado)" :disabled="!puedoEditarResultados()">
+                        <select v-model="animal.resultado" class="form-select form-control-sm fw-bold" :class="getResultadoClass(animal.resultado)" :disabled="true">
                           <option value="Pendiente" class="text-secondary">Pendiente</option>
                           <option value="Negativo" class="text-success">Negativo</option>
                           <option value="Positivo" class="text-danger">Positivo</option>
@@ -561,7 +617,7 @@
                         <input type="text" v-model="animal.observaciones" class="form-control form-control-sm" placeholder="Detalles..." />
                       </td>
                       <td class="text-center">
-                        <button type="button" class="btn btn-link text-danger p-0" @click="removeAnimal(index)" title="Eliminar">
+                        <button type="button" class="btn btn-link text-danger p-0" @click="removeAnimal(animal)" title="Eliminar">
                           <i class="bi bi-trash fs-5"></i>
                         </button>
                       </td>
@@ -570,18 +626,77 @@
                 </table>
               </div>
 
-              <!-- Vista de Tarjetas para Móviles (Responsivo) -->
-              <div v-if="form.animales.length > 0" class="d-block d-lg-none px-3 py-2 bg-light-card-container">
+              <!-- Vista Móvil para Lectura: Tabla estilo profesional para médicos -->
+              <div v-if="puedoEditarResultados() && form.animales.length > 0" class="d-block d-lg-none scrollable-animals-container-mobile">
+                <!-- Encabezado fijo de la tabla -->
+                <div class="lectura-table-header">
+                  <i class="bi bi-clipboard-check-fill me-1"></i> LECTURA DE RESULTADOS · {{ form.animales.length }} animales
+                </div>
+
+                <!-- Filas de animales -->
                 <div 
-                  v-for="(animal, index) in form.animales" 
-                  :key="index" 
+                  v-for="(animal, localIdx) in filteredAnimales" 
+                  :key="animal" 
+                  class="lectura-table-row"
+                  :class="{ 
+                    'lectura-row-positivo': animal.resultado === 'Positivo',
+                    'lectura-row-sospechoso': animal.resultado === 'Sospechoso',
+                    'lectura-row-negativo': animal.resultado === 'Negativo',
+                    'lectura-row-zebra': localIdx % 2 === 1
+                  }"
+                >
+                  <!-- Línea 1: Número + Arete + Cámara -->
+                  <div class="lectura-line1">
+                    <span class="lectura-num-badge">{{ getOriginalAnimalIndex(animal) + 1 }}</span>
+                    <input 
+                      type="text" 
+                      v-model="animal.identificador" 
+                      class="form-control form-control-sm text-uppercase lectura-input-arete flex-grow-1" 
+                      placeholder="SINIIGA o SA" 
+                      required 
+                      @change="onIdentificadorChange(animal)" 
+                    />
+                    <button class="btn btn-primary btn-sm lectura-btn-scan" type="button" @click="scanSingleAnimal(animal)" title="Escanear">
+                      <i class="bi bi-camera-fill"></i>
+                    </button>
+                  </div>
+
+                  <!-- Línea 2: Resultado + Observaciones + Eliminar -->
+                  <div class="lectura-line2">
+                    <select v-model="animal.resultado" class="form-select form-select-sm fw-bold lectura-select-result" :class="getResultadoClass(animal.resultado)">
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="Negativo">Negativo</option>
+                      <option value="Positivo">Positivo</option>
+                      <option value="Sospechoso">Sospechoso</option>
+                    </select>
+                    <input type="text" v-model="animal.observaciones" class="form-control form-control-sm lectura-input-obs flex-grow-1" placeholder="Observaciones..." />
+                    <button type="button" class="btn btn-outline-danger btn-sm lectura-btn-delete" @click="removeAnimal(animal)" title="Eliminar">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Footer con conteo de resultados -->
+                <div class="lectura-table-footer">
+                  <span><i class="bi bi-check-circle-fill text-success me-1"></i>Neg: {{ form.animales.filter(a => a.resultado === 'Negativo').length }}</span>
+                  <span><i class="bi bi-plus-circle-fill text-danger me-1"></i>Pos: {{ form.animales.filter(a => a.resultado === 'Positivo').length }}</span>
+                  <span><i class="bi bi-question-circle-fill text-warning me-1"></i>Sosp: {{ form.animales.filter(a => a.resultado === 'Sospechoso').length }}</span>
+                  <span><i class="bi bi-dash-circle text-secondary me-1"></i>Pend: {{ form.animales.filter(a => !a.resultado || a.resultado === 'Pendiente').length }}</span>
+                </div>
+              </div>
+
+              <!-- Modo Inyección: Cards Completos con Censo Ganadero -->
+              <div v-else-if="form.animales.length > 0" class="d-block d-lg-none px-3 py-2 bg-light-card-container scrollable-animals-container-mobile">
+                <div 
+                  v-for="(animal, localIdx) in filteredAnimales" 
+                  :key="animal" 
                   class="animal-mobile-card mb-3 position-relative"
                   :class="{ 'positivo-card': animal.resultado === 'Positivo' }"
                 >
                   <!-- Card Header: Animal Number & Delete -->
                   <div class="card-header-custom d-flex justify-content-between align-items-center mb-2.5 pb-2 border-bottom">
-                    <span class="fw-bold text-slate-700 fs-7-5">ANIMAL #{{ index + 1 }}</span>
-                    <button type="button" class="btn btn-link text-danger p-0 d-flex align-items-center gap-1 text-decoration-none fs-7-5" @click="removeAnimal(index)">
+                    <span class="fw-bold text-slate-700 fs-7-5">ANIMAL #{{ getOriginalAnimalIndex(animal) + 1 }}</span>
+                    <button type="button" class="btn btn-link text-danger p-0 d-flex align-items-center gap-1 text-decoration-none fs-7-5" @click="removeAnimal(animal)">
                       <i class="bi bi-trash"></i> Eliminar
                     </button>
                   </div>
@@ -601,7 +716,7 @@
                           required 
                           @change="onIdentificadorChange(animal)" 
                         />
-                        <button class="btn-camera-prominent" type="button" @click="scanSingleAnimal(index)" title="Escanear Arete">
+                        <button class="btn-camera-prominent" type="button" @click="scanSingleAnimal(animal)" title="Escanear Arete">
                           <i class="bi bi-camera-fill"></i> Escanear
                         </button>
                       </div>
@@ -641,10 +756,10 @@
                       </div>
                     </div>
 
-                    <!-- Resultado -->
+                    <!-- Resultado (Deshabilitado en Inyección) -->
                     <div class="col-12">
                       <label class="form-label-custom">RESULTADO</label>
-                      <select v-model="animal.resultado" class="form-select form-control-custom fw-bold" :class="getResultadoClass(animal.resultado)" :disabled="!puedoEditarResultados()">
+                      <select v-model="animal.resultado" class="form-select form-control-custom fw-bold" :class="getResultadoClass(animal.resultado)" :disabled="true">
                         <option value="Pendiente" class="text-secondary">Pendiente</option>
                         <option value="Negativo" class="text-success">Negativo</option>
                         <option value="Positivo" class="text-danger">Positivo</option>
@@ -661,10 +776,21 @@
                 </div>
               </div>
 
+              <!-- Load more button/indicator for performance pagination -->
+              <div v-if="hasMoreAnimals" class="p-3 text-center border-top bg-light">
+                <div class="text-secondary small mb-2">Mostrando {{ filteredAnimales.length }} de {{ totalMatchedAnimalsCount }} animales coincidentes</div>
+                <button type="button" class="btn btn-sm btn-primary px-4 py-2" @click="loadMoreAnimals" style="background: #2563eb;">
+                  <i class="bi bi-plus-circle"></i> Cargar más animales
+                </button>
+              </div>
+              <div v-else-if="animalSearchQuery && totalMatchedAnimalsCount > 0" class="p-2.5 text-center text-secondary small bg-light-subtle border-top">
+                Fin de resultados. {{ totalMatchedAnimalsCount }} animales encontrados.
+              </div>
+
               <!-- Agregar rápido por input inferior -->
               <div class="p-3 border-top bg-light" v-if="form.animales.length > 0">
                 <div class="d-flex gap-2">
-                  <input v-model="quickArete" type="text" class="form-control form-control-sm text-uppercase" placeholder="Agregar arete manualmente..." @keyup.enter="addQuickAnimal" />
+                  <input v-model="quickArete" type="text" class="form-control form-control-sm text-uppercase" placeholder="Registrar arete manualmente" @keyup.enter="addQuickAnimal" />
                   <button type="button" class="btn btn-outline w-auto px-3 py-1.5" @click="addQuickAnimal">+</button>
                 </div>
               </div>
@@ -779,6 +905,7 @@
 import { Network } from '@capacitor/network';
 import api from '../services/api.js';
 import { Geolocation } from '@capacitor/geolocation';
+import { Camera } from '@capacitor/camera';
 import db from '../services/db.js';
 import backgroundSync from '../services/backgroundSync.js';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -792,6 +919,8 @@ export default {
       selectedPredio: null,
       selectedProductor: null,
       quickArete: '',
+      animalSearchQuery: '',
+      visibleAnimalsLimit: 30,
       activeSection: 1, // Control de acordeón abierto
       sidebarActive: false,
       isAdmin: false,
@@ -835,6 +964,28 @@ export default {
     };
   },
   computed: {
+    filteredAnimales() {
+      const q = this.animalSearchQuery.trim().toUpperCase();
+      if (!q) {
+        return this.form.animales.slice(0, this.visibleAnimalsLimit);
+      }
+      return this.form.animales
+        .filter(a => (a.identificador || '').toUpperCase().includes(q))
+        .slice(0, this.visibleAnimalsLimit);
+    },
+    hasMoreAnimals() {
+      const q = this.animalSearchQuery.trim().toUpperCase();
+      const totalMatches = q 
+        ? this.form.animales.filter(a => (a.identificador || '').toUpperCase().includes(q)).length
+        : this.form.animales.length;
+      return totalMatches > this.visibleAnimalsLimit;
+    },
+    totalMatchedAnimalsCount() {
+      const q = this.animalSearchQuery.trim().toUpperCase();
+      return q 
+        ? this.form.animales.filter(a => (a.identificador || '').toUpperCase().includes(q)).length
+        : this.form.animales.length;
+    },
     totalRows() {
       return this.form.animales.length;
     },
@@ -1143,6 +1294,13 @@ export default {
       this.form.hato_libre_fecha = data.hato_libre_fecha || '';
       this.form.estado = data.estado || this.form.estado;
 
+      if (data.predio) {
+        this.selectedPredio = data.predio;
+        if (data.predio.productor) {
+          this.selectedProductor = data.predio.productor;
+        }
+      }
+
       if (Array.isArray(data.detalles)) {
         this.form.animales = data.detalles.map(detalle => ({
           identificador: detalle.animal?.numero_arete_siniiga || '',
@@ -1196,6 +1354,24 @@ export default {
     },
     async obtenerCoordenadasGPS() {
       try {
+        let permStatus = await Geolocation.checkPermissions();
+        
+        if (permStatus.location === 'prompt' || permStatus.location === 'prompt-with-rationale') {
+          permStatus = await Geolocation.requestPermissions();
+        }
+        
+        if (permStatus.location === 'denied') {
+          const retry = confirm("⚠️ El permiso de ubicación (GPS) está desactivado o denegado.\n\n¿Deseas intentar solicitar el permiso de nuevo?");
+          if (retry) {
+            permStatus = await Geolocation.requestPermissions();
+          }
+        }
+        
+        if (permStatus.location !== 'granted') {
+          alert("❌ Permiso de ubicación no concedido. Debes otorgar el permiso en la configuración de la app o dispositivo para capturar coordenadas GPS.");
+          return;
+        }
+
         const coordinates = await Geolocation.getCurrentPosition({
           enableHighAccuracy: true,
           timeout: 12000
@@ -1204,10 +1380,28 @@ export default {
         this.form.longitud = coordinates.coords.longitude.toFixed(6);
         alert(`📍 Coordenadas capturadas con éxito:\nLatitud: ${this.form.latitud}\nLongitud: ${this.form.longitud}`);
       } catch (e) {
-        alert('⚠️ No se pudo obtener la localización nativa del dispositivo. Ingrese las coordenadas manualmente o verifique que tenga el GPS encendido.');
+        console.error("Error al obtener ubicación Capacitor:", e);
+        // Fallback for browser geolocation
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              this.form.latitud = position.coords.latitude.toFixed(6);
+              this.form.longitud = position.coords.longitude.toFixed(6);
+              alert(`📍 Coordenadas capturadas con éxito (Navegador):\nLatitud: ${this.form.latitud}\nLongitud: ${this.form.longitud}`);
+            },
+            (err) => {
+              console.error("Error de ubicación en navegador:", err);
+              alert('⚠️ No se pudo obtener la localización del dispositivo. Por favor ingresa las coordenadas manualmente o verifica que el GPS esté encendido.');
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+          );
+        } else {
+          alert('⚠️ Geolocalización no soportada en este dispositivo.');
+        }
       }
     },
     addEmptyAnimal() {
+      this.clearAnimalSearch();
       this.form.animales.push({
         identificador: '',
         tipo_arete: 'IN',
@@ -1232,6 +1426,7 @@ export default {
         return;
       }
 
+      this.clearAnimalSearch();
       this.form.animales.push({
         identificador: this.quickArete.trim().toUpperCase(),
         tipo_arete: 'IN',
@@ -1246,8 +1441,11 @@ export default {
 
       this.quickArete = '';
     },
-    removeAnimal(index) {
-      this.form.animales.splice(index, 1);
+    removeAnimal(animal) {
+      const index = this.form.animales.indexOf(animal);
+      if (index > -1) {
+        this.form.animales.splice(index, 1);
+      }
     },
     getResultadoClass(res) {
       if (res === 'Negativo') return 'text-success bg-success-subtle';
@@ -1255,10 +1453,67 @@ export default {
       if (res === 'Sospechoso') return 'text-warning bg-warning-subtle';
       return 'text-secondary bg-light';
     },
-    scanSingleAnimal(index) {
-      this.startFormScanner(index);
+    scanSingleAnimal(animal) {
+      const index = this.form.animales.indexOf(animal);
+      if (index > -1) {
+        this.startFormScanner(index);
+      }
+    },
+    onSearchInput() {
+      this.visibleAnimalsLimit = 30; // Reset pagination limit on typing to keep rendering light
+    },
+    clearAnimalSearch() {
+      this.animalSearchQuery = '';
+      this.visibleAnimalsLimit = 30;
+    },
+    loadMoreAnimals() {
+      this.visibleAnimalsLimit += 30;
+    },
+    getOriginalAnimalIndex(animal) {
+      return this.form.animales.indexOf(animal);
+    },
+    async checkAndRequestCameraPermission() {
+      try {
+        let status = await Camera.checkPermissions();
+        if (status.camera === 'prompt' || status.camera === 'prompt-with-rationale') {
+          status = await Camera.requestPermissions({ permissions: ['camera'] });
+        }
+        if (status.camera === 'denied') {
+          const retry = confirm("⚠️ El permiso de cámara está denegado en este dispositivo.\n\n¿Deseas intentar solicitar el permiso de nuevo?");
+          if (retry) {
+            status = await Camera.requestPermissions({ permissions: ['camera'] });
+          }
+        }
+        return status.camera === 'granted';
+      } catch (e) {
+        console.warn("Permisos nativos de cámara no soportados, usando fallback de navegador:", e);
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          stream.getTracks().forEach(track => track.stop());
+          return true;
+        } catch (err) {
+          console.error("Browser camera permission denied:", err);
+          const retry = confirm("⚠️ No se pudo acceder a la cámara o el permiso fue denegado.\n\n¿Deseas volver a intentar solicitar el permiso?");
+          if (retry) {
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+              stream.getTracks().forEach(track => track.stop());
+              return true;
+            } catch (err2) {
+              console.error("Retry browser camera permission denied:", err2);
+            }
+          }
+          return false;
+        }
+      }
     },
     async startFormScanner(index) {
+      const hasPermission = await this.checkAndRequestCameraPermission();
+      if (!hasPermission) {
+        alert("❌ Permiso de cámara no concedido. Debes habilitar el permiso de cámara para usar el escáner.");
+        return;
+      }
+
       this.activeScanIndex = index;
       this.scannerActive = true;
       
@@ -1276,7 +1531,7 @@ export default {
           );
         } catch (err) {
           console.error("Error starting camera scanner:", err);
-          alert("⚠️ No se pudo iniciar la cámara. Verifique los permisos de cámara de la aplicación.");
+          alert("⚠️ No se pudo iniciar la cámara. Verifique los permisos de su dispositivo.");
           this.scannerActive = false;
         }
       });
@@ -2300,7 +2555,7 @@ export default {
 /* Sticky Action Bar Mobile */
 .mobile-sticky-actions {
   position: fixed;
-  bottom: 70px;
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   background: rgba(255, 255, 255, 0.9);
@@ -2362,7 +2617,7 @@ export default {
 /* Floating Action Button */
 .btn-fab-add {
   position: fixed;
-  bottom: 160px;
+  bottom: calc(160px + env(safe-area-inset-bottom, 0px));
   right: 20px;
   width: 56px;
   height: 56px;
@@ -2545,4 +2800,192 @@ export default {
   background-color: #1d4ed8;
   transform: scale(0.96);
 }
+
+/* Scrollable containers for Section IV */
+.scrollable-animals-container {
+  max-height: 480px;
+  overflow-y: auto;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.scrollable-animals-container-mobile {
+  max-height: 520px;
+  overflow-y: auto;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Elegant scrollbar styling for premium UI */
+.scrollable-animals-container::-webkit-scrollbar,
+.scrollable-animals-container-mobile::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollable-animals-container::-webkit-scrollbar-track,
+.scrollable-animals-container-mobile::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.scrollable-animals-container::-webkit-scrollbar-thumb,
+.scrollable-animals-container-mobile::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.scrollable-animals-container::-webkit-scrollbar-thumb:hover,
+.scrollable-animals-container-mobile::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ── Lectura Table: Professional layout for doctors ── */
+.lectura-table-header {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: #1e293b;
+  color: #f8fafc;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 10px 14px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.lectura-table-row {
+  border-bottom: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  padding: 10px 12px;
+  transition: background-color 0.15s ease;
+}
+
+.lectura-row-zebra {
+  background: #f8fafc;
+}
+
+.lectura-row-positivo {
+  background: #fef2f2 !important;
+  border-left: 4px solid #ef4444;
+}
+.lectura-row-sospechoso {
+  background: #fffbeb !important;
+  border-left: 4px solid #f59e0b;
+}
+.lectura-row-negativo {
+  border-left: 4px solid #10b981;
+}
+
+/* Línea 1: # + Arete + Cámara */
+.lectura-line1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+/* Línea 2: Resultado + Obs + Eliminar */
+.lectura-line2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 34px; /* alineado con el input de arriba */
+}
+
+.lectura-num-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.lectura-input-arete {
+  font-size: 0.82rem !important;
+  padding: 6px 8px !important;
+  border-radius: 8px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  background: #f8fafc !important;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  width
+}
+.lectura-input-arete:focus {
+  border-color: #2563eb !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12) !important;
+}
+
+.lectura-btn-scan {
+  border-radius: 6px !important;
+  padding: 0 !important;         /* Quitamos el padding para usar un ancho fijo */
+  font-size: 0.75rem !important;
+  line-height: 1 !important;
+  height: 28px;                  /* Alto del botón */
+  width: 28px;                   /* Ancho exacto del botón (mismo que el alto) */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lectura-select-result {
+  font-size: 0.72rem !important;      /* Letra un poco más pequeña */
+  padding: 0 20px 0 6px !important;   /* Menos relleno, manteniendo espacio derecho para la flecha */
+  height: 30px !important;            /* Un poco más alto que los botones de 28px */
+  width: 100px !important;        /* Reducimos el ancho mínimo (antes era 120px) */
+  border-radius: 6px !important;      /* Radio a juego con los otros botones */
+  border: 1.5px solid #cbd5e1 !important;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.lectura-input-obs {
+  font-size: 0.75rem !important;
+  padding: 5px 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #f8fafc !important;
+  color: #64748b;
+  width: 50px;
+}
+.lectura-input-obs:focus {
+  background: #fff !important;
+  border-color: #94a3b8 !important;
+}
+
+.lectura-btn-delete {
+  border-radius: 6px !important;
+  padding: 0 !important;
+  font-size: 0.75rem !important;
+  line-height: 1 !important;
+  height: 28px;                  /* Alto del botón */
+  width: 28px;                   /* Ancho exacto del botón (mismo que el alto) */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lectura-table-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #f1f5f9;
+  border-top: 1.5px solid #e2e8f0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #334155;
+}
 </style>
+

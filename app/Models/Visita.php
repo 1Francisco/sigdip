@@ -11,6 +11,7 @@ class Visita extends Model
     use HasFactory;
 
     protected $fillable = [
+        'codigo',
         'predio_id',
         'veterinario_id',
         'fecha_programada',
