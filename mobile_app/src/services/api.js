@@ -4,13 +4,17 @@
 
 import { CONFIG } from '../config.js';
 
-const API_BASE = CONFIG.API_BASE_URL; 
+const API_BASE = CONFIG.API_BASE_URL;
+const FETCH_TIMEOUT = 8000;
 
 function getToken() {
   return localStorage.getItem('sigdip_token');
 }
 
 async function request(method, endpoint, body = null) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
   const headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -21,19 +25,25 @@ async function request(method, endpoint, body = null) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const options = { method, headers };
+  const options = { method, headers, signal: controller.signal };
   if (body) {
     options.body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, options);
-  const data = await response.json();
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, options);
+    clearTimeout(timeoutId);
+    const data = await response.json();
 
-  if (!response.ok) {
-    throw new Error(data.message || `Error ${response.status}`);
+    if (!response.ok) {
+      throw new Error(data.message || `Error ${response.status}`);
+    }
+
+    return data;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
   }
-
-  return data;
 }
 
 async function requestBlob(endpoint, acceptType = 'application/pdf') {
@@ -66,8 +76,8 @@ async function hashPassword(password) {
       console.warn('Web Crypto API failed, using fallback hash:', e);
     }
   }
-  
-  // Fallback hash algorithm (e.g. djb2 / custom simple hash)
+
+  // Fallback hash algorithm (djb2)
   let hash = 5381;
   for (let i = 0; i < password.length; i++) {
     hash = (hash * 33) ^ password.charCodeAt(i);
@@ -75,75 +85,137 @@ async function hashPassword(password) {
   return 'fallback_' + (hash >>> 0).toString(16);
 }
 
+function saveOfflineCredentials(email, passwordHash, user, token) {
+  try {
+    const offlineData = {
+      email: email.toLowerCase().trim(),
+      hash: passwordHash,
+      user: user,
+      token: token
+    };
+    localStorage.setItem('sigdip_offline_credentials', JSON.stringify(offlineData));
+  } catch (e) {
+    console.error('Error caching offline credentials:', e);
+  }
+}
+
+function getOfflineCredentials() {
+  const cached = localStorage.getItem('sigdip_offline_credentials');
+  return cached ? JSON.parse(cached) : null;
+}
+
+async function tryOfflineLogin(email, password) {
+  const offlineData = getOfflineCredentials();
+  if (!offlineData) {
+    throw new Error('⚠️ Sin conexión a internet y no hay credenciales locales guardadas. Debes iniciar sesión con internet al menos una vez en este dispositivo.');
+  }
+
+  const passwordHash = await hashPassword(password);
+
+  if (email.toLowerCase().trim() !== offlineData.email || passwordHash !== offlineData.hash) {
+    throw new Error('Contraseña o correo incorrectos (Modo Offline)');
+  }
+
+  localStorage.setItem('sigdip_token', offlineData.token);
+  localStorage.setItem('sigdip_user', JSON.stringify(offlineData.user));
+
+  return {
+    success: true,
+    token: offlineData.token,
+    user: offlineData.user,
+    offline: true
+  };
+}
+
 export default {
   // Autenticación
   async login(email, password) {
-    let onlineFailed = false;
-    let errorToThrow = null;
+    // Si el dispositivo indica que está offline, saltar la petición de red
+    if (!navigator.onLine) {
+      return await tryOfflineLogin(email, password);
+    }
 
     try {
       const data = await request('POST', '/login', { email, password });
       if (data.token) {
         localStorage.setItem('sigdip_token', data.token);
         localStorage.setItem('sigdip_user', JSON.stringify(data.user));
-        
-        // Cache credentials for offline login
-        try {
-          const passwordHash = await hashPassword(password);
-          const offlineData = {
-            email: email.toLowerCase().trim(),
-            hash: passwordHash,
-            user: data.user,
-            token: data.token
-          };
-          localStorage.setItem('sigdip_offline_credentials', JSON.stringify(offlineData));
-        } catch (e) {
-          console.error('Error caching offline credentials:', e);
-        }
+
+        const passwordHash = await hashPassword(password);
+        saveOfflineCredentials(email, passwordHash, data.user, data.token);
       }
       return data;
     } catch (err) {
-      onlineFailed = true;
-      errorToThrow = err;
-    }
-
-    if (onlineFailed) {
-      // Try offline login fallback
-      const cached = localStorage.getItem('sigdip_offline_credentials');
-      if (cached) {
+      // Si falló por red (timeout/offline), intentar con credenciales locales
+      if (err.name === 'AbortError' || err instanceof TypeError) {
+        return await tryOfflineLogin(email, password);
+      }
+      // Otro tipo de error (credenciales inválidas, servidor caído, etc.)
+      // Si hay credenciales offline, intentar de todas formas
+      if (getOfflineCredentials()) {
         try {
-          const offlineData = JSON.parse(cached);
-          const passwordHash = await hashPassword(password);
-          
-          if (email.toLowerCase().trim() === offlineData.email && passwordHash === offlineData.hash) {
-            // Restore session
-            localStorage.setItem('sigdip_token', offlineData.token);
-            localStorage.setItem('sigdip_user', JSON.stringify(offlineData.user));
-            return {
-              success: true,
-              token: offlineData.token,
-              user: offlineData.user,
-              offline: true // Mark as offline login
-            };
-          } else {
-            throw new Error('Contraseña o correo incorrectos (Modo Offline)');
-          }
-        } catch (e) {
-          console.error('Error checking offline credentials:', e);
-          throw e;
+          return await tryOfflineLogin(email, password);
+        } catch (offlineErr) {
+          // Si offline también falla, lanzar el error original del servidor
+          throw new Error(err.message || 'Credenciales incorrectas');
         }
       }
-      // If offline login failed or no cached credentials, throw a friendly error
-      throw new Error('⚠️ Sin conexión a internet y no hay credenciales locales guardadas. Debes iniciar sesión con internet al menos una vez en este dispositivo.');
+      throw err;
     }
   },
 
   async logout() {
     try {
       await request('POST', '/logout');
+    } catch {
+      // Ignorar errores de red al cerrar sesión
     } finally {
       localStorage.removeItem('sigdip_token');
       localStorage.removeItem('sigdip_user');
+      // Mantener sigdip_offline_credentials para permitir re-login offline
+    }
+  },
+
+  /**
+   * Guarda o actualiza las credenciales offline con la sesión actual.
+   * Útil para llamar cuando la app se pone en segundo plano o se detecta pérdida de conexión.
+   */
+  async cacheCurrentSession(password) {
+    const token = getToken();
+    const user = this.getCurrentUser();
+    if (!token || !user) return;
+
+    if (password) {
+      const passwordHash = await hashPassword(password);
+      saveOfflineCredentials(user.email, passwordHash, user, token);
+    } else {
+      const offlineData = getOfflineCredentials();
+      if (offlineData) {
+        // Actualizar token y usuario sin cambiar el hash de la contraseña
+        offlineData.token = token;
+        offlineData.user = user;
+        localStorage.setItem('sigdip_offline_credentials', JSON.stringify(offlineData));
+      }
+    }
+  },
+
+  /**
+   * Al iniciar la app con una sesión activa, actualiza las credenciales offline
+   * con el token y usuario actuales (solo si ya existe un caché previo).
+   * Si no hay caché previo con hash de contraseña, no se crea uno nuevo
+   * (el usuario debe hacer login online al menos una vez para guardar el hash).
+   */
+  ensureOfflineCache() {
+    const token = getToken();
+    const user = this.getCurrentUser();
+    if (!token || !user) return;
+
+    const offlineData = getOfflineCredentials();
+    if (offlineData) {
+      // Actualizar token y usuario por si cambiaron
+      offlineData.token = token;
+      offlineData.user = user;
+      localStorage.setItem('sigdip_offline_credentials', JSON.stringify(offlineData));
     }
   },
 
@@ -158,6 +230,10 @@ export default {
 
   async uploadInspecciones(inspecciones) {
     return await request('POST', '/sync/inspecciones', { inspecciones });
+  },
+
+  async uploadVisitas(visitas) {
+    return await request('POST', '/sync/visitas', { visitas });
   },
 
   async getDashboardStats() {
@@ -183,6 +259,22 @@ export default {
 
   async getVisita(id) {
     return await request('GET', `/visitas/${id}`);
+  },
+
+  async checkVisitaCodigo(codigo) {
+    try {
+      return await request('GET', `/visitas/check-codigo/${encodeURIComponent(codigo)}`);
+    } catch (e) {
+      return { exists: false };
+    }
+  },
+
+  async getVisitaByCodigo(codigo) {
+    try {
+      return await request('GET', `/visitas/by-codigo/${encodeURIComponent(codigo)}`);
+    } catch (e) {
+      return { exists: false };
+    }
   },
 
   async createVisita(visita) {

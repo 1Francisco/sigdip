@@ -53,6 +53,11 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+*:focus {
+  outline: none;
 }
 
 body {
@@ -62,10 +67,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
 }
 
 /* ===== Pantalla completa tipo app ===== */
 .app-container {
+  min-height: 100dvh;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -110,11 +118,12 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 70px;
+  height: calc(70px + env(safe-area-inset-bottom));
   background: var(--bg-card);
   display: flex;
   justify-content: space-around;
-  align-items: center;
+  align-items: flex-start;
+  padding-top: 8px;
   box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
   z-index: 100;
   border-top: 1px solid #E5E7EB;
@@ -696,11 +705,6 @@ body {
 }
 
 /* ===== NOTCH & SAFE AREA INSET SUPPORT (Capacitor Fullscreen Support) ===== */
-.mobile-header {
-  padding-top: env(safe-area-inset-top, 0px) !important;
-  height: calc(72px + env(safe-area-inset-top, 0px)) !important;
-}
-
 .app-header {
   padding-top: calc(var(--space-md) + env(safe-area-inset-top, 0px)) !important;
 }
@@ -729,12 +733,21 @@ body {
 /* Sidebar scroll support for landscape phone view */
 .sidebar {
   overflow-y: auto !important;
-  max-height: 100vh !important;
   max-height: 100dvh !important;
+  max-height: 100vh !important;
   padding-bottom: calc(30px + env(safe-area-inset-bottom, 0px)) !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ===== Mobile Header & Sidebar (Drawer) Global Styles ===== */
+
+/* Safe-area override for notched devices — keeps content below status bar */
+.mobile-header {
+  padding-top: env(safe-area-inset-top, 0px) !important;
+  min-height: calc(72px + env(safe-area-inset-top, 0px)) !important;
+}
+
 .mobile-header {
   height: 72px;
   display: flex;
@@ -801,6 +814,7 @@ body {
   top: 0;
   left: 0;
   width: 270px;
+  height: 100dvh;
   height: 100vh;
   background: #fff;
   z-index: 100;

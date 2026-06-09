@@ -1189,13 +1189,13 @@ export default {
 .app-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* Sidebar Drawer Style Cloned from Dashboard */
 .sidebar {
   width: 280px;
-  height: 100vh;
+  height: 100dvh;
   height: 100dvh;
   position: fixed;
   top: 0;

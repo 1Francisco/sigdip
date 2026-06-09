@@ -19,6 +19,13 @@ const inspeccionStore = localforage.createInstance({
   description: 'Dictámenes creados offline que esperan sincronización'
 });
 
+// Instancia para visitas pendientes de sincronizar
+const visitaStore = localforage.createInstance({
+  name: 'sigdip_mobile',
+  storeName: 'visitas_pendientes',
+  description: 'Visitas creadas offline que esperan sincronización'
+});
+
 // Función auxiliar para desvincular proxies reactivos de Vue antes de guardar en IndexedDB
 function clean(obj) {
   return obj ? JSON.parse(JSON.stringify(obj)) : obj;
@@ -100,6 +107,39 @@ export default {
     return lista.length;
   },
 
+  // ====== VISITAS OFFLINE ======
+  async saveVisitaPendiente(visita) {
+    const lista = await this.getVisitasPendientes();
+    const idx = lista.findIndex(v => v.codigo === visita.codigo);
+    if (idx >= 0) {
+      lista[idx] = clean(visita);
+    } else {
+      lista.push(clean(visita));
+    }
+    await visitaStore.setItem('lista', lista);
+  },
+
+  async getVisitasPendientes() {
+    return (await visitaStore.getItem('lista')) || [];
+  },
+
+  async removeVisitaPendiente(codigo) {
+    const lista = await this.getVisitasPendientes();
+    const filtrado = lista.filter(v => v.codigo !== codigo);
+    await visitaStore.setItem('lista', filtrado);
+  },
+
+  async clearVisitasSincronizadas(codigosSincronizados) {
+    const lista = await this.getVisitasPendientes();
+    const restantes = lista.filter(v => !codigosSincronizados.includes(v.codigo));
+    await visitaStore.setItem('lista', restantes);
+  },
+
+  async countVisitasPendientes() {
+    const lista = await this.getVisitasPendientes();
+    return lista.length;
+  },
+
   // ====== DASHBOARD CACHE ======
   async saveDashboardData(data) {
     await catalogStore.setItem('dashboard_data', clean(data));
@@ -113,5 +153,6 @@ export default {
   async clearAll() {
     await catalogStore.clear();
     await inspeccionStore.clear();
+    await visitaStore.clear();
   }
 };

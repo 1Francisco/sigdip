@@ -496,13 +496,13 @@
                 <div class="input-group">
                   <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
                   <input 
-                    v-model="animalSearchQuery" 
+                    v-model="_searchInput" 
                     type="text" 
                     class="form-control border-start-0" 
                     placeholder="Buscar arete por número (escribe para filtrar)..."
                     @input="onSearchInput"
                   />
-                  <button v-if="animalSearchQuery" class="btn btn-outline-secondary py-0 px-2.5" type="button" @click="clearAnimalSearch">✕</button>
+                  <button v-if="_searchInput" class="btn btn-outline-secondary py-0 px-2.5" type="button" @click="clearAnimalSearch">✕</button>
                 </div>
               </div>
 
@@ -532,8 +532,8 @@
                     <tr v-for="(animal, localIdx) in filteredAnimales" :key="animal" :class="{ 'positivo-row': animal.resultado === 'Positivo' }">
                       <td>
                         <div class="input-group">
-                          <input type="text" v-model="animal.identificador" class="form-control form-control-sm text-uppercase" placeholder="SINIIGA o SA" required @change="onIdentificadorChange(animal)" />
-                          <button class="btn btn-primary py-0 px-2" type="button" @click="scanSingleAnimal(animal)" title="Escanear">
+                          <input type="text" v-model="animal.identificador" class="form-control form-control-sm text-uppercase" placeholder="SINIIGA o SA" required :readonly="true" style="background: #f1f5f9;" @change="onIdentificadorChange(animal)" />
+                          <button class="btn btn-primary py-0 px-2" type="button" @click="scanSingleAnimal(animal)" title="Escanear" disabled>
                             <i class="bi bi-camera"></i>
                           </button>
                         </div>
@@ -568,7 +568,7 @@
                       <th style="width: 120px;">Raza</th>
                       <th style="width: 80px;">Sexo</th>
                       <th style="width: 70px;">Fierro</th>
-                      <th style="width: 140px;">Resultado</th>
+                      <th style="width: 100px;">Estado</th>
                       <th>Observaciones</th>
                       <th style="width: 40px;"></th>
                     </tr>
@@ -606,12 +606,9 @@
                         <input type="checkbox" v-model="animal.fierro" class="form-check-input" true-value="Si" false-value="No" />
                       </td>
                       <td>
-                        <select v-model="animal.resultado" class="form-select form-control-sm fw-bold" :class="getResultadoClass(animal.resultado)" :disabled="true">
-                          <option value="Pendiente" class="text-secondary">Pendiente</option>
-                          <option value="Negativo" class="text-success">Negativo</option>
-                          <option value="Positivo" class="text-danger">Positivo</option>
-                          <option value="Sospechoso" class="text-warning">Sospechoso</option>
-                        </select>
+                        <span class="badge bg-light text-secondary fw-normal px-2 py-1" style="font-size: 0.75rem;">
+                          <i class="bi bi-hourglass-split me-1"></i> Pendiente
+                        </span>
                       </td>
                       <td>
                         <input type="text" v-model="animal.observaciones" class="form-control form-control-sm" placeholder="Detalles..." />
@@ -654,9 +651,11 @@
                       class="form-control form-control-sm text-uppercase lectura-input-arete flex-grow-1" 
                       placeholder="SINIIGA o SA" 
                       required 
+                      :readonly="true"
+                      style="background: #f1f5f9;"
                       @change="onIdentificadorChange(animal)" 
                     />
-                    <button class="btn btn-primary btn-sm lectura-btn-scan" type="button" @click="scanSingleAnimal(animal)" title="Escanear">
+                    <button class="btn btn-primary btn-sm lectura-btn-scan" type="button" @click="scanSingleAnimal(animal)" title="Escanear" disabled>
                       <i class="bi bi-camera-fill"></i>
                     </button>
                   </div>
@@ -756,15 +755,14 @@
                       </div>
                     </div>
 
-                    <!-- Resultado (Deshabilitado en Inyección) -->
+                    <!-- Resultado (Solo lectura en Inyección) -->
                     <div class="col-12">
-                      <label class="form-label-custom">RESULTADO</label>
-                      <select v-model="animal.resultado" class="form-select form-control-custom fw-bold" :class="getResultadoClass(animal.resultado)" :disabled="true">
-                        <option value="Pendiente" class="text-secondary">Pendiente</option>
-                        <option value="Negativo" class="text-success">Negativo</option>
-                        <option value="Positivo" class="text-danger">Positivo</option>
-                        <option value="Sospechoso" class="text-warning">Sospechoso</option>
-                      </select>
+                      <label class="form-label-custom">ESTADO</label>
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-light text-secondary fw-normal px-3 py-2 w-100 text-start" style="font-size: 0.82rem; border: 1px solid #e2e8f0;">
+                          <i class="bi bi-hourglass-split me-1 text-muted"></i> Pendiente (se captura en lectura)
+                        </span>
+                      </div>
                     </div>
 
                     <!-- Observaciones -->
@@ -919,6 +917,8 @@ export default {
       selectedPredio: null,
       selectedProductor: null,
       quickArete: '',
+      _searchInput: '',
+      _searchTimer: null,
       animalSearchQuery: '',
       visibleAnimalsLimit: 30,
       activeSection: 1, // Control de acordeón abierto
@@ -964,27 +964,37 @@ export default {
     };
   },
   computed: {
+    _animalesIdx() {
+      return this.form.animales.map(a => ({
+        animal: a,
+        _idUpper: (a.identificador || '').toUpperCase()
+      }));
+    },
     filteredAnimales() {
       const q = this.animalSearchQuery.trim().toUpperCase();
+      const idx = this._animalesIdx;
       if (!q) {
-        return this.form.animales.slice(0, this.visibleAnimalsLimit);
+        return idx.slice(0, this.visibleAnimalsLimit).map(i => i.animal);
       }
-      return this.form.animales
-        .filter(a => (a.identificador || '').toUpperCase().includes(q))
-        .slice(0, this.visibleAnimalsLimit);
+      return idx
+        .filter(i => i._idUpper.includes(q))
+        .slice(0, this.visibleAnimalsLimit)
+        .map(i => i.animal);
     },
     hasMoreAnimals() {
       const q = this.animalSearchQuery.trim().toUpperCase();
+      const idx = this._animalesIdx;
       const totalMatches = q 
-        ? this.form.animales.filter(a => (a.identificador || '').toUpperCase().includes(q)).length
-        : this.form.animales.length;
+        ? idx.filter(i => i._idUpper.includes(q)).length
+        : idx.length;
       return totalMatches > this.visibleAnimalsLimit;
     },
     totalMatchedAnimalsCount() {
       const q = this.animalSearchQuery.trim().toUpperCase();
+      const idx = this._animalesIdx;
       return q 
-        ? this.form.animales.filter(a => (a.identificador || '').toUpperCase().includes(q)).length
-        : this.form.animales.length;
+        ? idx.filter(i => i._idUpper.includes(q)).length
+        : idx.length;
     },
     totalRows() {
       return this.form.animales.length;
@@ -1460,11 +1470,17 @@ export default {
       }
     },
     onSearchInput() {
-      this.visibleAnimalsLimit = 30; // Reset pagination limit on typing to keep rendering light
+      clearTimeout(this._searchTimer);
+      this._searchTimer = setTimeout(() => {
+        this.animalSearchQuery = this._searchInput;
+        this.visibleAnimalsLimit = Math.max(this.visibleAnimalsLimit, 30);
+      }, 250);
     },
     clearAnimalSearch() {
+      this._searchInput = '';
       this.animalSearchQuery = '';
       this.visibleAnimalsLimit = 30;
+      clearTimeout(this._searchTimer);
     },
     loadMoreAnimals() {
       this.visibleAnimalsLimit += 30;
@@ -1704,6 +1720,26 @@ export default {
         }
       }
 
+      // Validar conteo de animales: suma de categorías vs lista individual
+      if (this.form.animales.length > 0) {
+        const sumaConteo = (this.form.sementales || 0) + (this.form.vacas || 0) + (this.form.vaquillas || 0) + (this.form.becerras || 0) + (this.form.becerros || 0);
+        if (sumaConteo !== this.form.animales.length) {
+          const dif = this.form.animales.length - sumaConteo;
+          const advertencia =
+            `⚠️ Diferencia en el conteo de animales:\n\n` +
+            `➡️ Animales en lista individual: ${this.form.animales.length}\n` +
+            `➡️ Suma de categorías (Sementales+Vacas+Vaquillas+Becerras+Becerros): ${sumaConteo}\n` +
+            `➡️ Diferencia: ${dif > 0 ? `${dif} animales sin categoría asignada` : `${Math.abs(dif)} de más en categorías`}\n\n` +
+            `Los animales sin edad registrada no se contabilizan en las categorías.` +
+            (dif > 0 ? ` Revise que todos los animales tengan edad y sexo.` : '');
+          if (saveEstado === 'sincronizado') {
+            if (!confirm(advertencia + '\n\n¿Desea continuar de todas formas?')) return;
+          } else {
+            console.warn(advertencia);
+          }
+        }
+      }
+
       // Generar folio automático si quedó vacío al guardar
       if (!this.form.folio || !this.form.folio.trim()) {
         const timestamp = Date.now();
@@ -1772,7 +1808,7 @@ export default {
 .app-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .bg-light-page {
@@ -1908,7 +1944,7 @@ export default {
   top: 0;
   left: 0;
   width: 270px;
-  height: 100vh;
+  height: 100dvh;
   background: #fff;
   z-index: 100;
   transform: translateX(-100%);
@@ -2406,7 +2442,7 @@ export default {
   .main-content {
     margin-left: 270px;
     padding: 2.5rem !important;
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .welcome-header {
@@ -2917,7 +2953,6 @@ export default {
   background: #f8fafc !important;
   font-weight: 600;
   letter-spacing: 0.5px;
-  width
 }
 .lectura-input-arete:focus {
   border-color: #2563eb !important;

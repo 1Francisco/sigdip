@@ -168,4 +168,52 @@ class SyncController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Subida de visitas generadas offline
+     */
+    public function uploadVisitas(Request $request)
+    {
+        $request->validate([
+            'visitas' => 'required|array',
+        ]);
+
+        $procesados = [];
+        $errores = [];
+
+        foreach ($request->visitas as $data) {
+            if (!isset($data['codigo'])) {
+                $errores[] = ['error' => 'Falta código de visita'];
+                continue;
+            }
+
+            try {
+                $existing = Visita::where('codigo', $data['codigo'])->first();
+                if ($existing) {
+                    $procesados[] = $data['codigo'];
+                    continue;
+                }
+
+                Visita::create([
+                    'codigo' => $data['codigo'],
+                    'predio_id' => $data['predio_id'],
+                    'veterinario_id' => $data['veterinario_id'] ?? auth()->id(),
+                    'fecha_programada' => $data['fecha_programada'],
+                    'observaciones' => $data['observaciones'] ?? null,
+                    'estado' => 'pendiente',
+                    'inyeccion' => false,
+                ]);
+
+                $procesados[] = $data['codigo'];
+            } catch (\Exception $e) {
+                $errores[] = ['codigo' => $data['codigo'], 'error' => $e->getMessage()];
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'procesados' => $procesados,
+            'errores' => $errores,
+        ]);
+    }
 }

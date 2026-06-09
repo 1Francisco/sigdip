@@ -47,6 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Sincronización Móvil
     Route::get('/sync/catalogos', [SyncController::class, 'catalogos']);
     Route::post('/sync/inspecciones', [SyncController::class, 'uploadInspecciones']);
+    Route::post('/sync/visitas', [SyncController::class, 'uploadVisitas']);
     Route::get('/dashboard/stats', [DashboardApiController::class, 'getStats']);
 
     // Gestión de Productores y Predios desde la App Móvil
@@ -60,6 +61,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Visitas desde la App Móvil
     Route::get('/visitas', [VisitasApiController::class, 'index']);
+    Route::get('/visitas/check-codigo/{codigo}', [VisitasApiController::class, 'checkCodigo']);
+    Route::get('/visitas/by-codigo/{codigo}', [VisitasApiController::class, 'showByCodigo']);
     Route::get('/visitas/{id}', [VisitasApiController::class, 'show']);
     Route::post('/visitas', [VisitasApiController::class, 'store']);
     Route::put('/visitas/{id}', [VisitasApiController::class, 'update']);

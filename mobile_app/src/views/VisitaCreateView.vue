@@ -436,16 +436,48 @@ export default {
           // Short random string to ensure uniqueness
           const randSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
 
-          const generatedCodigo = `V-${cleanName}-${dateStr}-${randSuffix}`;
+          let generatedCodigo = `V-${cleanName}-${dateStr}-${randSuffix}`;
 
-          await api.createVisita({
-            codigo: generatedCodigo,
-            predio_id: this.form.predio_id,
-            fecha_programada: this.form.fecha_programada,
-            veterinario_id: this.form.veterinario_id,
-            observaciones: this.form.observaciones
-          });
-          this.successMsg = `Visita programada con éxito.\nCódigo: ${generatedCodigo}`;
+          if (this.isOnline) {
+            // Check for duplicate codigo on server
+            const check = await api.checkVisitaCodigo(generatedCodigo);
+            if (check.exists) {
+              const msg =
+                `⚠️ El código ${generatedCodigo} ya está registrado en el servidor.\n\n` +
+                `Fecha: ${check.visita?.fecha_programada || '—'}\n` +
+                `Predio: ${check.visita?.predio?.nombre_rancho || '—'}\n` +
+                `Médico: ${check.visita?.veterinario?.name || '—'}\n\n` +
+                `¿Desea crear la visita de todas formas? Se generará un código nuevo.`;
+              if (!confirm(msg)) {
+                this.saving = false;
+                return;
+              }
+              // Regenerate with a new random suffix to avoid collision
+              const newRand = Math.random().toString(36).substring(2, 8).toUpperCase();
+              generatedCodigo = `V-${cleanName}-${dateStr}-${newRand}`;
+            }
+
+            await api.createVisita({
+              codigo: generatedCodigo,
+              predio_id: this.form.predio_id,
+              fecha_programada: this.form.fecha_programada,
+              veterinario_id: this.form.veterinario_id,
+              observaciones: this.form.observaciones
+            });
+            this.successMsg = `Visita programada con éxito.\nCódigo: ${generatedCodigo}`;
+          } else {
+            // Offline: save locally for later sync
+            await db.saveVisitaPendiente({
+              codigo: generatedCodigo,
+              predio_id: this.form.predio_id,
+              fecha_programada: this.form.fecha_programada,
+              veterinario_id: this.form.veterinario_id,
+              observaciones: this.form.observaciones,
+              _pendiente: true,
+              _created_at: new Date().toISOString()
+            });
+            this.successMsg = `Visita guardada localmente.\nSe sincronizará cuando haya conexión.\nCódigo: ${generatedCodigo}`;
+          }
         }
 
         setTimeout(() => {
@@ -463,7 +495,7 @@ export default {
 <style scoped>
 /* App Layout Structure */
 .app-container {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -608,7 +640,7 @@ export default {
   top: 0;
   left: 0;
   width: 270px;
-  height: 100vh;
+  height: 100dvh;
   background: #fff;
   z-index: 100;
   transform: translateX(-100%);
@@ -832,7 +864,7 @@ export default {
   .main-content {
     margin-left: 270px;
     padding: 2.5rem !important;
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .welcome-header {

@@ -12,6 +12,10 @@
         <p>Sistema Integral de Gestión y Dictamen</p>
       </div>
 
+      <div v-if="offlineMode" class="offline-badge">
+        <i class="bi bi-wifi-off"></i> Modo Offline — usando credenciales locales
+      </div>
+
       <div v-if="errorMsg" class="error-message">
         <i class="bi bi-exclamation-triangle-fill"></i> {{ errorMsg }}
       </div>
@@ -74,8 +78,13 @@ export default {
       password: '',
       loading: false,
       errorMsg: '',
-      showPassword: false
+      showPassword: false,
+      offlineMode: !navigator.onLine
     };
+  },
+  mounted() {
+    window.addEventListener('online', () => { this.offlineMode = false; });
+    window.addEventListener('offline', () => { this.offlineMode = true; });
   },
   methods: {
     async doLogin() {
@@ -85,11 +94,9 @@ export default {
       }
       this.loading = true;
       this.errorMsg = '';
+      this.offlineMode = !navigator.onLine;
       try {
-        const res = await api.login(this.email, this.password);
-        if (res && res.offline) {
-          alert('🔑 Inicio de sesión local (Modo Offline). Podrás trabajar en campo sin internet y los datos se sincronizarán al recuperar la conexión.');
-        }
+        await api.login(this.email, this.password);
         this.$router.push('/dashboard');
       } catch (err) {
         this.errorMsg = err.message || 'Credenciales incorrectas';
@@ -105,7 +112,7 @@ export default {
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
 
 .login-screen {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -271,6 +278,20 @@ export default {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.offline-badge {
+  background: #fff3cd;
+  color: #856404;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  border-left: 4px solid #ffc107;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
 }
 
 .error-message {

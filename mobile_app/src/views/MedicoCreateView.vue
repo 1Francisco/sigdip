@@ -339,7 +339,7 @@ export default {
 <style scoped>
 /* App Layout Structure */
 .app-container {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -477,7 +477,7 @@ export default {
   top: 0;
   left: 0;
   width: 270px;
-  height: 100vh;
+  height: 100dvh;
   background: #fff;
   z-index: 100;
   transform: translateX(-100%);
@@ -670,7 +670,7 @@ export default {
   .main-content {
     margin-left: 270px;
     padding: 2.5rem !important;
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .welcome-header {

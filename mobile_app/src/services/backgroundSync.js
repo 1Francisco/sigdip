@@ -12,11 +12,14 @@ export default {
   async init() {
     console.log('[BackgroundSync] Inicializando listeners nativos...');
 
-    // 1. Escuchar cambios de conexión (Offline -> Online)
+    // 1. Escuchar cambios de conexión (Offline -> Online / Online -> Offline)
     Network.addListener('networkStatusChange', async (status) => {
       console.log('[BackgroundSync] Cambio de red detectado:', status);
       if (status.connected) {
         await this.syncIfConnected();
+      } else {
+        // Al perder conexión, cachear la sesión actual para login offline
+        await this.cacheSessionOnOffline();
       }
     });
 
@@ -49,38 +52,67 @@ export default {
     }
 
     const pendientesCount = await db.countPendientes();
-    if (pendientesCount === 0) {
-      console.log('[BackgroundSync] No hay dictámenes pendientes por subir.');
+    const visitasPendientesCount = await db.countVisitasPendientes();
+    if (pendientesCount === 0 && visitasPendientesCount === 0) {
+      console.log('[BackgroundSync] No hay dictámenes ni visitas pendientes por subir.');
       return;
     }
 
     isSyncing = true;
-    console.log(`[BackgroundSync] Iniciando sincronización de ${pendientesCount} dictámenes...`);
+    console.log(`[BackgroundSync] Iniciando sincronización de ${pendientesCount} dictámenes y ${visitasPendientesCount} visitas...`);
 
     try {
-      const inspecciones = await db.getInspeccionesPendientes();
-      
-      // Subir al backend de Laravel
-      const res = await api.uploadInspecciones(inspecciones);
+      // 1. Sync pending inspections
+      if (pendientesCount > 0) {
+        const inspecciones = await db.getInspeccionesPendientes();
+        const res = await api.uploadInspecciones(inspecciones);
 
-      if (res.status === 'success' && res.procesados && res.procesados.length > 0) {
-        // Limpiar los dictámenes subidos exitosamente de la base de datos IndexedDB local
-        await db.clearInspeccionesSincronizadas(res.procesados);
-        
-        console.log(`[BackgroundSync] Sincronizados exitosamente: ${res.procesados.length} dictámenes.`);
+        if (res.status === 'success' && res.procesados && res.procesados.length > 0) {
+          await db.clearInspeccionesSincronizadas(res.procesados);
+          console.log(`[BackgroundSync] Sincronizados exitosamente: ${res.procesados.length} dictámenes.`);
+        }
+      }
 
-        // Disparar evento global para que las pantallas Vue recarguen sus datos inmediatamente si están activas
+      // 2. Sync pending visits
+      let visitasSincronizadas = 0;
+      if (visitasPendientesCount > 0) {
+        const visitas = await db.getVisitasPendientes();
+        const res = await api.uploadVisitas(visitas);
+        if (res.status === 'success' && res.procesados && res.procesados.length > 0) {
+          await db.clearVisitasSincronizadas(res.procesados);
+          visitasSincronizadas = res.procesados.length;
+          console.log(`[BackgroundSync] Sincronizadas exitosamente: ${visitasSincronizadas} visitas.`);
+        }
+      }
+
+      const totalSync = (res && res.procesados ? res.procesados.length : 0) + visitasSincronizadas;
+      if (totalSync > 0) {
+        // Disparar evento global para que las pantallas Vue recarguen sus datos
         window.dispatchEvent(new CustomEvent('sigdip-sync-complete', {
-          detail: { procesados: res.procesados.length, errores: res.errores ? res.errores.length : 0 }
+          detail: { procesados: totalSync, errores: 0 }
         }));
 
         // Enviar notificación push local nativa
-        await this.sendLocalNotification(res.procesados.length);
+        await this.sendLocalNotification(totalSync);
       }
     } catch (error) {
       console.error('[BackgroundSync] Error crítico en la sincronización automática de fondo:', error);
     } finally {
       isSyncing = false;
+    }
+  },
+
+  /**
+   * Al perder conexión, guarda la sesión actual como credenciales offline.
+   * Esto permite que el usuario pueda cerrar sesión y volver a entrar sin internet.
+   */
+  async cacheSessionOnOffline() {
+    if (!api.isAuthenticated()) return;
+    try {
+      await api.cacheCurrentSession();
+      console.log('[BackgroundSync] Sesión cacheada para login offline.');
+    } catch (e) {
+      console.error('[BackgroundSync] Error al cachear sesión:', e);
     }
   },
 

@@ -642,6 +642,7 @@ export default {
 .app-container {
   display: flex;
   flex-direction: column;
+  min-height: 100dvh;
   min-height: 100vh;
 }
 
@@ -699,8 +700,8 @@ export default {
 /* Sidebar Drawer */
 .sidebar {
   width: 280px;
-  height: 100vh;
   height: 100dvh;
+  height: 100vh;
   position: fixed;
   top: 0;
   left: 0;

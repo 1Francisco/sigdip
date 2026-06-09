@@ -186,7 +186,14 @@
                     <td class="ps-4">
                       <div class="fw-bold text-dark fs-6">{{ formatDate(visita.fecha_programada) }}</div>
                       <small class="text-secondary small fst-italic">{{ getRelativeTime(visita.fecha_programada) }}</small>
-                      <div v-if="visita.codigo" class="text-primary fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.3px; margin-top: 2px;">{{ visita.codigo }}</div>
+                      <div v-if="visita.codigo" class="d-flex align-items-center gap-1 flex-wrap" style="margin-top: 2px;">
+                        <span class="text-primary fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.3px;">{{ visita.codigo }}</span>
+                        <span v-if="visita._syncStatus === 'pendiente'"
+                          class="badge bg-warning text-dark fw-bold"
+                          style="font-size: 0.6rem; padding: 0 5px; border-radius: 4px;">
+                          Pendiente
+                        </span>
+                      </div>
                     </td>
                     <td>
                       <div class="fw-bold text-dark">{{ visita.predio?.productor?.nombre || 'Sin productor' }} {{ visita.predio?.productor?.apellido_paterno }}</div>
@@ -229,38 +236,58 @@
                     </td>
                     <td>
                       <div class="d-flex justify-content-center gap-2">
-                        <button 
-                          v-if="!visita.inspeccion?.id"
-                          @click="iniciarDictamen(visita)" 
-                          class="btn btn-sm btn-primary d-flex align-items-center justify-content-center gap-1.5 px-3 py-1-5" 
-                          style="background: #2563eb;"
-                        >
-                          <i class="bi bi-clipboard-plus"></i> Iniciar
-                        </button>
-                        <button 
-                          v-else
-                          @click="$router.push('/inspecciones/' + visita.inspeccion.id)" 
-                          class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center gap-1.5 px-3 py-1-5"
-                        >
-                          <i class="bi bi-eye"></i> Dictamen
-                        </button>
-                        <button 
-                          @click="openEdit(visita)" 
-                          class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center bg-transparent border-primary text-primary" 
-                          title="Editar / Reprogramar"
-                          style="width: 32px; height: 32px;"
-                        >
-                          <i class="bi bi-pencil"></i>
-                        </button>
-                        <button 
-                          v-if="visita.estado !== 'cancelada'"
-                          @click="cancelar(visita)" 
-                          class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center bg-transparent border-danger text-danger" 
-                          title="Cancelar"
-                          style="width: 32px; height: 32px;"
-                        >
-                          <i class="bi bi-trash"></i>
-                        </button>
+                        <template v-if="visita._syncStatus === 'pendiente'">
+                          <button
+                            @click="syncPendingVisita(visita)"
+                            class="btn btn-sm btn-warning d-flex align-items-center justify-content-center gap-1.5 px-3 py-1-5 fw-semibold text-dark"
+                            :disabled="syncingVisita === visita.codigo"
+                          >
+                            <i class="bi bi-cloud-arrow-up"></i>
+                            {{ syncingVisita === visita.codigo ? '...' : 'Sync' }}
+                          </button>
+                          <button
+                            @click="eliminarPendiente(visita)"
+                            class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center bg-transparent border-danger text-danger"
+                            title="Eliminar localmente"
+                            style="width: 32px; height: 32px;"
+                          >
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </template>
+                        <template v-else>
+                          <button 
+                            v-if="!visita.inspeccion?.id"
+                            @click="iniciarDictamen(visita)" 
+                            class="btn btn-sm btn-primary d-flex align-items-center justify-content-center gap-1.5 px-3 py-1-5" 
+                            style="background: #2563eb;"
+                          >
+                            <i class="bi bi-clipboard-plus"></i> Iniciar
+                          </button>
+                          <button 
+                            v-else
+                            @click="$router.push('/inspecciones/' + visita.inspeccion.id)" 
+                            class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center gap-1.5 px-3 py-1-5"
+                          >
+                            <i class="bi bi-eye"></i> Dictamen
+                          </button>
+                          <button 
+                            @click="openEdit(visita)" 
+                            class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center bg-transparent border-primary text-primary" 
+                            title="Editar / Reprogramar"
+                            style="width: 32px; height: 32px;"
+                          >
+                            <i class="bi bi-pencil"></i>
+                          </button>
+                          <button 
+                            v-if="visita.estado !== 'cancelada'"
+                            @click="cancelar(visita)" 
+                            class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center bg-transparent border-danger text-danger" 
+                            title="Cancelar"
+                            style="width: 32px; height: 32px;"
+                          >
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </template>
                       </div>
                     </td>
                   </tr>
@@ -283,7 +310,14 @@
                     <span class="field-label">FECHA</span>
                     <span class="field-value text-dark fw-bold fs-5">{{ formatDate(visita.fecha_programada) }}</span>
                     <span class="field-subtitle text-secondary fst-italic fs-7.5 mt-0.5">{{ getRelativeTime(visita.fecha_programada) }}</span>
-                    <span v-if="visita.codigo" class="text-primary fw-semibold fs-7 mt-0.5 d-block">{{ visita.codigo }}</span>
+                    <span v-if="visita.codigo" class="text-primary fw-semibold fs-7 mt-0.5 d-flex align-items-center gap-1 flex-wrap">
+                      {{ visita.codigo }}
+                      <span v-if="visita._syncStatus === 'pendiente'"
+                        class="badge bg-warning text-dark fw-bold"
+                        style="font-size: 0.6rem; padding: 0 5px; border-radius: 4px;">
+                        Pendiente
+                      </span>
+                    </span>
                   </div>
 
                   <!-- Productor Field -->
@@ -349,39 +383,60 @@
                 <div class="producer-mobile-footer d-flex align-items-center justify-content-between p-3" style="background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
                   <div class="footer-actions-label fw-bold text-secondary mb-0">ACCIONES</div>
                   <div class="d-flex gap-2 flex-wrap justify-content-end">
-                    <button 
-                      v-if="!visita.inspeccion?.id"
-                      @click="iniciarDictamen(visita)" 
-                      class="btn btn-sm btn-primary d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 fw-semibold" 
-                      style="border-radius: 10px; background: #2563eb; font-size: 0.82rem; height: 40px;"
-                    >
-                      <i class="bi bi-clipboard-plus"></i> Iniciar
-                    </button>
-                    <button 
-                      v-else
-                      @click="$router.push('/inspecciones/' + visita.inspeccion.id)" 
-                      class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 fw-semibold bg-transparent text-primary" 
-                      style="border-radius: 10px; font-size: 0.82rem; height: 40px;"
-                    >
-                      <i class="bi bi-eye"></i> Dictamen
-                    </button>
-                    <button 
-                      @click="openEdit(visita)" 
-                      class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center bg-transparent border-secondary text-secondary" 
-                      title="Editar / Reprogramar"
-                      style="width: 40px; height: 40px; border-radius: 10px;"
-                    >
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button 
-                      v-if="visita.estado !== 'cancelada'"
-                      @click="cancelar(visita)" 
-                      class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center bg-transparent border-danger text-danger" 
-                      title="Cancelar Visita"
-                      style="width: 40px; height: 40px; border-radius: 10px;"
-                    >
-                      <i class="bi bi-trash"></i>
-                    </button>
+                    <template v-if="visita._syncStatus === 'pendiente'">
+                      <button
+                        @click="syncPendingVisita(visita)"
+                        class="btn btn-sm btn-warning d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 fw-semibold text-dark"
+                        style="border-radius: 10px; font-size: 0.82rem; height: 40px;"
+                        :disabled="syncingVisita === visita.codigo"
+                      >
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        {{ syncingVisita === visita.codigo ? 'Sincronizando...' : 'Sincronizar' }}
+                      </button>
+                      <button
+                        @click="eliminarPendiente(visita)"
+                        class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center bg-transparent border-danger text-danger"
+                        title="Eliminar localmente"
+                        style="width: 40px; height: 40px; border-radius: 10px;"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </template>
+                    <template v-else>
+                      <button 
+                        v-if="!visita.inspeccion?.id"
+                        @click="iniciarDictamen(visita)" 
+                        class="btn btn-sm btn-primary d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 fw-semibold" 
+                        style="border-radius: 10px; background: #2563eb; font-size: 0.82rem; height: 40px;"
+                      >
+                        <i class="bi bi-clipboard-plus"></i> Iniciar
+                      </button>
+                      <button 
+                        v-else
+                        @click="$router.push('/inspecciones/' + visita.inspeccion.id)" 
+                        class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 fw-semibold bg-transparent text-primary" 
+                        style="border-radius: 10px; font-size: 0.82rem; height: 40px;"
+                      >
+                        <i class="bi bi-eye"></i> Dictamen
+                      </button>
+                      <button 
+                        @click="openEdit(visita)" 
+                        class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center bg-transparent border-secondary text-secondary" 
+                        title="Editar / Reprogramar"
+                        style="width: 40px; height: 40px; border-radius: 10px;"
+                      >
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button 
+                        v-if="visita.estado !== 'cancelada'"
+                        @click="cancelar(visita)" 
+                        class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center bg-transparent border-danger text-danger" 
+                        title="Cancelar Visita"
+                        style="width: 40px; height: 40px; border-radius: 10px;"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </template>
                   </div>
                 </div>
               </div>
@@ -506,6 +561,7 @@ export default {
       loading: false,
       saving: false,
       visitas: [],
+      visitasPendientes: [],
       predios: [],
       filters: {
         fecha: ''
@@ -519,6 +575,7 @@ export default {
         observaciones: ''
       },
       currentPage: 1,
+      syncingVisita: null,
       successMsg: '',
       errorMsg: ''
     };
@@ -560,11 +617,14 @@ export default {
       window.addEventListener('online', () => this.isOnline = true);
       window.addEventListener('offline', () => this.isOnline = false);
     }
+
+    window.addEventListener('sigdip-sync-complete', this.refreshOnSync);
   },
   beforeUnmount() {
     if (this.networkListener) {
       this.networkListener.remove();
     }
+    window.removeEventListener('sigdip-sync-complete', this.refreshOnSync);
   },
   methods: {
     alertWebOnly(seccion) {
@@ -584,7 +644,44 @@ export default {
     },
     async loadAll() {
       this.errorMsg = '';
-      await Promise.all([this.loadPredios(), this.loadVisitas()]);
+      await this.loadPredios();
+      await Promise.all([this.loadVisitas(), this.loadVisitasPendientes()]);
+      this.mergePendingVisitas();
+    },
+
+    mergePendingVisitas() {
+      if (!this.visitasPendientes.length) return;
+      const serverCodigos = new Set(
+        (this.visitas || []).filter(v => v.codigo).map(v => v.codigo)
+      );
+      const newOnes = this.visitasPendientes.filter(p => !serverCodigos.has(p.codigo));
+      if (newOnes.length) {
+        this.visitas = [...newOnes, ...this.visitas];
+      }
+      this.currentPage = 1;
+    },
+
+    async loadVisitasPendientes() {
+      try {
+        const pendientes = await db.getVisitasPendientes();
+        // Enrich with predio data from local catalog
+        this.visitasPendientes = pendientes.map(p => {
+          const pred = this.predios.find(pr => String(pr.id) === String(p.predio_id));
+          return {
+            ...p,
+            id: p.codigo, // Use codigo as pseudo-id for rendering
+            _syncStatus: 'pendiente',
+            predio: pred || { nombre_rancho: `ID: ${p.predio_id}`, localidad: '—' },
+            veterinario: { name: 'Pendiente de sincronización' },
+            estado: 'pendiente',
+            inyeccion: false,
+            inspeccion: null
+          };
+        });
+      } catch (e) {
+        console.warn('Error loading pending visits:', e);
+        this.visitasPendientes = [];
+      }
     },
     async loadPredios() {
       try {
@@ -637,6 +734,50 @@ export default {
     },
     iniciarDictamen(visita) {
       this.$router.push(`/inspeccion/${visita.predio_id}?visita_id=${visita.id}`);
+    },
+    async syncPendingVisita(visita) {
+      if (!this.isOnline) {
+        this.errorMsg = 'No hay conexión a internet. No se puede sincronizar.';
+        return;
+      }
+      this.syncingVisita = visita.codigo;
+      this.errorMsg = '';
+      try {
+        const check = await api.checkVisitaCodigo(visita.codigo);
+        if (check.exists) {
+          const msg =
+            `⚠️ El código ${visita.codigo} ya existe en el servidor.\n\n` +
+            `Fecha: ${check.visita?.fecha_programada || '—'}\n` +
+            `Predio: ${check.visita?.predio?.nombre_rancho || '—'}\n` +
+            `Médico: ${check.visita?.veterinario?.name || '—'}\n\n` +
+            `La visita local se eliminará y se conservará la del servidor.`;
+          alert(msg);
+          await db.removeVisitaPendiente(visita.codigo);
+        } else {
+          await api.createVisita({
+            codigo: visita.codigo,
+            predio_id: visita.predio_id,
+            fecha_programada: visita.fecha_programada,
+            veterinario_id: visita.veterinario_id,
+            observaciones: visita.observaciones || ''
+          });
+          await db.removeVisitaPendiente(visita.codigo);
+          this.successMsg = `Visita ${visita.codigo} sincronizada con éxito.`;
+        }
+        await this.loadAll();
+      } catch (e) {
+        this.errorMsg = e.message || 'Error al sincronizar la visita.';
+      } finally {
+        this.syncingVisita = null;
+      }
+    },
+    async eliminarPendiente(visita) {
+      if (!confirm(`¿Eliminar la visita ${visita.codigo} sin sincronizar?`)) return;
+      await db.removeVisitaPendiente(visita.codigo);
+      await this.loadAll();
+    },
+    refreshOnSync() {
+      this.loadAll();
     },
     async saveVisita() {
       this.saving = true;
@@ -746,7 +887,7 @@ export default {
 <style scoped>
 /* App Layout Structure */
 .app-container {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -829,7 +970,7 @@ export default {
   top: 0;
   left: 0;
   width: 270px;
-  height: 100vh;
+  height: 100dvh;
   background: #fff;
   z-index: 100;
   transform: translateX(-100%);
@@ -1236,7 +1377,7 @@ export default {
   .main-content {
     margin-left: 270px;
     padding: 2.5rem !important;
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .welcome-header {

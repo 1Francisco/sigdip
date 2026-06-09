@@ -127,6 +127,47 @@ class VisitasApiController extends Controller
         ]);
     }
 
+    public function showByCodigo($codigo)
+    {
+        $visita = Visita::with(['predio.productor', 'veterinario', 'inspeccion.detalles.animal'])
+            ->where('codigo', $codigo)
+            ->first();
+
+        if (!$visita) {
+            return response()->json(['exists' => false]);
+        }
+
+        return response()->json([
+            'exists' => true,
+            'data' => $this->toArray($visita, true),
+        ]);
+    }
+
+    public function checkCodigo($codigo)
+    {
+        $visita = Visita::with(['predio.productor', 'veterinario'])
+            ->where('codigo', $codigo)
+            ->first();
+
+        if ($visita) {
+            return response()->json([
+                'exists' => true,
+                'visita' => [
+                    'codigo' => $visita->codigo,
+                    'fecha_programada' => optional($visita->fecha_programada)->format('Y-m-d'),
+                    'predio' => $visita->predio ? [
+                        'nombre_rancho' => $visita->predio->nombre_rancho,
+                    ] : null,
+                    'veterinario' => $visita->veterinario ? [
+                        'name' => $visita->veterinario->name,
+                    ] : null,
+                ]
+            ]);
+        }
+
+        return response()->json(['exists' => false]);
+    }
+
     public function reprogramar(Request $request, $id)
     {
         $visita = Visita::findOrFail($id);

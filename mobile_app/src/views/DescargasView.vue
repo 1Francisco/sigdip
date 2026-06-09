@@ -618,7 +618,7 @@ export default {
 
 <style scoped>
 .app-container {
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 .bg-light-page {
   background-color: var(--bg-primary);

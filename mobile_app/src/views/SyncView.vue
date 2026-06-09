@@ -216,7 +216,16 @@
               :class="activeTab === 'locales' ? 'text-primary' : 'text-secondary'" 
               @click="activeTab = 'locales'"
             >
-              Pendientes de Subir ({{ localInspecciones.length }})
+              Dictámenes Pendientes ({{ localInspecciones.length }})
+            </button>
+          </li>
+          <li class="nav-item" style="list-style: none;">
+            <button 
+              class="btn btn-sm btn-link p-0 fw-bold text-decoration-none" 
+              :class="activeTab === 'visitas' ? 'text-primary' : 'text-secondary'" 
+              @click="activeTab = 'visitas'"
+            >
+              Visitas Pendientes ({{ localVisitas.length }})
             </button>
           </li>
           <li class="nav-item" style="list-style: none;" v-if="isOnline">
@@ -259,6 +268,44 @@
                   class="btn btn-primary btn-sm d-flex align-items-center gap-1.5 px-3 py-1-5" 
                   style="background: #2563eb;" 
                   @click="uploadSingleInspection(insp)"
+                  :disabled="uploading || !isOnline"
+                >
+                  <i class="bi bi-cloud-arrow-up-fill"></i> Subir
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Local Pending Visits List -->
+        <div v-if="activeTab === 'visitas'">
+          <div v-if="localVisitas.length === 0" class="text-center py-4 text-muted small">
+            No hay visitas pendientes de sincronizar en este dispositivo.
+          </div>
+          <div v-else class="list-group list-group-flush">
+            <div 
+              v-for="vis in localVisitas" 
+              :key="vis.codigo" 
+              class="list-group-item d-flex align-items-center justify-content-between py-3 border-bottom"
+            >
+              <div>
+                <div class="fw-bold text-dark fs-6">{{ vis.codigo }}</div>
+                <small class="text-secondary d-block">Fecha: {{ vis.fecha_programada }} · Predio ID: {{ vis.predio_id }}</small>
+                <small class="text-secondary d-block" v-if="vis.observaciones">Obs: {{ vis.observaciones }}</small>
+              </div>
+              <div class="d-flex gap-2">
+                <button 
+                  class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5 px-2.5 py-1.5"
+                  @click="compararVisita(vis)"
+                  :disabled="comparingVisita || uploading"
+                >
+                  <span v-if="comparingVisita" class="spinner-border spinner-border-sm me-1" role="status" style="width: 0.85rem; height: 0.85rem;"></span>
+                  <i v-else class="bi bi-arrow-left-right"></i> {{ isOnline ? 'Ver Cambios' : 'Ver Datos' }}
+                </button>
+                <button 
+                  class="btn btn-primary btn-sm d-flex align-items-center gap-1.5 px-3 py-1-5" 
+                  style="background: #2563eb;" 
+                  @click="uploadSingleVisita(vis)"
                   :disabled="uploading || !isOnline"
                 >
                   <i class="bi bi-cloud-arrow-up-fill"></i> Subir
@@ -507,6 +554,142 @@
         </div>
       </div>
 
+      <!-- Visita Detail Modal -->
+      <div v-if="verVisita" class="modal-overlay" @click="verVisita = null"></div>
+      <div v-if="verVisita" class="modal-card shadow-lg p-4 rounded-4 bg-white text-start" style="max-width: 520px;">
+        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+          <div class="d-flex align-items-center gap-2 text-primary fw-bold fs-5">
+            <i class="bi bi-calendar-event fs-4"></i> Visita: {{ verVisita.codigo }}
+          </div>
+          <button type="button" class="btn-close-scanner" style="color: #64748b;" @click="verVisita = null">✕</button>
+        </div>
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="small text-secondary fw-semibold text-uppercase">Fecha Programada</div>
+            <div class="fw-bold text-dark">{{ verVisita.fecha_programada }}</div>
+          </div>
+          <div class="col-6">
+            <div class="small text-secondary fw-semibold text-uppercase">Predio ID</div>
+            <div class="fw-bold text-dark">{{ verVisita.predio_id }}</div>
+          </div>
+          <div class="col-6">
+            <div class="small text-secondary fw-semibold text-uppercase">Veterinario ID</div>
+            <div class="fw-bold text-dark">{{ verVisita.veterinario_id || '—' }}</div>
+          </div>
+          <div class="col-6">
+            <div class="small text-secondary fw-semibold text-uppercase">Estado</div>
+            <span class="badge bg-warning text-dark">Pendiente de subir</span>
+          </div>
+          <div class="col-12" v-if="verVisita.observaciones">
+            <div class="small text-secondary fw-semibold text-uppercase">Observaciones</div>
+            <div class="text-dark">{{ verVisita.observaciones }}</div>
+          </div>
+          <div class="col-12">
+            <div class="small text-secondary fw-semibold text-uppercase">Creada Localmente</div>
+            <div class="text-dark">{{ verVisita._created_at ? new Date(verVisita._created_at).toLocaleString('es-MX') : '—' }}</div>
+          </div>
+        </div>
+        <div class="d-flex gap-2 mt-4">
+          <button class="btn btn-outline-secondary flex-grow-1 py-2 fw-semibold" @click="verVisita = null">Cerrar</button>
+          <button 
+            v-if="isOnline"
+            class="btn btn-primary flex-grow-1 py-2 fw-bold" 
+            style="background: #2563eb;" 
+            @click="uploadSingleVisita(verVisita); verVisita = null"
+            :disabled="uploading"
+          >
+            <i class="bi bi-cloud-arrow-up-fill"></i> Subir Ahora
+          </button>
+        </div>
+      </div>
+
+      <!-- Visita Comparison Modal -->
+      <div v-if="showVisitComparisonModal" class="modal-overlay" @click="showVisitComparisonModal = false"></div>
+      <div v-if="showVisitComparisonModal && visitComparison" class="modal-card shadow-lg p-4 rounded-4 bg-white text-start" style="max-width: 560px;">
+        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+          <div class="d-flex align-items-center gap-2 text-primary fw-bold fs-5">
+            <i class="bi bi-calendar-event fs-4"></i> Visita: {{ visitComparison.local.codigo }}
+          </div>
+          <button type="button" class="btn-close-scanner" style="color: #64748b;" @click="showVisitComparisonModal = false">✕</button>
+        </div>
+
+        <div v-if="!visitComparison.existsOnServer" class="py-3 text-center">
+          <div class="mb-3"><i class="bi bi-cloud-plus fs-1 text-primary"></i></div>
+          <p class="fw-semibold mb-1">Solo existe localmente</p>
+          <p class="small text-muted mb-3">Esta visita no se encuentra en el servidor. Puedes subirla para sincronizarla.</p>
+          <button class="btn btn-primary w-100 py-2 fw-bold" style="background: #2563eb;" @click="uploadSingleVisita(visitComparison.local); showVisitComparisonModal = false" :disabled="uploading">
+            <i class="bi bi-cloud-arrow-up-fill"></i> Subir Ahora
+          </button>
+        </div>
+
+        <div v-else>
+          <p class="small text-muted mb-3">
+            <i class="bi bi-info-circle me-1"></i> Comparando datos locales vs servidor.
+          </p>
+          <div class="comparison-container mb-3">
+            <div class="comparison-column">
+              <div class="column-header text-primary">
+                <i class="bi bi-phone me-1"></i> Local
+              </div>
+              <div class="column-stat">{{ visitComparison.localMeta?.updated || 'Desconocido' }}</div>
+              <div class="column-list">
+                <div v-for="(val, key) in visitComparison.fieldsLocal" :key="'l-'+key" class="column-list-item">
+                  <small class="text-secondary text-uppercase fw-semibold">{{ key }}</small>
+                  <div class="fw-semibold" :class="visitComparison.diffs[key] ? 'text-warning' : ''">{{ val || '—' }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="comparison-column">
+              <div class="column-header text-success">
+                <i class="bi bi-cloud me-1"></i> Servidor
+              </div>
+              <div class="column-stat">{{ visitComparison.serverMeta?.updated || 'Sincronizado' }}</div>
+              <div class="column-list">
+                <div v-for="(val, key) in visitComparison.fieldsServer" :key="'s-'+key" class="column-list-item">
+                  <small class="text-secondary text-uppercase fw-semibold">{{ key }}</small>
+                  <div class="fw-semibold" :class="visitComparison.diffs[key] ? 'text-warning' : ''">{{ val || '—' }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-if="visitComparison.hasDiffs" class="alert alert-warning py-2 px-3 small mb-3">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Hay <strong>{{ Object.keys(visitComparison.diffs).length }}</strong> campo(s) diferente(s). Elige qué versión conservar.
+          </div>
+          <div v-else class="alert alert-success py-2 px-3 small mb-3">
+            <i class="bi bi-check-circle me-1"></i>
+            Los datos coinciden con el servidor. Se eliminará la copia local.
+          </div>
+          <div class="modal-instructions small text-muted mb-3 border rounded p-2 bg-light">
+            <strong>Acciones disponibles:</strong>
+            <ul class="mb-0 ps-3 mt-1">
+              <li><strong>Subir Local</strong> — sobrescribe los datos en el servidor con la versión local.</li>
+              <li><strong>Mantener Servidor</strong> — descarta los cambios locales y conserva lo que está en el servidor.</li>
+            </ul>
+          </div>
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn btn-outline-secondary flex-grow-1 py-2 fw-semibold" @click="showVisitComparisonModal = false">
+              Cancelar
+            </button>
+            <button
+              class="btn btn-success flex-grow-1 py-2 fw-bold"
+              @click="resolverVisita('keep_server')"
+              :disabled="uploading"
+            >
+              <i class="bi bi-server me-1"></i> Mantener Servidor
+            </button>
+            <button
+              class="btn btn-primary flex-grow-1 py-2 fw-bold"
+              style="background: #2563eb;"
+              @click="resolverVisita('overwrite')"
+              :disabled="uploading"
+            >
+              <i class="bi bi-cloud-arrow-up-fill me-1"></i> Subir Local
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Borrar datos locales -->
       <div class="text-center mt-5 mb-4">
         <p class="text-muted small px-3">
@@ -564,8 +747,13 @@ export default {
       resultado: '',
       errorMsg: '',
       localInspecciones: [],
+      localVisitas: [],
       serverInspecciones: [],
       activeTab: 'locales',
+      verVisita: null,
+      visitComparison: null,
+      showVisitComparisonModal: false,
+      comparingVisita: false,
       loadingInspecciones: false,
       showConflictModal: false,
       conflictData: {
@@ -616,7 +804,8 @@ export default {
       const visitas = await db.getVisitas();
       this.visitasCount = visitas.length;
       this.localInspecciones = await db.getInspeccionesPendientes();
-      this.pendientes = this.localInspecciones.length;
+      this.localVisitas = await db.getVisitasPendientes();
+      this.pendientes = this.localInspecciones.length + this.localVisitas.length;
       const sync = await db.getLastSync();
       if (sync) {
         this.lastSyncText = new Date(sync).toLocaleDateString('es-MX', {
@@ -662,6 +851,7 @@ export default {
       this.errorMsg = '';
       try {
         const inspecciones = await db.getInspeccionesPendientes();
+        const visitas = await db.getVisitasPendientes();
         let totalSincronizados = 0;
         let totalErrores = 0;
         
@@ -676,14 +866,31 @@ export default {
             totalErrores++;
           }
         }
+
+        for (const vis of visitas) {
+          try {
+            const res = await api.uploadVisitas([vis]);
+            if (res.procesados && res.procesados.length) {
+              await db.removeVisitaPendiente(vis.codigo);
+              totalSincronizados++;
+            } else {
+              const errText = res.errores?.[0]?.error || 'Error al subir visita.';
+              console.error(`Error al subir visita ${vis.codigo}:`, errText);
+              totalErrores++;
+            }
+          } catch (err) {
+            console.error(`Error al subir visita ${vis.codigo}:`, err);
+            totalErrores++;
+          }
+        }
         
         await this.refreshStats();
         
         if (totalSincronizados > 0) {
-          this.resultado = `Sincronizados ${totalSincronizados} dictámenes exitosamente.`;
+          this.resultado = `Sincronizados ${totalSincronizados} elementos exitosamente.`;
         }
         if (totalErrores > 0) {
-          this.errorMsg = `Hubo errores al sincronizar ${totalErrores} dictámenes.`;
+          this.errorMsg = `Hubo errores al sincronizar ${totalErrores} elementos.`;
         }
       } catch (err) {
         this.errorMsg = err.message || 'Error al conectar con la base de datos central.';
@@ -704,6 +911,27 @@ export default {
         }
       } catch (err) {
         this.errorMsg = `Error al subir dictamen ${inspeccion.folio}: ${err.message}`;
+      } finally {
+        this.uploading = false;
+      }
+    },
+
+    async uploadSingleVisita(visita) {
+      this.uploading = true;
+      this.resultado = '';
+      this.errorMsg = '';
+      try {
+        const res = await api.uploadVisitas([visita]);
+        if (res.procesados && res.procesados.length) {
+          await db.removeVisitaPendiente(visita.codigo);
+          this.resultado = `Visita ${visita.codigo} sincronizada con éxito.`;
+          await this.refreshStats();
+        } else {
+          const errText = res.errores?.[0]?.error || 'Error al subir visita.';
+          this.errorMsg = `Error al subir visita ${visita.codigo}: ${errText}`;
+        }
+      } catch (err) {
+        this.errorMsg = `Error al subir visita ${visita.codigo}: ${err.message}`;
       } finally {
         this.uploading = false;
       }
@@ -1006,6 +1234,82 @@ export default {
       if (res === 'Positivo') return 'text-danger';
       if (res === 'Sospechoso') return 'text-warning';
       return 'text-secondary';
+    },
+    async compararVisita(visita) {
+      if (!this.isOnline) {
+        this.verVisita = visita;
+        return;
+      }
+      this.comparingVisita = true;
+      try {
+        const res = await api.getVisitaByCodigo(visita.codigo);
+        if (!res.exists) {
+          this.visitComparison = { local: visita, existsOnServer: false, fieldsLocal: {}, fieldsServer: {}, diffs: {}, hasDiffs: false };
+        } else {
+          const server = res.data;
+          const fieldsLocal = {
+            'Código': visita.codigo,
+            'Fecha Programada': visita.fecha_programada,
+            'Predio ID': visita.predio_id?.toString(),
+            'Veterinario ID': visita.veterinario_id?.toString() || '—',
+            'Observaciones': visita.observaciones || '—',
+            'Estado': visita.estado || 'pendiente',
+          };
+          const fieldsServer = {
+            'Código': server.codigo,
+            'Fecha Programada': server.fecha_programada,
+            'Predio ID': server.predio_id?.toString(),
+            'Veterinario ID': server.veterinario_id?.toString() || '—',
+            'Observaciones': server.observaciones || '—',
+            'Estado': server.estado,
+          };
+          const fieldKeys = Object.keys(fieldsLocal);
+          const diffs = {};
+          fieldKeys.forEach(k => {
+            const lv = (fieldsLocal[k] || '').toString().trim();
+            const sv = (fieldsServer[k] || '').toString().trim();
+            if (lv !== sv) diffs[k] = { local: fieldsLocal[k], server: fieldsServer[k] };
+          });
+          this.visitComparison = {
+            local: visita,
+            server,
+            existsOnServer: true,
+            fieldsLocal,
+            fieldsServer,
+            diffs,
+            hasDiffs: Object.keys(diffs).length > 0,
+            localMeta: { updated: visita._created_at ? new Date(visita._created_at).toLocaleString('es-MX') : 'Desconocido' },
+            serverMeta: { updated: server.id ? `ID: ${server.id}` : 'Sincronizado' },
+          };
+        }
+        this.showVisitComparisonModal = true;
+      } catch (err) {
+        this.errorMsg = `Error al comparar visita: ${err.message}`;
+      } finally {
+        this.comparingVisita = false;
+      }
+    },
+    async resolverVisita(option) {
+      this.showVisitComparisonModal = false;
+      const visita = this.visitComparison.local;
+      try {
+        if (option === 'keep_server') {
+          await db.removeVisitaPendiente(visita.codigo);
+          this.resultado = `Visita ${visita.codigo}: se mantuvo la versión del servidor.`;
+        } else if (option === 'overwrite') {
+          const res = await api.uploadVisitas([visita]);
+          if (res.procesados && res.procesados.length) {
+            await db.removeVisitaPendiente(visita.codigo);
+            this.resultado = `Visita ${visita.codigo} sobrescrita y sincronizada.`;
+          } else {
+            const errText = res.errores?.[0]?.error || 'Error de validación.';
+            this.errorMsg = `Error al sobrescribir visita ${visita.codigo}: ${errText}`;
+          }
+        }
+        await this.refreshStats();
+      } catch (err) {
+        this.errorMsg = `Error al resolver visita: ${err.message}`;
+      }
     }
   }
 };
@@ -1015,7 +1319,7 @@ export default {
 .app-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 @media (min-width: 992px) {
@@ -1026,7 +1330,7 @@ export default {
   .main-content {
     margin-left: 270px;
     padding: 2.5rem !important;
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .welcome-header {
