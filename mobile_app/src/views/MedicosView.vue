@@ -307,14 +307,7 @@ export default {
       sidebarActive: false,
       networkListener: null,
       loading: false,
-      saving: false,
       medicos: [],
-      showModal: false,
-      form: {
-        name: '',
-        email: '',
-        password: ''
-      },
       currentPage: 1,
       successMsg: '',
       errorMsg: ''
@@ -361,14 +354,18 @@ export default {
         this.isOnline = status.connected;
       });
     } catch (e) {
-      window.addEventListener('online', () => this.isOnline = true);
-      window.addEventListener('offline', () => this.isOnline = false);
+      this._onWindowOnline = () => this.isOnline = true;
+      this._onWindowOffline = () => this.isOnline = false;
+      window.addEventListener('online', this._onWindowOnline);
+      window.addEventListener('offline', this._onWindowOffline);
     }
   },
   beforeUnmount() {
     if (this.networkListener) {
       this.networkListener.remove();
     }
+    if (this._onWindowOnline) window.removeEventListener('online', this._onWindowOnline);
+    if (this._onWindowOffline) window.removeEventListener('offline', this._onWindowOffline);
   },
   methods: {
     alertWebOnly(seccion) {
@@ -397,28 +394,6 @@ export default {
         this.errorMsg = e.message || 'No se pudieron cargar los médicos verificadores desde el servidor.';
       } finally {
         this.loading = false;
-      }
-    },
-    openCreate() {
-      this.form = { name: '', email: '', password: '' };
-      this.showModal = true;
-    },
-    closeModal() {
-      this.showModal = false;
-    },
-    async saveMedico() {
-      this.saving = true;
-      this.errorMsg = '';
-      this.successMsg = '';
-      try {
-        await api.storeMedico(this.form);
-        this.successMsg = 'Médico Verificador registrado correctamente.';
-        this.closeModal();
-        await this.loadMedicos();
-      } catch (e) {
-        this.errorMsg = e.message || 'No se pudo registrar al médico.';
-      } finally {
-        this.saving = false;
       }
     },
     async deleteMedico(medico) {
@@ -757,69 +732,6 @@ export default {
   font-size: 0.95rem;
   color: #1e293b;
   background: white;
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-
-.modal-card {
-  width: 100%;
-  max-width: 520px;
-  background: white;
-  border-radius: 18px;
-  overflow: hidden;
-}
-
-.modal-header, .modal-footer {
-  padding: 16px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #f8fafc;
-}
-
-.modal-body {
-  padding: 20px;
-}
-
-.modal-title {
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.btn-close-modal {
-  background: #e2e8f0;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-}
-
-.btn-modal-save, .btn-modal-cancel {
-  border: none;
-  border-radius: 10px;
-  padding: 10px 16px;
-  font-weight: 600;
-}
-
-.btn-modal-save {
-  background: #2563eb;
-  color: #fff;
-}
-
-.btn-modal-cancel {
-  background: #fff;
-  color: #475569;
-  border: 1px solid #cbd5e1;
 }
 
 /* Responsive configurations */

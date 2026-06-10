@@ -310,14 +310,18 @@ export default {
         this.isOnline = status.connected;
       });
     } catch (e) {
-      window.addEventListener('online', () => this.isOnline = true);
-      window.addEventListener('offline', () => this.isOnline = false);
+      this._onWindowOnline = () => this.isOnline = true;
+      this._onWindowOffline = () => this.isOnline = false;
+      window.addEventListener('online', this._onWindowOnline);
+      window.addEventListener('offline', this._onWindowOffline);
     }
   },
   beforeUnmount() {
     if (this.networkListener) {
       this.networkListener.remove();
     }
+    if (this._onWindowOnline) window.removeEventListener('online', this._onWindowOnline);
+    if (this._onWindowOffline) window.removeEventListener('offline', this._onWindowOffline);
   },
   methods: {
     alertWebOnly(seccion) {
@@ -357,6 +361,17 @@ export default {
         this.predios = await db.getPredios();
         this.productores = await db.getProductores();
         this.medicos = await db.getMedicos();
+
+        // Fallback: extraer productores únicos desde los predios cacheados
+        if ((!this.productores || this.productores.length === 0) && this.predios.length > 0) {
+          const map = new Map();
+          this.predios.forEach(p => {
+            if (p.productor && p.productor.id) {
+              map.set(String(p.productor.id), p.productor);
+            }
+          });
+          this.productores = Array.from(map.values());
+        }
       }
     },
     async loadVisitaForEdit() {

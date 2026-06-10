@@ -228,15 +228,7 @@
               Visitas Pendientes ({{ localVisitas.length }})
             </button>
           </li>
-          <li class="nav-item" style="list-style: none;" v-if="isOnline">
-            <button 
-              class="btn btn-sm btn-link p-0 fw-bold text-decoration-none" 
-              :class="activeTab === 'servidor' ? 'text-primary' : 'text-secondary'" 
-              @click="activeTab = 'servidor'"
-            >
-              Sincronizados en Servidor ({{ serverInspecciones.length }})
-            </button>
-          </li>
+
         </ul>
 
         <!-- Local Pending Inspections List -->
@@ -315,28 +307,7 @@
           </div>
         </div>
 
-        <!-- Server Synced Inspections List -->
-        <div v-if="activeTab === 'servidor'">
-          <div v-if="loadingInspecciones" class="text-center py-4 text-secondary small">
-            Cargando dictámenes del servidor...
-          </div>
-          <div v-else-if="serverInspecciones.length === 0" class="text-center py-4 text-muted small">
-            No hay dictámenes registrados en el servidor para tu cuenta.
-          </div>
-          <div v-else class="list-group list-group-flush" style="max-height: 350px; overflow-y: auto;">
-            <div 
-              v-for="insp in serverInspecciones" 
-              :key="insp.id" 
-              class="list-group-item d-flex align-items-center justify-content-between py-2.5 border-bottom"
-            >
-              <div>
-                <div class="fw-semibold text-dark">{{ insp.folio }}</div>
-                <small class="text-secondary d-block">Fecha: {{ insp.fecha }} · Rancho: {{ insp.predio?.nombre_rancho }}</small>
-              </div>
-              <span class="badge bg-success-subtle text-success rounded-pill px-2.5 py-1">Sincronizado</span>
-            </div>
-          </div>
-        </div>
+
       </div>
 
       <!-- Conflict Resolution Modal Backdrop -->
@@ -748,13 +719,12 @@ export default {
       errorMsg: '',
       localInspecciones: [],
       localVisitas: [],
-      serverInspecciones: [],
       activeTab: 'locales',
       verVisita: null,
       visitComparison: null,
       showVisitComparisonModal: false,
       comparingVisita: false,
-      loadingInspecciones: false,
+
       showConflictModal: false,
       conflictData: {
         inspeccion: {},
@@ -777,8 +747,10 @@ export default {
     };
   },
   async mounted() {
-    window.addEventListener('online', () => this.isOnline = true);
-    window.addEventListener('offline', () => this.isOnline = false);
+    this._onWindowOnline = () => this.isOnline = true;
+    this._onWindowOffline = () => this.isOnline = false;
+    window.addEventListener('online', this._onWindowOnline);
+    window.addEventListener('offline', this._onWindowOffline);
 
     // Escuchar el evento de sincronización de fondo para actualizar las estadísticas en tiempo real
     this._syncListener = async (e) => {
@@ -796,6 +768,8 @@ export default {
     if (this._syncListener) {
       window.removeEventListener('sigdip-sync-complete', this._syncListener);
     }
+    if (this._onWindowOnline) window.removeEventListener('online', this._onWindowOnline);
+    if (this._onWindowOffline) window.removeEventListener('offline', this._onWindowOffline);
   },
   methods: {
     async refreshStats() {
@@ -812,19 +786,6 @@ export default {
           day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
         });
       }
-
-      // Cargar dictámenes del servidor en tiempo real si está online
-      if (this.isOnline) {
-        try {
-          this.loadingInspecciones = true;
-          const res = await api.getInspecciones();
-          this.serverInspecciones = res.data || [];
-        } catch (e) {
-          console.warn("No se pudieron cargar dictámenes del servidor:", e);
-        } finally {
-          this.loadingInspecciones = false;
-        }
-      }
     },
 
     async downloadData() {
@@ -834,9 +795,13 @@ export default {
       try {
         const res = await api.downloadCatalogos();
         await db.savePredios(res.data.predios);
+        await db.saveProductores(res.data.productores || []);
+        await db.saveMedicos(res.data.medicos || []);
         await db.saveVisitas(res.data.visitas);
         await db.setLastSync();
-        this.resultado = `Descargados ${res.data.predios.length} ranchos y ${res.data.visitas.length} visitas correctamente en local.`;
+        const prodCount = res.data.productores?.length || 0;
+        const medCount = res.data.medicos?.length || 0;
+        this.resultado = `Descargados ${res.data.predios.length} ranchos, ${prodCount} productores, ${medCount} médicos y ${res.data.visitas.length} visitas.`;
         await this.refreshStats();
       } catch (err) {
         this.errorMsg = err.message || 'No se pudo establecer conexión con el servidor de CEFPPENAY.';

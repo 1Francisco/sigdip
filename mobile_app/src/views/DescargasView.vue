@@ -5,7 +5,7 @@
     
     <aside class="sidebar" :class="{ active: sidebarActive }">
       <div class="sidebar-brand">
-        <img src="/icon_png.png" alt="SIGDIP" class="sidebar-logo">
+        <img src="/icon_png.png" alt="SIGDIP" style="width: 22px; height: 22px; object-fit: contain;">
         <span>SIGDIP</span>
         <button class="btn-close-sidebar" @click="sidebarActive = false">
           <i class="bi bi-x-lg"></i>
@@ -83,7 +83,7 @@
       </button>
       
       <div class="brand-title flex-grow-1 text-center">
-        <img src="/icon_png.png" alt="SIGDIP" class="brand-icon">
+        <img src="/icon_png.png" alt="SIGDIP" style="width: 20px; height: 20px; object-fit: contain; vertical-align: -3px; margin-right: 6px;">
         <span class="fw-bold">SIGDIP</span>
       </div>
 
@@ -96,9 +96,9 @@
         <span class="badge-text d-none d-sm-inline">{{ isOnline ? 'Online' : 'Offline' }}</span>
       </div>
 
-      <button class="avatar-circle rounded-circle" @click="sidebarActive = true">
+      <div class="avatar-circle rounded-circle">
         <i class="bi bi-person"></i>
-      </button>
+      </div>
     </header>
 
     <!-- Main Content -->
@@ -266,6 +266,7 @@
                     title="Eliminar"
                   >
                     <i class="bi bi-trash3-fill"></i>
+                    <span class="d-none d-sm-inline">Eliminar</span>
                   </button>
                 </div>
               </div>
@@ -389,8 +390,10 @@ export default {
         this.isOnline = status.connected;
       });
     } catch (e) {
-      window.addEventListener('online', () => this.isOnline = true);
-      window.addEventListener('offline', () => this.isOnline = false);
+      this._onWindowOnline = () => this.isOnline = true;
+      this._onWindowOffline = () => this.isOnline = false;
+      window.addEventListener('online', this._onWindowOnline);
+      window.addEventListener('offline', this._onWindowOffline);
     }
 
     await this.loadFiles();
@@ -399,6 +402,8 @@ export default {
     if (this.networkListener) {
       this.networkListener.remove();
     }
+    if (this._onWindowOnline) window.removeEventListener('online', this._onWindowOnline);
+    if (this._onWindowOffline) window.removeEventListener('offline', this._onWindowOffline);
     this.cleanPreviewUrl();
   },
   methods: {
@@ -502,55 +507,102 @@ export default {
       this.successMsg = '';
 
       if (file.isNative) {
-        // Native: read file content and create blob URL for preview
         if (this.isPdf(file.name)) {
-          this.previewFileName = file.name;
-          this.previewVisible = true;
-          this.previewLoading = true;
-          try {
-            const fileData = await Filesystem.readFile({
-              path: file.name,
-              directory: Directory.Documents
-            });
-            const byteCharacters = atob(fileData.data);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-              byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], { type: 'application/pdf' });
-            this.cleanPreviewUrl();
-            this.previewBlobUrl = URL.createObjectURL(blob);
-          } catch (err) {
-            console.error('Error reading PDF:', err);
-            this.previewBlobUrl = null;
-          } finally {
-            this.previewLoading = false;
-          }
+          await this.previewNativePdf(file);
         } else {
-          // Excel: open via Share (no in-app preview possible)
-          try {
-            await Share.share({
-              title: file.name,
-              url: file.uri,
-              dialogTitle: 'Abrir archivo Excel'
-            });
-          } catch (e) {
-            // User cancelled
-          }
+          await this.openNativeFile(file);
         }
       } else {
-        // Browser fallback — open demo/mock
         if (this.isPdf(file.name)) {
-          this.previewFileName = file.name;
-          this.previewVisible = true;
-          this.previewLoading = false;
-          // In browser dev mode, show a placeholder message since there's no real file
-          this.previewBlobUrl = null;
+          this.showBrowserPreview(file);
         } else {
           alert(`En el dispositivo nativo, se abrirá "${file.name}" con la aplicación de hojas de cálculo instalada.`);
         }
       }
+    },
+
+    async previewNativePdf(file) {
+      this.previewFileName = file.name;
+      this.previewVisible = true;
+      this.previewLoading = true;
+      try {
+        const fileData = await Filesystem.readFile({
+          path: file.name,
+          directory: Directory.Documents
+        });
+        const blob = this.base64ToBlob(fileData.data, 'application/pdf');
+        this.cleanPreviewUrl();
+        this.previewBlobUrl = URL.createObjectURL(blob);
+      } catch (err) {
+        console.error('Error reading PDF:', err);
+        this.errorMsg = `No se pudo leer el archivo "${file.name}": ${err.message || 'Error desconocido'}.`;
+        this.previewVisible = false;
+      } finally {
+        this.previewLoading = false;
+      }
+    },
+
+    async openNativeFile(file) {
+      try {
+        const uriResult = await Filesystem.getUri({
+          path: file.name,
+          directory: Directory.Documents
+        });
+        await Share.share({
+          title: file.name,
+          url: uriResult.uri,
+          dialogTitle: `Abrir ${file.name}`
+        });
+      } catch (e) {
+        if (e.message && !e.message.includes('cancel')) {
+          console.error('Error opening file:', e);
+          this.errorMsg = `No se pudo abrir "${file.name}": ${e.message}`;
+        }
+      }
+    },
+
+    showBrowserPreview(file) {
+      this.previewFileName = file.name;
+      this.previewVisible = true;
+      this.previewLoading = false;
+      const html = `<!DOCTYPE html>
+<html lang="es-MX">
+<head><meta charset="UTF-8"><title>${file.name}</title>
+<style>
+  body { font-family: 'Plus Jakarta Sans', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f8fafc; color: #1e293b; }
+  .card { text-align: center; padding: 40px; background: white; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); max-width: 400px; }
+  .icon { font-size: 3rem; margin-bottom: 12px; }
+  .title { font-weight: 700; font-size: 1.1rem; margin-bottom: 8px; }
+  .meta { font-size: 0.85rem; color: #64748b; }
+  .badge { display: inline-block; margin-top: 12px; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: #dbeafe; color: #2563eb; }
+</style></head>
+<body>
+<div class="card">
+  <div class="icon">📄</div>
+  <div class="title">${file.name}</div>
+  <div class="meta">${this.formatBytes(file.size)} · ${this.formatDate(file.mtime)}</div>
+  <div class="badge">Vista previa no disponible</div>
+  <p style="margin-top:16px;font-size:0.82rem;color:#94a3b8;">Descarga el archivo desde la sección de Dictámenes para ver su contenido aquí.</p>
+</div>
+</body></html>`;
+      this.cleanPreviewUrl();
+      const blob = new Blob([html], { type: 'text/html' });
+      this.previewBlobUrl = URL.createObjectURL(blob);
+    },
+
+    base64ToBlob(base64, mimeType) {
+      const byteChars = atob(base64);
+      const byteArrays = [];
+      const sliceSize = 512;
+      for (let offset = 0; offset < byteChars.length; offset += sliceSize) {
+        const slice = byteChars.slice(offset, offset + sliceSize);
+        const byteNums = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+          byteNums[i] = slice.charCodeAt(i);
+        }
+        byteArrays.push(new Uint8Array(byteNums));
+      }
+      return new Blob(byteArrays, { type: mimeType });
     },
 
     cleanPreviewUrl() {
@@ -572,16 +624,28 @@ export default {
       this.successMsg = '';
       try {
         if (file.isNative) {
+          const uriResult = await Filesystem.getUri({
+            path: file.name,
+            directory: Directory.Documents
+          });
           await Share.share({
             title: file.name,
-            url: file.uri,
+            url: uriResult.uri,
             dialogTitle: 'Compartir archivo'
           });
         } else {
-          alert(`En el dispositivo nativo, podrás enviar "${file.name}" por WhatsApp, Correo, etc.`);
+          if (navigator.share) {
+            await navigator.share({
+              title: file.name,
+              text: `Archivo SIGDIP: ${file.name}`,
+            });
+          } else {
+            await navigator.clipboard.writeText(file.name);
+            this.successMsg = `Nombre del archivo copiado al portapapeles: "${file.name}"`;
+          }
         }
       } catch (e) {
-        if (e.message && !e.message.includes('cancel')) {
+        if (e.message && !e.message.includes('cancel') && !e.message.includes('abort')) {
           console.error('Error sharing file:', e);
           this.errorMsg = 'No se pudo compartir el archivo: ' + e.message;
         }
@@ -824,16 +888,19 @@ export default {
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid #f1f5f9;
+  gap: 8px;
 }
 .dl-actions-label {
   font-size: 0.65rem;
   font-weight: 700;
   color: #94a3b8;
   letter-spacing: 1px;
+  flex-shrink: 0;
 }
 .dl-action-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   padding: 8px 14px;
   border-radius: 10px;
@@ -844,6 +911,10 @@ export default {
   transition: all 0.2s ease;
   background: transparent;
   font-family: inherit;
+  white-space: nowrap;
+}
+.dl-action-btn:active {
+  transform: scale(0.95);
 }
 .dl-action-open {
   border-color: #2563eb;
@@ -867,11 +938,27 @@ export default {
   border-color: #ef4444;
   color: #ef4444;
   background: #fef2f2;
-  padding: 8px 10px;
+  padding: 8px 12px;
 }
 .dl-action-delete:hover {
   background: #ef4444;
   color: #fff;
+}
+
+@media (max-width: 400px) {
+  .dl-file-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .dl-actions-label {
+    width: 100%;
+    margin-bottom: 4px;
+  }
+  .dl-action-btn {
+    padding: 8px 10px;
+    font-size: 0.7rem;
+    flex: 1;
+  }
 }
 
 /* ===== PDF Preview Modal ===== */
@@ -958,5 +1045,44 @@ export default {
   width: 100%;
   height: 100%;
   border: none;
+}
+
+/* ===== Responsive Mobile ===== */
+@media (max-width: 991.98px) {
+  .main-content {
+    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .dl-stat-card {
+    padding: 12px 8px;
+  }
+  .dl-stat-value {
+    font-size: 1.25rem;
+  }
+  .dl-stat-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+  }
+
+  .dl-file-body {
+    padding: 12px;
+  }
+
+  .dl-preview-modal {
+    height: 90vh;
+    border-radius: 16px;
+  }
+}
+
+/* Desktop sidebar offset */
+@media (min-width: 992px) {
+  .main-content {
+    margin-left: 270px;
+    padding: 2.5rem !important;
+  }
+  .welcome-header {
+    padding: 0;
+  }
 }
 </style>

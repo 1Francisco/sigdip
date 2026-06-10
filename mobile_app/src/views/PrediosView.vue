@@ -111,6 +111,20 @@
         </button>
       </div>
 
+      <div class="p-3 bg-light-subtle border-bottom border-slate-100 mx-3 mb-2 rounded-3 d-lg-none">
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+          <input 
+            v-model="search" 
+            type="text" 
+            class="form-control border-start-0 px-2 py-2 fs-6-5" 
+            placeholder="Buscar por nombre, UPP, localidad o productor..."
+            style="outline: none; box-shadow: none; border-color: #dee2e6;"
+            @input="currentPage = 1"
+          >
+        </div>
+      </div>
+
       <div v-if="errorMsg" class="alert alert-danger shadow-sm border-0 rounded-4">{{ errorMsg }}</div>
 
       <div class="mobile-cards d-lg-none">
@@ -159,6 +173,20 @@
           <button class="btn btn-primary btn-sm-custom d-flex align-items-center gap-1-5 px-3 py-2" @click="$router.push('/predios/nuevo')">
             <i class="bi bi-house-add"></i> Nuevo Predio
           </button>
+        </div>
+
+        <div class="p-3 bg-light-subtle border-bottom border-slate-100">
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+            <input 
+              v-model="search" 
+              type="text" 
+              class="form-control border-start-0 px-2 py-2 fs-6-5" 
+              placeholder="Buscar por nombre, UPP, localidad o productor..."
+              style="outline: none; box-shadow: none; border-color: #dee2e6;"
+              @input="currentPage = 1"
+            >
+          </div>
         </div>
 
         <div class="table-responsive">
@@ -668,6 +696,48 @@ export default {
   border-radius: 0.9rem;
 }
 
+/* Search input style (matching ProductoresView) */
+.input-group {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+.input-group-text {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #6c757d;
+  text-align: center;
+  white-space: nowrap;
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #212529;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #dee2e6;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+  box-shadow: none !important;
+}
+
+.form-control:focus {
+  border-color: var(--color-primary) !important;
+}
+
 .predios-table thead th {
   font-size: 1rem;
   font-weight: 700;
@@ -772,6 +842,14 @@ export default {
 
   .predio-mobile-card {
     margin-bottom: 0 !important;
+  }
+
+  .bg-light-subtle {
+    border-radius: 12px !important;
+    margin-bottom: 16px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: var(--shadow-sm) !important;
+    background-color: #ffffff !important;
   }
 }
 </style>

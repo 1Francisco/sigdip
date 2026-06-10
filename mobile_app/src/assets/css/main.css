@@ -761,6 +761,19 @@ body {
   border-bottom: 1px solid #eef2f7;
 }
 
+/* Dark strip behind status bar for white notification icons */
+.mobile-header::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: #0f172a;
+  z-index: 9999;
+  pointer-events: none;
+}
+
 .header-hamburger-btn {
   width: 42px;
   height: 42px;

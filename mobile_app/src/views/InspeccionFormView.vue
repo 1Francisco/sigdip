@@ -1127,8 +1127,10 @@ export default {
         this.isOnline = status.connected;
       });
     } catch (e) {
-      window.addEventListener('online', () => this.isOnline = true);
-      window.addEventListener('offline', () => this.isOnline = false);
+      this._onWindowOnline = () => this.isOnline = true;
+      this._onWindowOffline = () => this.isOnline = false;
+      window.addEventListener('online', this._onWindowOnline);
+      window.addEventListener('offline', this._onWindowOffline);
     }
 
     // Si viene un dictamen existente desde el índice o el detalle
@@ -1271,6 +1273,8 @@ export default {
     if (this.networkListener) {
       this.networkListener.remove();
     }
+    if (this._onWindowOnline) window.removeEventListener('online', this._onWindowOnline);
+    if (this._onWindowOffline) window.removeEventListener('offline', this._onWindowOffline);
     this.stopFormScanner();
   },
   methods: {
@@ -2458,7 +2462,7 @@ export default {
   
   .main-content {
     padding: 1rem;
-    padding-bottom: 160px;
+    padding-bottom: calc(160px + env(safe-area-inset-bottom, 0px));
   }
 }
 

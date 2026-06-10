@@ -492,11 +492,13 @@ export default {
     } catch (e) {
       console.warn('Network API no disponible en navegador, usando fallback.', e);
       this.isOnline = navigator.onLine;
-      window.addEventListener('online', () => {
+      this._onWindowOnline = () => {
         this.isOnline = true;
         this.loadLiveData();
-      });
-      window.addEventListener('offline', () => this.isOnline = false);
+      };
+      this._onWindowOffline = () => this.isOnline = false;
+      window.addEventListener('online', this._onWindowOnline);
+      window.addEventListener('offline', this._onWindowOffline);
     }
 
     // 4. Cargar caché de IndexedDB para renderizar instantáneamente (Offline-First)
@@ -511,6 +513,8 @@ export default {
     if (this.networkListener) {
       this.networkListener.remove();
     }
+    if (this._onWindowOnline) window.removeEventListener('online', this._onWindowOnline);
+    if (this._onWindowOffline) window.removeEventListener('offline', this._onWindowOffline);
   },
   methods: {
     alertWebOnly(seccion) {

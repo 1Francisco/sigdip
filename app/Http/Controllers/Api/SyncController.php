@@ -32,10 +32,19 @@ class SyncController extends Controller
         }
         $visitas = $query->get();
 
+        // Obtener productores y médicos para caché offline completo
+        $productores = \App\Models\Productor::with('predios')->get();
+        $medicos = \App\Models\User::role('Medico_Campo')
+            ->select('id', 'name', 'email')
+            ->orderBy('name')
+            ->get();
+
         return response()->json([
             'status' => 'success',
             'data' => [
                 'predios' => $predios,
+                'productores' => $productores,
+                'medicos' => $medicos,
                 'visitas' => $visitas,
             ]
         ]);
