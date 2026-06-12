@@ -1,0 +1,35 @@
+[
+  {
+    "id": 1,
+    "nombre_rancho": "Rancho El Paraiso",
+    "productor_id": 1,
+    "productor_nombre": "Maria Garcia Lopez",
+    "clave_unidad_produccion": "CUP-001",
+    "municipio": "Champoton",
+    "localidad": "Villahermosa",
+    "estado": "Campeche",
+    "superficie": 50
+  },
+  {
+    "id": 2,
+    "nombre_rancho": "Rancho La Esperanza",
+    "productor_id": 1,
+    "productor_nombre": "Maria Garcia Lopez",
+    "clave_unidad_produccion": "CUP-002",
+    "municipio": "Carmen",
+    "localidad": "Ciudad del Carmen",
+    "estado": "Campeche",
+    "superficie": 120
+  },
+  {
+    "id": 3,
+    "nombre_rancho": "Rancho San Jose",
+    "productor_id": 2,
+    "productor_nombre": "Jose Martinez Hernandez",
+    "clave_unidad_produccion": "CUP-003",
+    "municipio": "Escarcega",
+    "localidad": "Escarcega",
+    "estado": "Campeche",
+    "superficie": 75
+  }
+]

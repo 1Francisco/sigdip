@@ -1,0 +1,31 @@
+[
+  {
+    "id": 1,
+    "nombre": "Maria",
+    "apellido_paterno": "Garcia",
+    "apellido_materno": "Lopez",
+    "curp": "GALM800101HPLRRN01",
+    "upp": "UPP-001",
+    "direccion": "Av. Principal 123",
+    "telefono": "555-0101",
+    "email": "maria@email.com",
+    "predios": [
+      { "id": 1, "nombre_rancho": "Rancho El Paraiso", "municipio": "Champoton", "localidad": "Villahermosa" },
+      { "id": 2, "nombre_rancho": "Rancho La Esperanza", "municipio": "Carmen", "localidad": "Ciudad del Carmen" }
+    ]
+  },
+  {
+    "id": 2,
+    "nombre": "Jose",
+    "apellido_paterno": "Martinez",
+    "apellido_materno": "Hernandez",
+    "curp": "MAHJ850515HPLRRN02",
+    "upp": "UPP-002",
+    "direccion": "Calle 5 de Mayo 456",
+    "telefono": "555-0102",
+    "email": "jose@email.com",
+    "predios": [
+      { "id": 3, "nombre_rancho": "Rancho San Jose", "municipio": "Escarcega", "localidad": "Escarcega" }
+    ]
+  }
+]

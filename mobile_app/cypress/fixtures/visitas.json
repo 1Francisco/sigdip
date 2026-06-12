@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "codigo": "V-ADMIN-20260610-A1B2",
+    "predio_id": 1,
+    "predio": { "id": 1, "nombre_rancho": "Rancho El Paraiso" },
+    "veterinario_id": 2,
+    "veterinario": { "id": 2, "name": "Dr. Juan Perez" },
+    "fecha_programada": "2026-06-15",
+    "estado": "pendiente",
+    "observaciones": "Visita de rutina"
+  },
+  {
+    "id": 2,
+    "codigo": "V-ADMIN-20260610-C3D4",
+    "predio_id": 3,
+    "predio": { "id": 3, "nombre_rancho": "Rancho San Jose" },
+    "veterinario_id": 2,
+    "veterinario": { "id": 2, "name": "Dr. Juan Perez" },
+    "fecha_programada": "2026-06-16",
+    "estado": "completada",
+    "observaciones": ""
+  }
+]

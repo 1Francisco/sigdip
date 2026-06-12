@@ -1,0 +1,6 @@
+{
+  "id": 2,
+  "name": "Dr. Juan Perez",
+  "email": "medico@sigdip.com",
+  "roles": ["Medico_Campo"]
+}

@@ -1,0 +1,15 @@
+{
+  "productores": [
+    { "id": 1, "nombre": "Maria", "apellido_paterno": "Garcia", "upp": "UPP-001" },
+    { "id": 2, "nombre": "Jose", "apellido_paterno": "Martinez", "upp": "UPP-002" }
+  ],
+  "predios": [
+    { "id": 1, "nombre_rancho": "Rancho El Paraiso", "productor_id": 1, "municipio": "Champoton" },
+    { "id": 2, "nombre_rancho": "Rancho La Esperanza", "productor_id": 1, "municipio": "Carmen" },
+    { "id": 3, "nombre_rancho": "Rancho San Jose", "productor_id": 2, "municipio": "Escarcega" }
+  ],
+  "medicos": [
+    { "id": 2, "name": "Dr. Juan Perez", "email": "medico@sigdip.com" }
+  ],
+  "visitas": []
+}

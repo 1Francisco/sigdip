@@ -1,0 +1,6 @@
+{
+  "id": 1,
+  "name": "Administrador SIGDIP",
+  "email": "admin@sigdip.com",
+  "roles": ["Administrador"]
+}
