@@ -12,10 +12,7 @@ describe('Flujo de Descargas (E2E)', () => {
   })
 
   it('navega a descargas desde el sidebar del dashboard', () => {
-    cy.intercept('GET', '**/api/dashboard/stats', {
-      statusCode: 200,
-      body: { totalInspecciones: 0, totalAnimales: 0, totalVisitasPendientes: 0, inspeccionesPorLocalidad: [], rendimientoVeterinarios: [], proximasVisitasGlobales: [], borradoresGlobales: [] },
-    })
+    cy.interceptDashboardStats()
 
     cy.visit('/#/dashboard')
     cy.get('.header-hamburger-btn').click()
