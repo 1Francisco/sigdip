@@ -70,4 +70,26 @@ describe('Editar Productor (E2E)', () => {
     cy.wait('@getProductorFail', { timeout: 10000 })
     cy.contains('Editar Productor', { timeout: 5000 }).should('be.visible')
   })
+
+  it('muestra error si la API falla al actualizar productor', () => {
+    cy.intercept('GET', '**/api/productores/1', {
+      statusCode: 200,
+      body: { data: { id: 1, nombre: 'Juan', apellido_paterno: 'Perez', apellido_materno: 'Lopez', curp: 'PELJ900101HDFLZN01', telefono: '3111234567', municipio: 'Tepic', localidad: 'Tepic', domicilio: 'Calle 123', email: 'juan@test.com', upp: 'UPP-001' } },
+    }).as('getProductor')
+
+    cy.intercept('PUT', '**/api/productores/1', {
+      statusCode: 500,
+      body: { message: 'Error' },
+    }).as('updateProductorFail')
+
+    cy.seedIndexedDB('catalogos', 'productores', [
+      { id: 1, nombre: 'Juan', apellido_paterno: 'Perez', apellido_materno: 'Lopez' },
+    ])
+
+    cy.visit('/#/productores/editar/1')
+    cy.wait('@getProductor', { timeout: 10000 })
+    cy.get('button[type="submit"]').click()
+    cy.wait('@updateProductorFail', { timeout: 10000 })
+    cy.location('hash').should('include', '/productores/editar/1')
+  })
 })

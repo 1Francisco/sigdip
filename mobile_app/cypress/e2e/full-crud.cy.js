@@ -61,4 +61,20 @@ describe('Full CRUD Flow (E2E)', () => {
       cy.get('h2', { timeout: 5000 }).should('be.visible')
     })
   })
+
+  it('muestra empty state en productores', () => {
+    cy.seedIndexedDB('catalogos', 'predios', [])
+    cy.visit('/#/productores')
+    cy.contains('No se encontraron productores', { timeout: 5000 }).should('be.visible')
+  })
+
+  it('muestra empty state en predios', () => {
+    cy.visit('/#/predios')
+    cy.contains('No hay predios para mostrar', { timeout: 5000 }).should('exist')
+  })
+
+  it('muestra empty state en visitas', () => {
+    cy.visit('/#/visitas')
+    cy.contains('No hay visitas para mostrar', { timeout: 5000 }).should('be.visible')
+  })
 })

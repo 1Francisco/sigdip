@@ -20,4 +20,12 @@ describe('Flujo de Inspeccion (E2E)', () => {
     cy.location('hash').should('eq', '#/inspeccion')
     cy.contains('Registro de Dictamen', { timeout: 5000 }).should('be.visible')
   })
+
+  it('muestra empty state en inspecciones', () => {
+    cy.interceptEmptyInspecciones()
+
+    cy.visit('/#/inspecciones')
+    cy.wait('@getInspecciones', { timeout: 10000 })
+    cy.contains('No hay inspecciones para mostrar', { timeout: 5000 }).should('be.visible')
+  })
 })

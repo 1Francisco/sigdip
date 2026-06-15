@@ -7,10 +7,7 @@ describe('CRUD de Medicos (E2E)', () => {
   })
 
   it('navega a lista de medicos', () => {
-    cy.intercept('GET', '**/api/medicos', {
-      statusCode: 200,
-      body: { data: [] },
-    }).as('getMedicos')
+    cy.interceptEmptyMedicos()
 
     cy.visit('/#/medicos')
     cy.wait('@getMedicos', { timeout: 10000 })
@@ -18,10 +15,7 @@ describe('CRUD de Medicos (E2E)', () => {
   })
 
   it('navega a crear medico desde la lista', () => {
-    cy.intercept('GET', '**/api/medicos', {
-      statusCode: 200,
-      body: { data: [] },
-    }).as('getMedicos')
+    cy.interceptEmptyMedicos()
 
     cy.visit('/#/medicos')
     cy.wait('@getMedicos', { timeout: 10000 })
@@ -56,5 +50,30 @@ describe('CRUD de Medicos (E2E)', () => {
 
     cy.get('button[type="submit"]').click()
     cy.contains('coinciden', { timeout: 5000 }).should('be.visible')
+  })
+
+  it('muestra empty state en medicos', () => {
+    cy.interceptEmptyMedicos()
+
+    cy.visit('/#/medicos')
+    cy.wait('@getMedicos', { timeout: 10000 })
+    cy.contains('No hay médicos registrados', { timeout: 5000 }).should('be.visible')
+  })
+
+  it('muestra error si la API falla al crear medico', () => {
+    cy.intercept('POST', '**/api/medicos', {
+      statusCode: 500,
+      body: { message: 'Error del servidor' },
+    }).as('createMedicoFail')
+
+    cy.visit('/#/medicos/nuevo')
+    cy.get('input').first().type('Dr. Fail')
+    cy.get('input[type="email"]').type('fail@test.com')
+    cy.get('input[type="password"]').first().type('password123')
+    cy.get('input[type="password"]').eq(1).type('password123')
+
+    cy.get('button[type="submit"]').click()
+    cy.wait('@createMedicoFail', { timeout: 10000 })
+    cy.location('hash').should('include', '/medicos/nuevo')
   })
 })

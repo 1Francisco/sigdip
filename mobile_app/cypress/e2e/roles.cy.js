@@ -11,10 +11,7 @@ describe('Role-based Navigation (E2E)', () => {
     })
 
     it('ve enlaces del sidebar de admin', () => {
-      cy.intercept('GET', '**/api/dashboard/stats', {
-        statusCode: 200,
-        body: { totalInspecciones: 0, totalAnimales: 0, totalVisitasPendientes: 0, inspeccionesPorLocalidad: [], rendimientoVeterinarios: [], proximasVisitasGlobales: [], borradoresGlobales: [] },
-      })
+      cy.interceptDashboardStats()
 
       cy.visit('/#/dashboard')
       cy.get('.header-hamburger-btn').click()
@@ -44,10 +41,7 @@ describe('Role-based Navigation (E2E)', () => {
     })
 
     it('navega a Dashboard', () => {
-      cy.intercept('GET', '**/api/dashboard/stats', {
-        statusCode: 200,
-        body: { totalInspecciones: 10, totalAnimales: 100, totalVisitasPendientes: 3, inspeccionesPorLocalidad: [], rendimientoVeterinarios: [], proximasVisitasGlobales: [], borradoresGlobales: [] },
-      })
+      cy.interceptDashboardStats({ totalInspecciones: 10, totalAnimales: 100, totalVisitasPendientes: 3 })
 
       cy.visit('/#/dashboard')
       cy.get('h2', { timeout: 5000 }).should('be.visible')
@@ -70,10 +64,7 @@ describe('Role-based Navigation (E2E)', () => {
     })
 
     it('navega a Inspecciones', () => {
-      cy.intercept('GET', '**/api/inspecciones', {
-        statusCode: 200,
-        body: { data: [] },
-      }).as('getInspecciones')
+      cy.interceptEmptyInspecciones()
 
       cy.visit('/#/inspecciones')
       cy.wait('@getInspecciones', { timeout: 10000 })
@@ -91,10 +82,7 @@ describe('Role-based Navigation (E2E)', () => {
     })
 
     it('navega a Medicos', () => {
-      cy.intercept('GET', '**/api/medicos', {
-        statusCode: 200,
-        body: { data: [] },
-      }).as('getMedicos')
+      cy.interceptEmptyMedicos()
 
       cy.visit('/#/medicos')
       cy.wait('@getMedicos', { timeout: 10000 })
@@ -110,10 +98,7 @@ describe('Role-based Navigation (E2E)', () => {
     })
 
     it('ve enlaces del sidebar de medico (sin admin)', () => {
-      cy.intercept('GET', '**/api/dashboard/stats', {
-        statusCode: 200,
-        body: { totalInspecciones: 0, totalAnimales: 0, totalVisitasPendientes: 0, inspeccionesPorLocalidad: [], rendimientoVeterinarios: [], proximasVisitasGlobales: [], borradoresGlobales: [] },
-      })
+      cy.interceptDashboardStats()
 
       cy.visit('/#/dashboard')
       cy.get('.header-hamburger-btn').click()
@@ -134,10 +119,7 @@ describe('Role-based Navigation (E2E)', () => {
     })
 
     it('navega a Dashboard y ve su nombre', () => {
-      cy.intercept('GET', '**/api/dashboard/stats', {
-        statusCode: 200,
-        body: { totalInspecciones: 0, totalAnimales: 0, totalVisitasPendientes: 0, inspeccionesPorLocalidad: [], rendimientoVeterinarios: [], proximasVisitasGlobales: [], borradoresGlobales: [] },
-      })
+      cy.interceptDashboardStats()
 
       cy.visit('/#/dashboard')
       cy.contains('Bienvenido', { timeout: 5000 }).should('be.visible')
@@ -161,10 +143,7 @@ describe('Role-based Navigation (E2E)', () => {
     })
 
     it('navega a Inspecciones', () => {
-      cy.intercept('GET', '**/api/inspecciones', {
-        statusCode: 200,
-        body: { data: [] },
-      }).as('getInspecciones')
+      cy.interceptEmptyInspecciones()
 
       cy.visit('/#/inspecciones')
       cy.wait('@getInspecciones', { timeout: 10000 })
