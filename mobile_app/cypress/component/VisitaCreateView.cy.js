@@ -56,6 +56,7 @@ describe('VisitaCreateView', () => {
   beforeEach(() => {
     cy.resetAppState()
     cy.mockCapacitor()
+    cy.intercept('HEAD', '**/api/user', { statusCode: 200, body: {} }).as('getUser')
   })
 
   describe('como Administrador', () => {
@@ -119,6 +120,11 @@ describe('VisitaCreateView', () => {
     })
 
     it('guarda visita exitosamente via API', () => {
+      cy.intercept('GET', '**/api/visitas/check-codigo/*', {
+        statusCode: 200,
+        body: { exists: false },
+      }).as('checkVisitaCodigo')
+
       cy.intercept('POST', '**/api/visitas', {
         statusCode: 200,
         body: { success: true, visita: { id: 99, codigo: 'V-099' } },
