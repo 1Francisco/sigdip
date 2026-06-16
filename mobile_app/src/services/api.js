@@ -5,10 +5,57 @@
 import { CONFIG } from '../config.js';
 
 const API_BASE = CONFIG.API_BASE_URL;
-const FETCH_TIMEOUT = 8000;
+const FETCH_TIMEOUT = 20000;
+const FETCH_TIMEOUT_QUICK = 8000;
+
+// Cache de conectividad real para evitar repetir checks
+let _lastConnCheck = { result: null, time: 0 };
+const CONN_CHECK_TTL = 10000; // 10 segundos de cache
 
 function getToken() {
   return localStorage.getItem('sigdip_token');
+}
+
+/**
+ * Verificación rápida de conectividad REAL con el servidor.
+ * navigator.onLine solo detecta si hay WiFi/datos, no si el servidor responde.
+ * Retorna true si el servidor respondió dentro de 5 segundos.
+ */
+async function checkRealConnectivity() {
+  // Si no hay red física, no intentar
+  if (!navigator.onLine) return false;
+
+  // Usar cache para no saturar con checks repetidos
+  const now = Date.now();
+  if (now - _lastConnCheck.time < CONN_CHECK_TTL && _lastConnCheck.result !== null) {
+    return _lastConnCheck.result;
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  try {
+    // Un HEAD request liviano al endpoint base de la API
+    await fetch(`${API_BASE}/user`, {
+      method: 'HEAD',
+      signal: controller.signal,
+      headers: {
+        'Authorization': `Bearer ${getToken() || ''}`,
+        'Accept': 'application/json'
+      }
+    });
+    clearTimeout(timeoutId);
+    _lastConnCheck = { result: true, time: now };
+    return true;
+  } catch (e) {
+    clearTimeout(timeoutId);
+    _lastConnCheck = { result: false, time: now };
+    return false;
+  }
+}
+
+/** Invalida el cache de conectividad (llamar cuando cambia el estado de red) */
+function invalidateConnectivityCache() {
+  _lastConnCheck = { result: null, time: 0 };
 }
 
 async function request(method, endpoint, body = null) {
@@ -355,5 +402,16 @@ export default {
   getCurrentUser() {
     const user = localStorage.getItem('sigdip_user');
     return user ? JSON.parse(user) : null;
-  }
+  },
+
+  /**
+   * Verifica si el servidor SIGDIP está realmente accesible (no solo WiFi conectado).
+   * Usa cache de 10 segundos para evitar requests repetidos.
+   */
+  checkRealConnectivity,
+
+  /**
+   * Invalida el cache de conectividad. Llamar cuando el estado de red cambia.
+   */
+  invalidateConnectivityCache
 };

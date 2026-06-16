@@ -25,12 +25,63 @@ class SyncController extends Controller
         // Obtener predios con sus productores
         $predios = Predio::with('productor')->get();
 
-        // Obtener visitas pendientes asignadas a este veterinario (o todas si es Administrador)
-        $query = Visita::with('predio')->where('estado', 'pendiente');
+        // Obtener todas las visitas asignadas a este veterinario (o todas si es Administrador) con relaciones completas
+        $query = Visita::with(['predio.productor', 'veterinario', 'inspeccion']);
         if ($user && !$user->hasRole('Administrador')) {
             $query->where('veterinario_id', $veterinarioId);
         }
-        $visitas = $query->get();
+        $visitas = $query->orderByDesc('id')->get()->map(function ($visita) {
+            return [
+                'id' => $visita->id,
+                'codigo' => $visita->codigo,
+                'predio_id' => $visita->predio_id,
+                'veterinario_id' => $visita->veterinario_id,
+                'fecha_programada' => optional($visita->fecha_programada)->format('Y-m-d'),
+                'estado' => $visita->estado,
+                'inyeccion' => (bool) $visita->inyeccion,
+                'observaciones' => $visita->observaciones,
+                'predio' => $visita->predio ? [
+                    'id' => $visita->predio->id,
+                    'nombre' => $visita->predio->nombre_rancho,
+                    'nombre_rancho' => $visita->predio->nombre_rancho,
+                    'clave_unidad_produccion' => $visita->predio->clave_unidad_produccion,
+                    'latitud' => $visita->predio->latitud,
+                    'longitud' => $visita->predio->longitud,
+                    'domicilio' => $visita->predio->domicilio,
+                    'municipio' => $visita->predio->municipio,
+                    'localidad' => $visita->predio->localidad,
+                    'productor' => $visita->predio->productor ? [
+                        'id' => $visita->predio->productor->id,
+                        'nombre' => $visita->predio->productor->nombre,
+                        'apellido_paterno' => $visita->predio->productor->apellido_paterno,
+                        'apellido_materno' => $visita->predio->productor->apellido_materno,
+                        'curp' => $visita->predio->productor->curp,
+                        'upp' => $visita->predio->productor->upp,
+                        'telefono' => $visita->predio->productor->telefono,
+                        'domicilio' => $visita->predio->productor->domicilio,
+                        'municipio' => $visita->predio->productor->municipio,
+                        'localidad' => $visita->predio->productor->localidad,
+                        'estado' => $visita->predio->productor->estado,
+                        'email' => $visita->predio->productor->email,
+                    ] : null,
+                ] : null,
+                'veterinario' => $visita->veterinario ? [
+                    'id' => $visita->veterinario->id,
+                    'name' => $visita->veterinario->name,
+                    'email' => $visita->veterinario->email,
+                ] : null,
+                'inspeccion' => $visita->inspeccion ? [
+                    'id' => $visita->inspeccion->id,
+                    'folio' => $visita->inspeccion->folio,
+                    'estado' => $visita->inspeccion->estado,
+                    'fecha' => optional($visita->inspeccion->fecha)->format('Y-m-d'),
+                    'fecha_inyeccion' => optional($visita->inspeccion->fecha_inyeccion)->format('Y-m-d'),
+                    'hora_inyeccion' => $visita->inspeccion->hora_inyeccion,
+                    'fecha_lectura' => optional($visita->inspeccion->fecha_lectura)->format('Y-m-d'),
+                    'hora_lectura' => $visita->inspeccion->hora_lectura,
+                ] : null,
+            ];
+        });
 
         // Obtener productores y médicos para caché offline completo
         $productores = \App\Models\Productor::with('predios')->get();
@@ -103,6 +154,17 @@ class SyncController extends Controller
 
                 // Procesar Animales si existen
                 if (isset($data['animales']) && is_array($data['animales'])) {
+                    // Determinar si estamos en fase de lectura y capturar aretes existentes
+                    $isLectura = $inspeccion->visita && $inspeccion->visita->inyeccion;
+                    $existingAretes = [];
+                    if ($isLectura) {
+                        $existingAretes = $inspeccion->detalles()
+                            ->with('animal')
+                            ->get()
+                            ->pluck('animal.numero_arete_siniiga')
+                            ->toArray();
+                    }
+
                     // Borrar detalles anteriores si es una actualización (evitar duplicados en resync)
                     DetalleInspeccion::where('inspeccion_id', $inspeccion->id)->delete();
 
@@ -116,15 +178,23 @@ class SyncController extends Controller
                             $sexo = 'Macho';
                         }
 
+                        $edadMeses = $item['edad_meses'] ?? 0;
+                        $resultado = $item['resultado'] ?? 'Negativo';
+                        if ($edadMeses > 0 && $edadMeses < 6) {
+                            $resultado = 'No Aplica';
+                        }
+
                         $animal = Animal::firstOrCreate(
                             ['numero_arete_siniiga' => $item['identificador']],
                             [
                                 'raza' => $item['raza'] ?? 'No especificada', 
                                 'sexo' => $sexo, 
                                 'predio_id' => $data['predio_id'],
-                                'edad' => $item['edad_meses'] ?? 0
+                                'edad' => $edadMeses
                             ]
                         );
+
+                        $agregadoEnLectura = $isLectura && !in_array($item['identificador'], $existingAretes);
 
                         DetalleInspeccion::create([
                             'inspeccion_id' => $inspeccion->id,
@@ -134,8 +204,9 @@ class SyncController extends Controller
                             'raza' => $item['raza'] ?? null,
                             'sexo' => $sexo,
                             'fierro' => $item['fierro'] ?? null,
-                            'resultado_prueba' => $item['resultado'] ?? 'Negativo',
+                            'resultado_prueba' => $resultado,
                             'observaciones_animal' => $item['observaciones'] ?? null,
+                            'agregado_en_lectura' => $agregadoEnLectura,
                         ]);
                     }
                 }

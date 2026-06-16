@@ -296,6 +296,7 @@
 <script>
 import { Network } from '@capacitor/network';
 import api from '../services/api.js';
+import db from '../services/db.js';
 
 export default {
   name: 'MedicosView',
@@ -386,12 +387,38 @@ export default {
     async loadMedicos() {
       this.loading = true;
       this.errorMsg = '';
+
+      // 1. Mostrar datos locales inmediatamente
       try {
-        const res = await api.getMedicos();
-        this.medicos = res.data || [];
-        this.currentPage = 1;
+        this.medicos = await db.getMedicos();
       } catch (e) {
-        this.errorMsg = e.message || 'No se pudieron cargar los médicos verificadores desde el servidor.';
+        // Si no hay datos locales, seguimos con array vacío
+      }
+
+      // 2. Intentar actualizar desde servidor en segundo plano
+      try {
+        const isReachable = await api.checkRealConnectivity();
+        if (!isReachable) {
+          if (this.medicos.length === 0) {
+            this.errorMsg = 'Sin conexión al servidor. No hay datos locales de médicos disponibles.';
+          }
+          return;
+        }
+
+        const res = await api.getMedicos();
+        if (res.data) {
+          this.medicos = res.data;
+          this.currentPage = 1;
+          // Guardar en local para próxima vez
+          await db.saveMedicos(this.medicos);
+          this.errorMsg = '';
+        }
+      } catch (e) {
+        if (this.medicos.length > 0) {
+          console.warn('No se pudieron actualizar médicos desde el servidor, mostrando datos locales:', e.message);
+        } else {
+          this.errorMsg = e.message || 'No se pudieron cargar los médicos verificadores desde el servidor.';
+        }
       } finally {
         this.loading = false;
       }

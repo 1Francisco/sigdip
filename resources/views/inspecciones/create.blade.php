@@ -187,7 +187,11 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-semibold">Folio Dictamen</label>
-                                    <input type="text" name="folio" class="form-control fw-bold text-primary" placeholder="Opcional (se puede dejar en blanco)" value="{{ old('folio') }}">
+                                    @php $suggestedFolio = 'D-' . date('Ymd') . '-' . \Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(6)); @endphp
+                                    <input type="text" name="folio" class="form-control fw-bold text-primary" placeholder="Se generará automáticamente si se deja en blanco" value="{{ old('folio', $suggestedFolio) }}">
+                                    @if(isset($claveInterna) && $claveInterna)
+                                        <input type="hidden" name="clave_interna" value="{{ $claveInterna }}">
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -821,7 +825,7 @@
             const resSelect = row.querySelector('select[name*="[resultado_disabled]"]') || row.querySelector('select[name*="[resultado]"]');
             const resHidden = row.querySelector('input[type="hidden"][name*="[resultado]"]');
             const resVal = resSelect ? resSelect.value : (resHidden ? resHidden.value : '');
-            if (resVal === 'Pendiente' || resVal === '') {
+            if (resVal !== 'No Aplica' && (resVal === 'Pendiente' || resVal === '')) {
                 pendingResults++;
             }
         });
@@ -1001,11 +1005,31 @@
         if (tabla) {
             tabla.addEventListener('input', function(e) {
                 if (e.target.name && (e.target.name.includes('[edad_meses]') || e.target.name.includes('[identificador]'))) {
+                    if (e.target.name.includes('[edad_meses]')) {
+                        const row = e.target.closest('tr');
+                        const edadVal = parseInt(e.target.value) || 0;
+                        const resHidden = row.querySelector('input[type="hidden"][name*="[resultado]"]');
+                        if (edadVal > 0 && edadVal < 6 && resHidden) {
+                            resHidden.value = 'No Aplica';
+                        } else if (resHidden && resHidden.value === 'No Aplica') {
+                            resHidden.value = 'Pendiente';
+                        }
+                    }
                     actualizarCenso();
                 }
             });
             tabla.addEventListener('change', function(e) {
                 if (e.target.name && (e.target.name.includes('[edad_meses]') || e.target.name.includes('[sexo]') || e.target.name.includes('[tipo_arete]') || e.target.name.includes('[identificador]'))) {
+                    if (e.target.name.includes('[edad_meses]')) {
+                        const row = e.target.closest('tr');
+                        const edadVal = parseInt(e.target.value) || 0;
+                        const resHidden = row.querySelector('input[type="hidden"][name*="[resultado]"]');
+                        if (edadVal > 0 && edadVal < 6 && resHidden) {
+                            resHidden.value = 'No Aplica';
+                        } else if (resHidden && resHidden.value === 'No Aplica') {
+                            resHidden.value = 'Pendiente';
+                        }
+                    }
                     actualizarCenso();
                 }
             });
@@ -1098,8 +1122,13 @@
      }
 
      function startScanner(inputIdSuffix) {
+         if (html5QrCode && html5QrCode.isScanning) return;
+
          currentInputId = `arete_${inputIdSuffix}`;
-         const modal = new bootstrap.Modal(document.getElementById('scannerModal'));
+         const modalEl = document.getElementById('scannerModal');
+         const existingModal = bootstrap.Modal.getInstance(modalEl);
+         if (existingModal) existingModal.dispose();
+         const modal = new bootstrap.Modal(modalEl);
          modal.show();
 
          html5QrCode = new Html5Qrcode("reader");
@@ -1118,15 +1147,15 @@
      function onScanSuccess(decodedText, decodedResult) {
          if (currentInputId) {
              const input = document.getElementById(currentInputId);
-             input.value = decodedText;
-             
-             // Feedback de éxito
-             if (navigator.vibrate) navigator.vibrate(100);
-             
-             buscarDatosAnimal(input);
+             if (input) {
+                 input.value = decodedText;
+                 if (navigator.vibrate) navigator.vibrate(100);
+                 buscarDatosAnimal(input);
+             }
              stopScanner();
-             const modal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
-             modal.hide();
+             const modalEl = document.getElementById('scannerModal');
+             const modal = bootstrap.Modal.getInstance(modalEl);
+             if (modal) modal.hide();
          }
      }
 
@@ -1144,10 +1173,30 @@
      }
 
      function stopScanner() {
-         if (html5QrCode && html5QrCode.isScanning) {
-             html5QrCode.stop();
+         if (html5QrCode) {
+             if (html5QrCode.isScanning) {
+                 html5QrCode.stop().catch(() => {}).finally(() => { html5QrCode = null; });
+             } else {
+                 html5QrCode = null;
+             }
          }
      }
+
+     // Asegurar que la cámara se libere al cerrar el modal por cualquier método
+     document.addEventListener('DOMContentLoaded', function() {
+         const modalEl = document.getElementById('scannerModal');
+         if (modalEl) {
+             modalEl.addEventListener('hidden.bs.modal', function() {
+                 if (html5QrCode) {
+                     if (html5QrCode.isScanning) {
+                         html5QrCode.stop().catch(() => {}).finally(() => { html5QrCode = null; });
+                     } else {
+                         html5QrCode = null;
+                     }
+                 }
+             });
+         }
+     });
 
      function buscarDatosAnimal(input) {
           const numero = input.value.trim();
@@ -1217,6 +1266,10 @@
                       }
                       if (edadMeses !== null && edadMeses !== undefined) {
                           edadInput.value = edadMeses;
+                          const resHidden = row.querySelector('input[type="hidden"][name*="[resultado]"]');
+                          if (edadMeses > 0 && edadMeses < 6 && resHidden) {
+                              resHidden.value = 'No Aplica';
+                          }
                       }
                       if (data.raza) razaInput.value = data.raza;
                       if (data.sexo) {

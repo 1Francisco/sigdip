@@ -1053,13 +1053,22 @@ export default {
     },
     userFolio: {
       get() {
-        if (!this.form.folio || this.form.folio.startsWith('TEMP-') || this.form.folio.startsWith('TB-')) {
+        if (!this.form.folio || this.form.folio.startsWith('TEMP-')) {
           return '';
         }
         return this.form.folio;
       },
       set(val) {
-        this.form.folio = val;
+        if (!val || !val.trim()) {
+          // Si el usuario borra el folio, restaurar el original temporal si existía
+          if (this.originalFolio && this.originalFolio.startsWith('TEMP-')) {
+            this.form.folio = this.originalFolio;
+          } else {
+            this.form.folio = '';
+          }
+        } else {
+          this.form.folio = val;
+        }
       }
     }
   },
@@ -1142,7 +1151,7 @@ export default {
         this.cargarDictamenData(data);
         this.activeSection = 4;
         if (this.form.predio_id) {
-          this.onPredioSelect();
+          await this.onPredioSelect();
         }
       } catch (e) {
         console.warn('No se pudo cargar el dictamen existente desde la API, buscando localmente:', e);
@@ -1153,7 +1162,7 @@ export default {
           this.form = { ...localInsp };
           this.originalFolio = localInsp.folio || '';
           if (this.form.predio_id) {
-            this.onPredioSelect();
+            await this.onPredioSelect();
           }
           this.activeSection = 4;
           alert('💾 Dictamen local cargado.');
@@ -1165,19 +1174,7 @@ export default {
     const predioId = this.$route.params.predioId;
     if (predioId && !inspeccionId) {
       this.form.predio_id = parseInt(predioId);
-      this.onPredioSelect();
-
-      // Buscar si hay un borrador guardado para este predio
-      if (!this.$route.query.visita_id) {
-        const listas = await db.getInspeccionesPendientes();
-        const borradorExistente = listas.find(i => i.predio_id === this.form.predio_id && i.estado === 'borrador' && !i.visita_id);
-        if (borradorExistente) {
-          this.form = { ...borradorExistente };
-          this.originalFolio = borradorExistente.folio || '';
-          this.onPredioSelect();
-          alert('💾 Borrador cargado con éxito. Puedes continuar la captura.');
-        }
-      }
+      await this.onPredioSelect();
     }
 
     // ── Restaurar borrador si venimos del escáner individual ──
@@ -1208,7 +1205,7 @@ export default {
 
       // Re-select predio to restore computed state
       if (this.form.predio_id) {
-        this.onPredioSelect();
+        await this.onPredioSelect();
       }
 
       this.activeSection = 4; // Go to results section
@@ -1231,29 +1228,18 @@ export default {
       if (visita) {
         if (visita.predio_id) {
           this.form.predio_id = visita.predio_id;
-          this.onPredioSelect();
+          await this.onPredioSelect();
         }
 
-        // Buscar si hay un dictamen local para esta visita
-        const pendientes = await db.getInspeccionesPendientes();
-        const localInsp = pendientes.find(i => String(i.visita_id) === String(visitaId));
-        
-        if (localInsp) {
-          this.form = { ...localInsp };
-          this.originalFolio = localInsp.folio || '';
-          if (this.form.predio_id) {
-            this.onPredioSelect();
-          }
-          this.activeSection = 4;
-          alert('💾 Dictamen local de la visita cargado para continuar.');
-        } else if (visita.inspeccion?.id) {
-          // Si tiene inspección en el servidor, cargarla
+        // Si no se cargó un borrador local en onPredioSelect (por ejemplo, form.folio sigue vacío o TEMP),
+        // y la visita tiene inspección en el servidor, intentar cargarla
+        if ((!this.form.folio || this.form.folio.startsWith('TEMP-')) && visita.inspeccion?.id) {
           try {
             const res = await api.getInspeccion(visita.inspeccion.id);
             const data = res.data || {};
             this.cargarDictamenData(data);
             if (this.form.predio_id) {
-              this.onPredioSelect();
+              await this.onPredioSelect();
             }
             this.activeSection = 4;
             alert('💾 Dictamen recuperado del servidor para continuar.');
@@ -1327,12 +1313,24 @@ export default {
           observaciones: detalle.observaciones_animal || '',
           en_base_datos: (detalle.tipo_arete && detalle.tipo_arete !== 'SINIIGA') ? false : true
         }));
+      } else if (Array.isArray(data.animales)) {
+        this.form.animales = data.animales.map(a => ({
+          identificador: a.identificador || '',
+          tipo_arete: a.tipo_arete || 'SINIIGA',
+          edad_meses: a.edad_meses ?? null,
+          raza: a.raza || '',
+          sexo: ['H', 'Hembra'].includes(a.sexo) ? 'H' : 'M',
+          fierro: a.fierro || 'Si',
+          resultado: a.resultado || 'Pendiente',
+          observaciones: a.observaciones || '',
+          en_base_datos: a.en_base_datos !== undefined ? a.en_base_datos : false
+        }));
       }
     },
     toggleSection(num) {
       this.activeSection = this.activeSection === num ? null : num;
     },
-    onPredioSelect() {
+    async onPredioSelect() {
       if (!this.form.predio_id) {
         this.selectedPredio = null;
         this.selectedProductor = null;
@@ -1346,6 +1344,32 @@ export default {
         // Cargar coordenadas si el predio ya las tiene
         if (pred.latitud) this.form.latitud = pred.latitud;
         if (pred.longitud) this.form.longitud = pred.longitud;
+      }
+
+      // Buscar si hay un borrador guardado para este predio y cargarlo automáticamente
+      if (!this.$route.query.inspeccion_id) {
+        const listas = await db.getInspeccionesPendientes();
+        const visitaId = this.form.visita_id ? parseInt(this.form.visita_id) : null;
+        const borradorExistente = listas.find(i => 
+          i.predio_id === this.form.predio_id && 
+          i.estado === 'borrador' && 
+          (visitaId ? parseInt(i.visita_id) === visitaId : !i.visita_id)
+        );
+
+        if (borradorExistente && borradorExistente.folio !== this.form.folio) {
+          this.cargarDictamenData(borradorExistente);
+          if (Array.isArray(borradorExistente.animales) && borradorExistente.animales.length > 0) {
+            this.activeSection = 4;
+          }
+          alert('💾 Se detectó un borrador existente para este predio. Se ha cargado automáticamente para evitar duplicados.');
+        } else {
+          // Asignar clave única temporal por detrás
+          if (!this.form.folio || this.form.folio.startsWith('TEMP-') || this.form.folio === '') {
+            const rand = Math.floor(1000 + Math.random() * 9000);
+            this.form.folio = `TEMP-${Date.now()}-${rand}`;
+            this.originalFolio = this.form.folio;
+          }
+        }
       }
     },
     onTipoPruebaChange() {
@@ -1498,12 +1522,6 @@ export default {
         if (status.camera === 'prompt' || status.camera === 'prompt-with-rationale') {
           status = await Camera.requestPermissions({ permissions: ['camera'] });
         }
-        if (status.camera === 'denied') {
-          const retry = confirm("⚠️ El permiso de cámara está denegado en este dispositivo.\n\n¿Deseas intentar solicitar el permiso de nuevo?");
-          if (retry) {
-            status = await Camera.requestPermissions({ permissions: ['camera'] });
-          }
-        }
         return status.camera === 'granted';
       } catch (e) {
         console.warn("Permisos nativos de cámara no soportados, usando fallback de navegador:", e);
@@ -1513,16 +1531,6 @@ export default {
           return true;
         } catch (err) {
           console.error("Browser camera permission denied:", err);
-          const retry = confirm("⚠️ No se pudo acceder a la cámara o el permiso fue denegado.\n\n¿Deseas volver a intentar solicitar el permiso?");
-          if (retry) {
-            try {
-              const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-              stream.getTracks().forEach(track => track.stop());
-              return true;
-            } catch (err2) {
-              console.error("Retry browser camera permission denied:", err2);
-            }
-          }
           return false;
         }
       }
@@ -1530,7 +1538,7 @@ export default {
     async startFormScanner(index) {
       const hasPermission = await this.checkAndRequestCameraPermission();
       if (!hasPermission) {
-        alert("❌ Permiso de cámara no concedido. Debes habilitar el permiso de cámara para usar el escáner.");
+        alert("❌ Permiso de cámara no concedido. Por favor, habilita el permiso de cámara en la configuración de tu dispositivo o navegador para usar el escáner de aretes.");
         return;
       }
 
@@ -1750,6 +1758,45 @@ export default {
         const rand = Math.floor(1000 + Math.random() * 9000);
         this.form.folio = `TEMP-${timestamp}-${rand}`;
       }
+
+      let conflictFound = false;
+      if (this.isOnline && (saveEstado === 'sincronizado' || (estado === 'sincronizado' && saveEstado === 'borrador'))) {
+        try {
+          const checkRes = await api.getInspecciones({ folio: this.form.folio });
+          if (checkRes.success && checkRes.data && checkRes.data.length > 0) {
+            const basicServer = checkRes.data[0];
+            const detailRes = await api.getInspeccion(basicServer.id);
+            const serverInsp = detailRes.data || {};
+            const serverAnimals = serverInsp.detalles || [];
+            const localAnimals = this.form.animales || [];
+            
+            const serverAretes = serverAnimals.map(a => (a.animal?.numero_arete_siniiga || a.identificador || '').trim().toUpperCase()).filter(Boolean);
+            const localAretes = localAnimals.map(a => (a.identificador || '').trim().toUpperCase()).filter(Boolean);
+            
+            const isMetadataDifferent = 
+              this.form.fecha !== serverInsp.fecha ||
+              this.form.tipo_prueba !== serverInsp.tipo_prueba ||
+              this.form.motivo_prueba !== serverInsp.motivo_prueba ||
+              this.form.funcion_zootecnica !== serverInsp.funcion_zootecnica ||
+              (this.form.sementales || 0) !== (serverInsp.sementales || 0) ||
+              (this.form.vacas || 0) !== (serverInsp.vacas || 0) ||
+              (this.form.vaquillas || 0) !== (serverInsp.vaquillas || 0) ||
+              (this.form.becerras || 0) !== (serverInsp.becerras || 0) ||
+              (this.form.becerros || 0) !== (serverInsp.becerros || 0);
+
+            const areIdentical = !isMetadataDifferent && 
+                                 serverAretes.length === localAretes.length && 
+                                 serverAretes.every(val => localAretes.includes(val)) &&
+                                 localAretes.every(val => serverAretes.includes(val));
+            
+            if (!areIdentical) {
+              conflictFound = true;
+            }
+          }
+        } catch (e) {
+          console.warn("Error pre-verificando conflicto con servidor:", e);
+        }
+      }
       
       this.form.estado = saveEstado;
 
@@ -1772,6 +1819,12 @@ export default {
             localVisitas[vIdx].estado = 'completada';
             await db.saveVisitas(localVisitas);
           }
+        }
+
+        if (conflictFound) {
+          alert(`⚠️ Conflicto Detectado: El dictamen con folio "${this.form.folio}" ya existe en el servidor con datos diferentes.\n\nSe ha guardado localmente en tu dispositivo. Te redirigiremos al Centro de Sincronización para comparar las diferencias y elegir la versión correcta.`);
+          this.$router.push({ path: '/sync', query: { check_folio: this.form.folio } });
+          return;
         }
 
         if (estado === 'sincronizado' && saveEstado === 'borrador') {

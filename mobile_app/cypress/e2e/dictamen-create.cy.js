@@ -34,4 +34,59 @@ describe('Creacion de Dictamen (E2E)', () => {
     cy.contains('Borrador').click({ force: true })
     cy.location('hash').should('eq', '#/inspeccion')
   })
+
+  it('finaliza dictamen completo con fechas pasadas y animales', () => {
+    // Interceptar APIs para evitar llamadas reales al backend
+    cy.intercept('GET', '**/api/inspecciones?folio=*', { statusCode: 200, body: { success: true, data: [] } })
+    cy.intercept('POST', '**/api/sync/inspecciones', { statusCode: 200, body: { procesados: [] } })
+
+    cy.visit('/#/inspeccion')
+    cy.get('select').first().select('1', { force: true })
+
+    // Section III: establecer fechas pasadas para evitar confirm de inyección
+    cy.contains('III: DATOS DE LA PRUEBA').click()
+    cy.get('input[type="date"]').eq(1).invoke('val', '2026-06-10').trigger('input')
+    cy.get('input[type="time"]').first().invoke('val', '08:00').trigger('input')
+
+    // Section IV: agregar animal con resultado
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click()
+    cy.contains('Añadir Animal').click()
+    cy.get('input[placeholder*="Registrar arete manualmente"]').type('MX-E2E-001', { force: true })
+    cy.contains('button', '+').click({ force: true })
+    cy.get('.animal-mobile-card').should('have.length.at.least', 2)
+
+    // Asignar resultado Negativo
+    cy.get('.animal-mobile-card').eq(1).find('select').select('Negativo', { force: true })
+
+    // Stub confirm para el warning de censo
+    cy.window().then((win) => {
+      cy.stub(win, 'confirm').returns(true)
+    })
+
+    cy.contains('button', /finalizar/i).first().click({ force: true })
+    cy.location('hash', { timeout: 15000 }).should('eq', '#/dashboard')
+  })
+
+  it('flujo completo scan batch + formulario + borrador', () => {
+    cy.visit('/#/scan')
+    cy.get('.form-input', { timeout: 5000 }).type('MX-SCAN-001')
+    cy.contains('Agregar Animal').click()
+    cy.get('.form-input').type('MX-SCAN-002')
+    cy.contains('Agregar Animal').click()
+    cy.contains('MX-SCAN-001').should('be.visible')
+    cy.contains('MX-SCAN-002').should('be.visible')
+
+    cy.contains('Continuar al Dictamen').click()
+    cy.location('hash', { timeout: 5000 }).should('include', '/inspeccion')
+
+    // Verificar que los animales del scan están cargados en el formulario
+    cy.get('.animal-mobile-card').should('have.length.at.least', 2)
+    cy.contains('MX-SCAN-001').should('be.visible')
+    cy.contains('MX-SCAN-002').should('be.visible')
+
+    // Seleccionar predio y guardar borrador
+    cy.get('select').first().select('1', { force: true })
+    cy.contains('Borrador').click({ force: true })
+    cy.location('hash', { timeout: 10000 }).should('eq', '#/dashboard')
+  })
 })

@@ -397,12 +397,12 @@
               <div class="small text-secondary mb-1"><strong>Zootécnica:</strong> {{ versionControlData.localMeta.funcion_zootecnica }}</div>
               <div class="mt-2 pt-2 border-top">
                 <span class="fw-semibold small text-dark d-block mb-1">Censo Ganadero Local:</span>
-                <div class="d-flex flex-wrap gap-1.5">
-                  <span class="badge bg-secondary text-white font-monospace">Sem: {{ versionControlData.localMeta.sementales }}</span>
-                  <span class="badge bg-secondary text-white font-monospace">Vac: {{ versionControlData.localMeta.vacas }}</span>
-                  <span class="badge bg-secondary text-white font-monospace">Vaq: {{ versionControlData.localMeta.vaquillas }}</span>
-                  <span class="badge bg-secondary text-white font-monospace">BecF: {{ versionControlData.localMeta.becerras }}</span>
-                  <span class="badge bg-secondary text-white font-monospace">BecM: {{ versionControlData.localMeta.becerros }}</span>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;">
+                  <span class="badge font-monospace" style="background-color: #64748b; color: #ffffff; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; margin-right: 4px; display: inline-block;">Sem: {{ versionControlData.localMeta.sementales }}</span>
+                  <span class="badge font-monospace" style="background-color: #64748b; color: #ffffff; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; margin-right: 4px; display: inline-block;">Vac: {{ versionControlData.localMeta.vacas }}</span>
+                  <span class="badge font-monospace" style="background-color: #64748b; color: #ffffff; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; margin-right: 4px; display: inline-block;">Vaq: {{ versionControlData.localMeta.vaquillas }}</span>
+                  <span class="badge font-monospace" style="background-color: #64748b; color: #ffffff; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; margin-right: 4px; display: inline-block;">BecF: {{ versionControlData.localMeta.becerras }}</span>
+                  <span class="badge font-monospace" style="background-color: #64748b; color: #ffffff; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; margin-right: 4px; display: inline-block;">BecM: {{ versionControlData.localMeta.becerros }}</span>
                 </div>
               </div>
             </div>
@@ -412,7 +412,7 @@
           <div class="col-md-6">
             <div v-if="versionControlData.serverInsp" class="p-3 rounded-3" style="background: #f0fdf4; border: 1.5px solid #bbf7d0; height: 100%;">
               <div class="fw-bold text-success mb-2 d-flex align-items-center gap-1.5 fs-7-5 text-uppercase">
-                <span class="badge bg-success">Servidor</span> Versión guardada
+                <span class="badge bg-success" style="color: #ffffff;">Servidor</span> Versión guardada
               </div>
               <div class="small text-secondary mb-1"><strong>Fecha:</strong> {{ versionControlData.serverMeta.fecha }}</div>
               <div class="small text-secondary mb-1"><strong>Tipo de Prueba:</strong> {{ versionControlData.serverMeta.tipo_prueba }}</div>
@@ -420,12 +420,12 @@
               <div class="small text-secondary mb-1"><strong>Zootécnica:</strong> {{ versionControlData.serverMeta.funcion_zootecnica }}</div>
               <div class="mt-2 pt-2 border-top">
                 <span class="fw-semibold small text-dark d-block mb-1">Censo Ganadero en Servidor:</span>
-                <div class="d-flex flex-wrap gap-1.5">
-                  <span class="badge bg-dark text-white font-monospace">Sem: {{ versionControlData.serverMeta.sementales }}</span>
-                  <span class="badge bg-dark text-white font-monospace">Vac: {{ versionControlData.serverMeta.vacas }}</span>
-                  <span class="badge bg-dark text-white font-monospace">Vaq: {{ versionControlData.serverMeta.vaquillas }}</span>
-                  <span class="badge bg-dark text-white font-monospace">BecF: {{ versionControlData.serverMeta.becerras }}</span>
-                  <span class="badge bg-dark text-white font-monospace">BecM: {{ versionControlData.serverMeta.becerros }}</span>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;">
+                  <span class="badge font-monospace" style="background-color: #1e293b; color: #ffffff; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; margin-right: 4px; display: inline-block;">Sem: {{ versionControlData.serverMeta.sementales }}</span>
+                  <span class="badge font-monospace" style="background-color: #1e293b; color: #ffffff; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; margin-right: 4px; display: inline-block;">Vac: {{ versionControlData.serverMeta.vacas }}</span>
+                  <span class="badge font-monospace" style="background-color: #1e293b; color: #ffffff; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; margin-right: 4px; display: inline-block;">Vaq: {{ versionControlData.serverMeta.vaquillas }}</span>
+                  <span class="badge font-monospace" style="background-color: #1e293b; color: #ffffff; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; margin-right: 4px; display: inline-block;">BecF: {{ versionControlData.serverMeta.becerras }}</span>
+                  <span class="badge font-monospace" style="background-color: #1e293b; color: #ffffff; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; margin-right: 4px; display: inline-block;">BecM: {{ versionControlData.serverMeta.becerros }}</span>
                 </div>
               </div>
             </div>
@@ -440,7 +440,7 @@
         <!-- Diff / Changes List -->
         <div class="fw-bold text-dark fs-7-5 text-uppercase mb-2">Detalle de Cambios (Aretes)</div>
         
-        <div class="version-diff-container mb-4" style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: white; padding: 12px;">
+        <div class="version-diff-container mb-4" style="min-height: 140px; max-height: 250px; flex-shrink: 0; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: white; padding: 12px;">
           
           <!-- Case 1: Offline or New inspection (just list all local animals) -->
           <template v-if="!versionControlData.serverInsp">
@@ -509,19 +509,57 @@
         </div>
 
         <!-- Modal Actions -->
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-secondary flex-grow-1 py-2.5 fw-semibold" @click="showVersionControlModal = false">
-            Cerrar
-          </button>
-          <button 
-            v-if="isOnline"
-            class="btn btn-primary flex-grow-1 py-2.5 fw-bold" 
-            style="background: #2563eb;" 
-            @click="uploadFromVersionControl(versionControlData.localInsp)"
-            :disabled="uploading"
-          >
-            <i class="bi bi-cloud-arrow-up-fill"></i> Subir Dictamen Ahora
-          </button>
+        <div class="w-100">
+          <!-- Caso 1: El dictamen NO existe en el servidor (dictamen nuevo) -->
+          <div v-if="!versionControlData.serverInsp" class="d-flex gap-2 w-100">
+            <button class="btn btn-outline-secondary flex-grow-1 py-2.5 fw-semibold" @click="showVersionControlModal = false">
+              Cerrar
+            </button>
+            <button 
+              v-if="isOnline"
+              class="btn btn-primary flex-grow-1 py-2.5 fw-bold" 
+              style="background: #2563eb;" 
+              @click="uploadFromVersionControl(versionControlData.localInsp)"
+              :disabled="uploading"
+            >
+              <i class="bi bi-cloud-arrow-up-fill"></i> Subir Dictamen Ahora
+            </button>
+          </div>
+
+          <!-- Caso 2: El dictamen SI existe en el servidor -->
+          <div v-else class="w-100">
+            <!-- Caso 2A: Tienen discrepancias (conflicto) -->
+            <div v-if="versionControlData.diff.added.length > 0 || versionControlData.diff.removed.length > 0 || versionControlData.diff.modified.length > 0">
+              <div class="alert alert-info py-2 px-3 mb-3 small text-secondary" style="border-radius: 10px; background-color: #f0f9ff; border: 1px solid #bae6fd; color: #0369a1;">
+                <i class="bi bi-info-circle-fill me-1"></i>
+                Se detectaron discrepancias con el servidor. Por favor selecciona cuál versión es la correcta para resolver el conflicto:
+              </div>
+              
+              <div class="d-flex flex-column gap-2">
+                <button class="btn btn-accent w-100 py-2.5 fw-bold" @click="resolveConflict('merge')" :disabled="uploading">
+                  <i class="bi bi-shuffle"></i> Combinar y Subir (Fusionar ambos listados)
+                </button>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-outline-danger flex-grow-1 py-2 fw-semibold" @click="resolveConflict('overwrite')" :disabled="uploading">
+                    Sobrescribir Servidor
+                  </button>
+                  <button class="btn btn-outline-secondary flex-grow-1 py-2 fw-semibold" @click="resolveConflict('keep_server')" :disabled="uploading">
+                    Conservar Servidor
+                  </button>
+                </div>
+                <button class="btn btn-link text-secondary text-decoration-none py-1 mt-1 small" @click="showVersionControlModal = false" :disabled="uploading">
+                  Cancelar y Cerrar
+                </button>
+              </div>
+            </div>
+
+            <!-- Caso 2B: Son idénticos -->
+            <div v-else class="d-flex gap-2 w-100">
+              <button class="btn btn-outline-secondary flex-grow-1 py-2.5 fw-semibold" @click="showVersionControlModal = false">
+                Cerrar (Dictamen Idéntico)
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -763,6 +801,15 @@ export default {
     this.isAdmin = user?.roles && user.roles.includes('Administrador');
 
     await this.refreshStats();
+
+    // Autocomparar folio si viene de redirección por conflicto
+    const checkFolio = this.$route.query.check_folio;
+    if (checkFolio) {
+      const targetInsp = this.localInspecciones.find(i => i.folio === checkFolio);
+      if (targetInsp) {
+        this.compareInspection(targetInsp);
+      }
+    }
   },
   unmounted() {
     if (this._syncListener) {
@@ -967,20 +1014,35 @@ export default {
 
     async resolveConflict(option) {
       this.showConflictModal = false;
+      this.showVersionControlModal = false;
       const { inspeccion, localAnimals, serverAnimals } = this.conflictData;
       const resolve = this.conflictResolver;
+      
+      this.uploading = true;
+      this.resultado = '';
+      this.errorMsg = '';
       
       try {
         if (option === 'keep_server') {
           // Descartar local
           await db.clearInspeccionesSincronizadas([inspeccion.folio]);
-          resolve({ status: 'success', action: 'keep_server' });
+          if (resolve) {
+            resolve({ status: 'success', action: 'keep_server' });
+          } else {
+            this.resultado = `Dictamen ${inspeccion.folio} resuelto conservando la versión del servidor.`;
+            await this.refreshStats();
+          }
         } else if (option === 'overwrite') {
           // Sobrescribir
           const res = await api.uploadInspecciones([inspeccion]);
           if (res.procesados && res.procesados.length) {
             await db.clearInspeccionesSincronizadas([inspeccion.folio]);
-            resolve({ status: 'success', action: 'overwrite' });
+            if (resolve) {
+              resolve({ status: 'success', action: 'overwrite' });
+            } else {
+              this.resultado = `Dictamen ${inspeccion.folio} sobrescrito en el servidor con éxito.`;
+              await this.refreshStats();
+            }
           } else {
             throw new Error(res.errores?.[0]?.error || 'Error de validación al sobrescribir.');
           }
@@ -1040,14 +1102,25 @@ export default {
           const res = await api.uploadInspecciones([mergedInspection]);
           if (res.procesados && res.procesados.length) {
             await db.clearInspeccionesSincronizadas([inspeccion.folio]);
-            resolve({ status: 'success', action: 'merge' });
+            if (resolve) {
+              resolve({ status: 'success', action: 'merge' });
+            } else {
+              this.resultado = `Dictamen ${inspeccion.folio} fusionado y sincronizado con éxito.`;
+              await this.refreshStats();
+            }
           } else {
             throw new Error(res.errores?.[0]?.error || 'Error de validación al fusionar.');
           }
         }
       } catch (err) {
         alert(`❌ Error al resolver conflicto: ${err.message}`);
-        resolve(Promise.reject(err));
+        if (resolve) {
+          resolve(Promise.reject(err));
+        } else {
+          this.errorMsg = `Error al resolver conflicto: ${err.message}`;
+        }
+      } finally {
+        this.uploading = false;
       }
     },
 
@@ -1174,6 +1247,20 @@ export default {
               }
             });
           }
+        }
+
+        if (serverInsp) {
+          const serverAretes = serverAnimals.map(sa => (sa.animal?.numero_arete_siniiga || sa.identificador || '').trim().toUpperCase()).filter(Boolean);
+          const localAretes = localAnimals.map(a => (a.identificador || '').trim().toUpperCase()).filter(Boolean);
+          this.conflictData = {
+            inspeccion: insp,
+            serverInspId: serverInsp.id,
+            localAnimals: localAnimals,
+            serverAnimals: serverAnimals,
+            serverAretes: serverAretes,
+            localAretes: localAretes
+          };
+          this.conflictResolver = null;
         }
 
         this.versionControlData = {

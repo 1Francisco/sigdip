@@ -688,27 +688,57 @@ export default {
       }
     },
     async loadPredios() {
+      // 1. Cargar datos locales inmediatamente
+      this.predios = await db.getPredios();
+
+      // 2. Intentar actualizar desde servidor en segundo plano
       try {
+        const isReachable = await api.checkRealConnectivity();
+        if (!isReachable) return;
+
         const res = await api.getPredios();
-        this.predios = res.data || [];
-        await db.savePredios(this.predios);
+        if (res.data && res.data.length > 0) {
+          this.predios = res.data;
+          await db.savePredios(this.predios);
+        }
       } catch (e) {
-        this.predios = await db.getPredios();
+        console.warn('No se pudo actualizar predios desde el servidor:', e.message);
       }
     },
     async loadVisitas() {
-      this.loading = true;
       this.errorMsg = '';
+
+      // 1. Cargar datos locales inmediatamente
+      const local = await db.getVisitas();
+      this.visitas = this.filters.fecha ? local.filter(v => v.fecha_programada === this.filters.fecha) : local;
+      this.currentPage = 1;
+
+      // 2. Intentar actualizar desde servidor en segundo plano
+      this.loading = true;
       try {
-        const res = await api.getVisitas(this.filters.fecha ? { fecha: this.filters.fecha } : {});
-        this.visitas = res.data || [];
-        await db.saveVisitas(this.visitas);
-        this.currentPage = 1;
+        const isReachable = await api.checkRealConnectivity();
+        if (!isReachable) {
+          if (this.visitas.length === 0) {
+            this.errorMsg = 'Sin conexión al servidor. Mostrando datos locales.';
+          }
+          return;
+        }
+
+        const res = await api.getVisitas();
+        if (res.data) {
+          await db.saveVisitas(res.data);
+          const local = res.data;
+          this.visitas = this.filters.fecha ? local.filter(v => v.fecha_programada === this.filters.fecha) : local;
+          this.currentPage = 1;
+          this.errorMsg = '';
+        }
       } catch (e) {
-        console.error('Error loading visitas:', e);
-        const local = await db.getVisitas();
-        this.visitas = this.filters.fecha ? local.filter(v => v.fecha_programada === this.filters.fecha) : local;
-        this.errorMsg = `No se pudo leer el servidor: ${e.message || e}. Mostrando datos locales.`;
+        // Si ya tenemos datos locales, no mostrar error alarmante
+        if (this.visitas.length > 0) {
+          console.warn('No se pudo actualizar visitas desde el servidor, mostrando datos locales:', e.message);
+        } else {
+          this.errorMsg = `Sin conexión al servidor. Mostrando datos locales.`;
+        }
       } finally {
         this.loading = false;
       }

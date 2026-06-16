@@ -70,6 +70,7 @@ describe('InspeccionesView', () => {
   beforeEach(() => {
     cy.resetAppState()
     cy.mockCapacitor()
+    cy.intercept('HEAD', '**/api/user', { statusCode: 200, body: {} }).as('getUser')
     cy.intercept('POST', '**/api/logout', { statusCode: 200, body: { message: 'ok' } }).as('logout')
   })
 

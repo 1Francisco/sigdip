@@ -41,6 +41,7 @@ class Inspeccion extends Model
         'observaciones',
         'estado',
         'visita_id',
+        'clave_interna',
     ];
 
     protected $casts = [

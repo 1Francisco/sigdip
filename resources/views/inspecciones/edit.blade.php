@@ -2,7 +2,7 @@
 
 @section('title', 'Continuar Dictamen')
 @section('header_title', 'Finalizar Dictamen')
-@section('header_subtitle', empty($inspeccion->folio) || \Illuminate\Support\Str::startsWith($inspeccion->folio, 'TB-') ? 'Sin Folio (Borrador)' : 'Folio: ' . $inspeccion->folio)
+@section('header_subtitle', empty($inspeccion->folio) || \Illuminate\Support\Str::startsWith($inspeccion->folio, 'TEMP-') ? 'Sin Folio' : 'Folio: ' . $inspeccion->folio)
 @section('back_url', route('inspecciones.index'))
 
 @section('styles')
@@ -215,7 +215,8 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-semibold">Folio Dictamen</label>
-                                    <input type="text" name="folio" class="form-control fw-bold text-primary" placeholder="Opcional (se puede dejar en blanco)" value="{{ empty($inspeccion->folio) || \Illuminate\Support\Str::startsWith($inspeccion->folio, 'TB-') ? '' : $inspeccion->folio }}">
+                                    @php $currentFolio = (empty($inspeccion->folio) || \Illuminate\Support\Str::startsWith($inspeccion->folio, 'TEMP-')) ? ('D-' . date('Ymd') . '-' . \Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(6))) : $inspeccion->folio; @endphp
+                                    <input type="text" name="folio" class="form-control fw-bold text-primary" placeholder="Se generará automáticamente si se deja en blanco" value="{{ old('folio', $currentFolio) }}">
                                 </div>
                             </div>
                         </div>
@@ -490,8 +491,17 @@
                                     </thead>
                                     <tbody>
                                         @forelse($inspeccion->detalles as $index => $detalle)
-                                        <tr>
+                                        <tr class="{{ $detalle->agregado_en_lectura ? 'table-warning-agregado' : '' }}"
+                                            @if($detalle->agregado_en_lectura)
+                                                title="Este animal fue agregado en la fase de lectura. No estaba presente durante la inyección."
+                                                data-bs-toggle="tooltip"
+                                            @endif>
                                             <td data-label="Identificador">
+                                                @if($detalle->agregado_en_lectura)
+                                                    <span class="badge bg-warning text-dark badge-agregado-lectura mb-1 d-block text-start" title="Agregado en lectura, no estaba en la inyección">
+                                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Agregado en lectura
+                                                    </span>
+                                                @endif
                                                 <div class="input-group input-group-sm">
                                                     <input type="text" name="animales[{{ $index }}][identificador]" class="form-control arete-input" id="arete_{{ $index }}" value="{{ $detalle->animal->numero_arete_siniiga }}" required onchange="buscarDatosAnimal(this)">
                                                     <button class="btn btn-primary" type="button" onclick="startScanner({{ $index }})">
@@ -519,16 +529,21 @@
                                                  <input type="checkbox" name="animales[{{ $index }}][fierro]" value="Si" class="form-check-input" {{ $detalle->fierro == 'Si' ? 'checked' : '' }}>
                                              </td>
                                              <td data-label="Resultado" class="resultado-cell">
-                                                 <select name="animales[{{ $index }}][resultado]" class="form-select form-select-sm fw-bold resultado-select" required {{ !$esDiaDeLectura ? 'disabled' : '' }}>
-                                                     @if(empty($detalle->resultado_prueba) || $detalle->resultado_prueba == 'Pendiente')
-                                                         <option value="" disabled selected>-- Seleccione --</option>
-                                                     @endif
-                                                     <option value="Negativo" class="text-success" {{ $detalle->resultado_prueba == 'Negativo' ? 'selected' : '' }}>Negativo</option>
-                                                     <option value="Positivo" class="text-danger" {{ $detalle->resultado_prueba == 'Positivo' ? 'selected' : '' }}>Positivo</option>
-                                                     <option value="Sospechoso" class="text-warning" {{ $detalle->resultado_prueba == 'Sospechoso' ? 'selected' : '' }}>Sospechoso</option>
-                                                 </select>
-                                                 <input type="hidden" name="animales[{{ $index }}][resultado]" class="resultado-hidden" value="{{ $detalle->resultado_prueba ?? 'Pendiente' }}" {{ $esDiaDeLectura ? 'disabled' : '' }}>
-                                             </td>
+                                                  @if($detalle->resultado_prueba === 'No Aplica')
+                                                      <span class="badge bg-secondary rounded-pill px-3 resultado-text">No Aplica</span>
+                                                      <input type="hidden" name="animales[{{ $index }}][resultado]" class="resultado-hidden" value="No Aplica" {{ $esDiaDeLectura ? 'disabled' : '' }}>
+                                                  @else
+                                                      <select name="animales[{{ $index }}][resultado]" class="form-select form-select-sm fw-bold resultado-select" required {{ !$esDiaDeLectura ? 'disabled' : '' }}>
+                                                          @if(empty($detalle->resultado_prueba) || $detalle->resultado_prueba == 'Pendiente')
+                                                              <option value="" disabled selected>-- Seleccione --</option>
+                                                          @endif
+                                                          <option value="Negativo" class="text-success" {{ $detalle->resultado_prueba == 'Negativo' ? 'selected' : '' }}>Negativo</option>
+                                                          <option value="Positivo" class="text-danger" {{ $detalle->resultado_prueba == 'Positivo' ? 'selected' : '' }}>Positivo</option>
+                                                          <option value="Sospechoso" class="text-warning" {{ $detalle->resultado_prueba == 'Sospechoso' ? 'selected' : '' }}>Sospechoso</option>
+                                                      </select>
+                                                      <input type="hidden" name="animales[{{ $index }}][resultado]" class="resultado-hidden" value="{{ $detalle->resultado_prueba ?? 'Pendiente' }}" {{ $esDiaDeLectura ? 'disabled' : '' }}>
+                                                  @endif
+                                              </td>
                                             <td data-label="Obs"><input type="text" name="animales[{{ $index }}][observaciones]" class="form-control form-control-sm" value="{{ $detalle->observaciones_animal }}"></td>
                                             <td class="text-center" data-label="Quitar">
                                                 <button type="button" class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove(); actualizarCenso(); validateSections();">
@@ -659,6 +674,11 @@
 <style>
     .is-loading { opacity: 0.5; pointer-events: none; }
     .arete-input.is-valid { border-color: #22c55e !important; background-color: #f0fdf4 !important; }
+    .no-aplica-row td { opacity: 0.6; background-color: #f8f9fa !important; }
+    .no-aplica-row .resultado-text { font-weight: 600; color: #6c757d; }
+    tr.table-warning-agregado td { background-color: #fff3cd !important; }
+    tr.table-warning-agregado td:first-child { border-left: 4px solid #ffc107; }
+    .badge-agregado-lectura { font-size: 0.65rem; vertical-align: middle; cursor: help; }
     #reader { background: #000 !important; }
     #reader video { object-fit: cover !important; }
     @media (max-width: 991px) {
@@ -815,8 +835,21 @@
         // 2. Table Rows
         const rows = document.querySelectorAll('#tablaAnimales tbody tr');
         rows.forEach(row => {
-            const selectEl = row.querySelector('.resultado-select');
             const hiddenEl = row.querySelector('.resultado-hidden');
+            const resVal = hiddenEl ? hiddenEl.value : '';
+            
+            // Ocultar animales con "No Aplica" en fase de lectura
+            if (resVal === 'No Aplica' && esDiaDeLectura) {
+                row.classList.add('d-none');
+                return;
+            }
+            if (resVal === 'No Aplica') {
+                row.classList.add('no-aplica-row');
+                return;
+            }
+            row.classList.remove('d-none', 'no-aplica-row');
+            
+            const selectEl = row.querySelector('.resultado-select');
             
             if (selectEl) {
                 selectEl.disabled = !esDiaDeLectura;
@@ -976,7 +1009,7 @@
             const resSelect = row.querySelector('select[name*="[resultado_disabled]"]') || row.querySelector('select[name*="[resultado]"]');
             const resHidden = row.querySelector('input[type="hidden"][name*="[resultado]"]');
             const resVal = resSelect ? resSelect.value : (resHidden ? resHidden.value : '');
-            if (resVal === 'Pendiente' || resVal === '') {
+            if (resVal !== 'No Aplica' && (resVal === 'Pendiente' || resVal === '')) {
                 pendingResults++;
             }
         });
@@ -1151,6 +1184,8 @@
         if (window.esDiaDeLectura) {
             const rows = document.querySelectorAll('#tablaAnimales tbody tr');
             rows.forEach(row => {
+                const resHidden = row.querySelector('.resultado-hidden');
+                if (resHidden && resHidden.value === 'No Aplica') return;
                 const resSelect = row.querySelector('select[name*="[resultado]"]');
                 if (resSelect && (resSelect.value === '' || resSelect.value === 'Pendiente')) {
                     isS4Complete = false;
@@ -1183,10 +1218,17 @@
         const isLecturaDisabled = !window.esDiaDeLectura ? 'disabled' : '';
         const isLecturaRequired = window.esDiaDeLectura ? 'required' : '';
         const isHiddenDisabled = window.esDiaDeLectura ? 'disabled' : '';
+        const isLecturaMode = window.esDiaDeLectura || inyeccionConfirmada;
+
+        const rowClass = isLecturaMode ? 'table-warning-agregado' : '';
+        const warningBadge = isLecturaMode
+            ? '<span class="badge bg-warning text-dark badge-agregado-lectura mb-1 d-block text-start" title="Agregado en lectura, no estaba en la inyección"><i class="bi bi-exclamation-triangle-fill me-1"></i>Agregado en lectura</span>'
+            : '';
 
         const row = `
-            <tr>
+            <tr class="${rowClass}"${isLecturaMode ? ' title="Este animal fue agregado en la fase de lectura. No estaba presente durante la inyección." data-bs-toggle="tooltip"' : ''}>
                 <td data-label="Identificador">
+                    ${warningBadge}
                     <div class="input-group input-group-sm">
                         <input type="text" name="animales[${animalCount}][identificador]" class="form-control arete-input" id="arete_${animalCount}" placeholder="SINIIGA" required onchange="buscarDatosAnimal(this)">
                         <button class="btn btn-primary" type="button" onclick="startScanner(${animalCount})">
@@ -1243,8 +1285,13 @@
     }
 
     function startScanner(inputIdSuffix) {
+        if (html5QrCode && html5QrCode.isScanning) return;
+
         currentInputId = `arete_${inputIdSuffix}`;
-        const modal = new bootstrap.Modal(document.getElementById('scannerModal'));
+        const modalEl = document.getElementById('scannerModal');
+        const existingModal = bootstrap.Modal.getInstance(modalEl);
+        if (existingModal) existingModal.dispose();
+        const modal = new bootstrap.Modal(modalEl);
         modal.show();
 
         html5QrCode = new Html5Qrcode("reader");
@@ -1263,14 +1310,15 @@
     function onScanSuccess(decodedText, decodedResult) {
         if (currentInputId) {
             const input = document.getElementById(currentInputId);
-            input.value = decodedText;
-            
-            if (navigator.vibrate) navigator.vibrate(100);
-            
-            buscarDatosAnimal(input);
+            if (input) {
+                input.value = decodedText;
+                if (navigator.vibrate) navigator.vibrate(100);
+                buscarDatosAnimal(input);
+            }
             stopScanner();
-            const modal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
-            modal.hide();
+            const modalEl = document.getElementById('scannerModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
         }
     }
 
@@ -1288,10 +1336,30 @@
     }
 
     function stopScanner() {
-        if (html5QrCode && html5QrCode.isScanning) {
-            html5QrCode.stop();
+        if (html5QrCode) {
+            if (html5QrCode.isScanning) {
+                html5QrCode.stop().catch(() => {}).finally(() => { html5QrCode = null; });
+            } else {
+                html5QrCode = null;
+            }
         }
     }
+
+    // Asegurar que la cámara se libere al cerrar el modal por cualquier método
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalEl = document.getElementById('scannerModal');
+        if (modalEl) {
+            modalEl.addEventListener('hidden.bs.modal', function() {
+                if (html5QrCode) {
+                    if (html5QrCode.isScanning) {
+                        html5QrCode.stop().catch(() => {}).finally(() => { html5QrCode = null; });
+                    } else {
+                        html5QrCode = null;
+                    }
+                }
+            });
+        }
+    });
 
     function buscarDatosAnimal(input) {
         const numero = input.value.trim();
@@ -1360,6 +1428,10 @@
                     }
                     if (edadMeses !== null && edadMeses !== undefined) {
                         edadInput.value = edadMeses;
+                        const resHidden = row.querySelector('.resultado-hidden');
+                        if (edadMeses > 0 && edadMeses < 6 && resHidden) {
+                            resHidden.value = 'No Aplica';
+                        }
                     }
                     if (data.raza) razaInput.value = data.raza;
                     if (data.sexo) {
@@ -1598,11 +1670,35 @@
         if (tabla) {
             tabla.addEventListener('input', function(e) {
                 if (e.target.name && (e.target.name.includes('[edad_meses]') || e.target.name.includes('[identificador]'))) {
+                    if (e.target.name.includes('[edad_meses]')) {
+                        const row = e.target.closest('tr');
+                        const edadVal = parseInt(e.target.value) || 0;
+                        const resHidden = row.querySelector('.resultado-hidden');
+                        if (edadVal > 0 && edadVal < 6 && resHidden) {
+                            resHidden.value = 'No Aplica';
+                            checkLecturaDate();
+                        } else if (resHidden && resHidden.value === 'No Aplica') {
+                            resHidden.value = 'Pendiente';
+                            checkLecturaDate();
+                        }
+                    }
                     actualizarCenso();
                 }
             });
             tabla.addEventListener('change', function(e) {
                 if (e.target.name && (e.target.name.includes('[edad_meses]') || e.target.name.includes('[sexo]') || e.target.name.includes('[resultado]') || e.target.name.includes('[tipo_arete]') || e.target.name.includes('[identificador]'))) {
+                    if (e.target.name.includes('[edad_meses]')) {
+                        const row = e.target.closest('tr');
+                        const edadVal = parseInt(e.target.value) || 0;
+                        const resHidden = row.querySelector('.resultado-hidden');
+                        if (edadVal > 0 && edadVal < 6 && resHidden) {
+                            resHidden.value = 'No Aplica';
+                            checkLecturaDate();
+                        } else if (resHidden && resHidden.value === 'No Aplica') {
+                            resHidden.value = 'Pendiente';
+                            checkLecturaDate();
+                        }
+                    }
                     actualizarCenso();
                 }
             });
@@ -1632,6 +1728,8 @@
                     let firstPendingSelect = null;
                     const rows = document.querySelectorAll('#tablaAnimales tbody tr');
                     rows.forEach(row => {
+                        const resHidden = row.querySelector('.resultado-hidden');
+                        if (resHidden && resHidden.value === 'No Aplica') return;
                         const resSelect = row.querySelector('select[name*="[resultado]"]');
                         if (resSelect && (resSelect.value === '' || resSelect.value === 'Pendiente')) {
                             pendingCount++;
@@ -1665,6 +1763,13 @@
                 }
             });
         }
+
+        // Inicializar tooltips de Bootstrap
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            [...tooltipTriggerList].forEach(el => new bootstrap.Tooltip(el));
+        }
+
         setTimeout(validateSections, 300);
     });
 </script>

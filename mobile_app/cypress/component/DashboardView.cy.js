@@ -53,6 +53,7 @@ describe('DashboardView', () => {
   beforeEach(() => {
     cy.resetAppState()
     cy.mockCapacitor()
+    cy.intercept('HEAD', '**/api/user', { statusCode: 200, body: {} }).as('getUser')
   })
 
   describe('Vista Administrador', () => {

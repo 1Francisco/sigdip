@@ -243,7 +243,7 @@
                     <div class="fw-bold text-dark text-start">{{ borrador.predio?.nombre_rancho || borrador.predio?.nombre }}</div>
                     <div class="d-flex justify-content-between align-items-center mt-1">
                       <small class="text-secondary">
-                        <span v-if="!borrador.folio || borrador.folio.startsWith('TB-')" class="text-muted fst-italic">Sin Folio (Borrador)</span>
+                        <span v-if="!borrador.folio || borrador.folio.startsWith('TEMP-')" class="text-muted fst-italic">Sin Folio (Borrador)</span>
                         <span v-else class="font-mono">Folio: {{ borrador.folio }}</span>
                       </small>
                       <small class="text-muted fst-italic">{{ borrador.veterinario?.name }}</small>
@@ -462,7 +462,8 @@ export default {
     const localInspecciones = await db.getInspeccionesPendientes();
     this.pendientesSync = localInspecciones.filter(i => i.estado === 'borrador').length;
     this.borradores = localInspecciones.filter(i => i.estado === 'borrador');
-    this.visitas = await db.getVisitas();
+    const allVisitas = await db.getVisitas();
+    this.visitas = allVisitas.filter(v => v.estado === 'pendiente');
     this.prediosList = await db.getPredios();
 
     const sync = await db.getLastSync();
@@ -484,6 +485,7 @@ export default {
       this.networkListener = await Network.addListener('networkStatusChange', (status) => {
         const wasOffline = !this.isOnline;
         this.isOnline = status.connected;
+        api.invalidateConnectivityCache();
         if (this.isOnline && wasOffline) {
           // Si vuelve a conectarse, recargar en vivo
           this.loadLiveData();
@@ -504,10 +506,8 @@ export default {
     // 4. Cargar caché de IndexedDB para renderizar instantáneamente (Offline-First)
     await this.loadCachedStats();
 
-    // 5. Cargar datos en vivo si está conectado
-    if (this.isOnline) {
-      await this.loadLiveData();
-    }
+    // 5. Cargar datos en vivo (el método verifica conectividad real internamente)
+    await this.loadLiveData();
   },
   beforeUnmount() {
     if (this.networkListener) {
@@ -572,7 +572,17 @@ export default {
 
     // Cargar estadísticas en vivo del backend SIGDIP
     async loadLiveData() {
-      if (!this.isOnline) return;
+      // Verificar conectividad REAL con el servidor (no solo WiFi conectado)
+      try {
+        const isReachable = await api.checkRealConnectivity();
+        if (!isReachable) {
+          console.log('[Dashboard] Servidor SIGDIP no alcanzable, usando datos locales.');
+          return;
+        }
+      } catch (e) {
+        console.log('[Dashboard] Error al verificar conectividad:', e.message);
+        return;
+      }
 
       try {
         const res = await api.getDashboardStats();

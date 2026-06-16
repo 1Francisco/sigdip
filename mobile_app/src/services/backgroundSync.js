@@ -15,6 +15,8 @@ export default {
     // 1. Escuchar cambios de conexión (Offline -> Online / Online -> Offline)
     Network.addListener('networkStatusChange', async (status) => {
       console.log('[BackgroundSync] Cambio de red detectado:', status);
+        // Invalidar cache de conectividad para que el próximo check sea fresco
+      api.invalidateConnectivityCache();
       if (status.connected) {
         await this.syncIfConnected();
       } else {

@@ -36,6 +36,7 @@ describe('MedicosView', () => {
   beforeEach(() => {
     cy.resetAppState()
     cy.mockCapacitor()
+    cy.intercept('HEAD', '**/api/user', { statusCode: 200, body: {} }).as('getUser')
   })
 
   describe('como Administrador', () => {

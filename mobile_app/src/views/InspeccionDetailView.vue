@@ -133,7 +133,7 @@ export default {
       }
     },
     folioLabel(folio) {
-      if (!folio || String(folio).startsWith('TB-')) return 'Sin Folio (Borrador)';
+      if (!folio || String(folio).startsWith('TEMP-')) return 'Sin Folio (Borrador)';
       return folio;
     },
     formatDate(dateStr) {

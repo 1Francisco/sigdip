@@ -195,4 +195,49 @@ describe('ScanView', () => {
     cy.contains('Continuar al Dictamen').click()
     cy.location('hash', { timeout: 5000 }).should('include', '/inspeccion')
   })
+
+  it('modo batch: permite cambiar resultado de arete escaneado', () => {
+    const router = buildRouter()
+    router.push('/scan')
+    mount(ScanView, { global: { plugins: [router] } })
+
+    cy.get('.form-input', { timeout: 5000 }).type('ARETE-001')
+    cy.contains('Agregar Animal').click()
+
+    cy.get('.animal-row select').select('Negativo')
+    cy.get('.animal-row select').should('have.value', 'Negativo')
+
+    cy.get('.animal-row select').select('Positivo')
+    cy.get('.animal-row select').should('have.value', 'Positivo')
+
+    cy.get('.animal-row select').select('Sospechoso')
+    cy.get('.animal-row select').should('have.value', 'Sospechoso')
+  })
+
+  it('modo single preserva inspeccion_draft en sessionStorage', () => {
+    cy.window().then((win) => {
+      win.sessionStorage.setItem('scan_target_index', '0')
+      win.sessionStorage.setItem('inspeccion_draft', JSON.stringify({
+        folio: 'TEMP-1234567890-1234',
+        predio_id: 1,
+        animales: [{ identificador: '', resultado: 'Pendiente', edad_meses: null }],
+      }))
+    })
+
+    const router = buildRouter()
+    router.push('/scan')
+    mount(ScanView, { global: { plugins: [router] } })
+
+    cy.get('.form-input', { timeout: 5000 }).type('ARETE-SINGLE')
+    cy.contains('Confirmar Arete').click()
+
+    cy.window().then((win) => {
+      expect(win.sessionStorage.getItem('scanned_single_arete')).to.eq('ARETE-SINGLE')
+      // inspeccion_draft debe preservarse para que el formulario lo restaure
+      const draft = JSON.parse(win.sessionStorage.getItem('inspeccion_draft'))
+      expect(draft).to.not.be.null
+      expect(draft.folio).to.eq('TEMP-1234567890-1234')
+    })
+    cy.location('hash').should('eq', '#/inspeccion')
+  })
 })

@@ -377,13 +377,34 @@ export default {
       this.isOnline = false;
     },
     async loadPredios() {
+      // 1. Mostrar datos locales inmediatamente (offline-first)
+      this.predios = await db.getPredios();
+
+      // 2. Intentar actualizar desde el servidor en segundo plano
       try {
+        const isReachable = await api.checkRealConnectivity();
+        if (!isReachable) {
+          if (this.predios.length > 0) {
+            this.errorMsg = '';
+          } else {
+            this.errorMsg = 'Sin conexión al servidor. Sincroniza datos cuando tengas conexión.';
+          }
+          return;
+        }
+
         const res = await api.getPredios();
-        this.predios = res.data || [];
-        await db.savePredios(this.predios);
+        if (res.data && res.data.length > 0) {
+          this.predios = res.data;
+          await db.savePredios(this.predios);
+          this.errorMsg = '';
+        }
       } catch (e) {
-        this.errorMsg = 'No se pudo leer el servidor. Mostrando datos locales.';
-        this.predios = await db.getPredios();
+        // Si ya tenemos datos locales, no mostrar error alarmante
+        if (this.predios.length > 0) {
+          console.warn('No se pudo actualizar predios desde el servidor, mostrando datos locales:', e.message);
+        } else {
+          this.errorMsg = 'No se pudo leer el servidor. Sincroniza datos cuando tengas conexión.';
+        }
       }
     },
     formatProductorName(productor) {

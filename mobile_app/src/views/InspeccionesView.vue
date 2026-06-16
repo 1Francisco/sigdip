@@ -461,11 +461,9 @@ export default {
       this.errorMsg = '';
       try {
         this.prediosCatalog = await db.getPredios();
-        const [serverRes, local] = await Promise.all([
-          api.getInspecciones().catch(() => ({ data: [] })),
-          db.getInspeccionesPendientes(),
-        ]);
 
+        // 1. Cargar borradores locales inmediatamente (siempre disponible)
+        const local = await db.getInspeccionesPendientes();
         this.localDrafts = local
           .filter(item => item.estado === 'borrador')
           .map(item => ({
@@ -473,34 +471,68 @@ export default {
             predio_nombre: this.getLocalPredioName(item.predio_id),
           }));
 
-        const serverItems = (serverRes.data || []).filter(item => item);
-        const merged = [...serverItems];
-
+        // Mostrar borradores locales de inmediato
+        const localMerged = [];
         this.localDrafts.forEach(draft => {
-          const exists = merged.some(item => item.folio === draft.folio);
-          if (!exists) {
-            merged.unshift({
-              id: `local-${draft.folio}`,
-              folio: draft.folio,
-              fecha: draft.fecha,
-              estado: 'borrador',
-              predio: {
-                id: draft.predio_id,
-                nombre_rancho: draft.predio_nombre,
-                localidad: draft.predio_localidad || '',
-              },
-              veterinario: {
-                name: draft.veterinario_name || 'Local',
-              },
-              __localDraft: true,
-              __draft: draft,
-            });
-          }
+          localMerged.unshift({
+            id: `local-${draft.folio}`,
+            folio: draft.folio,
+            fecha: draft.fecha,
+            estado: 'borrador',
+            predio: {
+              id: draft.predio_id,
+              nombre_rancho: draft.predio_nombre,
+              localidad: draft.predio_localidad || '',
+            },
+            veterinario: {
+              name: draft.veterinario_name || 'Local',
+            },
+            __localDraft: true,
+            __draft: draft,
+          });
         });
+        this.inspecciones = localMerged;
 
-        this.inspecciones = merged;
+        // 2. Intentar obtener datos del servidor en segundo plano
+        const isReachable = await api.checkRealConnectivity();
+        if (isReachable) {
+          try {
+            const serverRes = await api.getInspecciones();
+            const serverItems = (serverRes.data || []).filter(item => item);
+            const merged = [...serverItems];
+
+            // Agregar borradores locales que no existan en el servidor
+            this.localDrafts.forEach(draft => {
+              const exists = merged.some(item => item.folio === draft.folio);
+              if (!exists) {
+                merged.unshift({
+                  id: `local-${draft.folio}`,
+                  folio: draft.folio,
+                  fecha: draft.fecha,
+                  estado: 'borrador',
+                  predio: {
+                    id: draft.predio_id,
+                    nombre_rancho: draft.predio_nombre,
+                    localidad: draft.predio_localidad || '',
+                  },
+                  veterinario: {
+                    name: draft.veterinario_name || 'Local',
+                  },
+                  __localDraft: true,
+                  __draft: draft,
+                });
+              }
+            });
+
+            this.inspecciones = merged;
+          } catch (serverErr) {
+            console.warn('No se pudieron cargar inspecciones del servidor, mostrando datos locales:', serverErr.message);
+          }
+        }
       } catch (e) {
-        this.errorMsg = 'No se pudieron cargar las inspecciones.';
+        if (this.inspecciones.length === 0) {
+          this.errorMsg = 'No se pudieron cargar las inspecciones.';
+        }
       } finally {
         this.loading = false;
       }

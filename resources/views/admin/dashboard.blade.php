@@ -112,8 +112,8 @@
                         <div class="fw-bold text-dark">{{ $borrador->predio->nombre_rancho }}</div>
                         <div class="d-flex justify-content-between align-items-center mt-1">
                             <small class="text-secondary">
-                                @if(empty($borrador->folio) || \Illuminate\Support\Str::startsWith($borrador->folio, 'TB-'))
-                                    <span class="text-muted fst-italic">Sin Folio (Borrador)</span>
+                                @if(empty($borrador->folio) || \Illuminate\Support\Str::startsWith($borrador->folio, 'TEMP-'))
+                                    <span class="text-muted fst-italic">Sin Folio</span>
                                 @else
                                     Folio: {{ $borrador->folio }}
                                 @endif
@@ -207,8 +207,8 @@
                         <div>
                             <div class="fw-bold">{{ $borrador->predio->nombre_rancho }}</div>
                             <small class="text-secondary">
-                                @if(empty($borrador->folio) || \Illuminate\Support\Str::startsWith($borrador->folio, 'TB-'))
-                                    <span class="text-muted fst-italic">Sin Folio (Borrador)</span>
+                                @if(empty($borrador->folio) || \Illuminate\Support\Str::startsWith($borrador->folio, 'TEMP-'))
+                                    <span class="text-muted fst-italic">Sin Folio</span>
                                 @else
                                     Folio: {{ $borrador->folio }}
                                 @endif

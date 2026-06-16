@@ -10,9 +10,11 @@ use App\Models\Visita;
 use App\Models\Productor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class InspeccionController extends Controller
 {
+    const EDAD_MINIMA_PRUEBA_MESES = 6;
     /**
      * Lista las inspecciones recientes.
      */
@@ -64,7 +66,19 @@ class InspeccionController extends Controller
         $selected_productor_id = $request->productor_id ?? ($visita ? $visita->predio->productor_id : null);
         $selected_predio_id = $request->predio_id ?? ($visita ? $visita->predio_id : null);
         
-        return view('inspecciones.create', compact('productores', 'productoresModel', 'visita', 'selected_productor_id', 'selected_predio_id'));
+        $claveInterna = null;
+        if ($selected_productor_id) {
+            $claveInterna = 'PRD-' . $selected_productor_id . '-' . now()->format('Ymd');
+            $existente = Inspeccion::where('clave_interna', $claveInterna)->first();
+            if ($existente) {
+                if ($existente->estado === 'borrador') {
+                    return redirect()->route('inspecciones.edit', $existente->id)
+                        ->with('info', 'Ya existe un borrador para este productor hoy. Continúe editándolo.');
+                }
+            }
+        }
+
+        return view('inspecciones.create', compact('productores', 'productoresModel', 'visita', 'selected_productor_id', 'selected_predio_id', 'claveInterna'));
     }
 
     /**
@@ -97,7 +111,27 @@ class InspeccionController extends Controller
                 ->first();
         }
 
-        // Mapear sexo (H/M) y resultado pendiente
+        // Generar clave_interna si no viene en el request pero tenemos predio
+        if (empty($request->clave_interna) && $request->predio_id) {
+            $predio = \App\Models\Predio::find($request->predio_id);
+            if ($predio) {
+                $request->merge([
+                    'clave_interna' => 'PRD-' . $predio->productor_id . '-' . now()->format('Ymd')
+                ]);
+            }
+        }
+
+        // Si hay clave_interna, verificar si ya existe un borrador para evitar duplicados
+        if ($request->clave_interna && !$existingDraft) {
+            $existingByClave = Inspeccion::where('clave_interna', $request->clave_interna)
+                ->where('estado', 'borrador')
+                ->first();
+            if ($existingByClave) {
+                $existingDraft = $existingByClave;
+            }
+        }
+
+        // Mapear sexo (H/M) y resultado
         if ($request->has('animales') && is_array($request->animales)) {
             $animales = $request->animales;
             foreach ($animales as $index => $item) {
@@ -108,7 +142,10 @@ class InspeccionController extends Controller
                         $animales[$index]['sexo'] = 'Macho';
                     }
                 }
-                if (empty($item['resultado'])) {
+                $edadMeses = $item['edad_meses'] ?? 0;
+                if ($edadMeses > 0 && $edadMeses < self::EDAD_MINIMA_PRUEBA_MESES) {
+                    $animales[$index]['resultado'] = 'No Aplica';
+                } elseif (empty($item['resultado'])) {
                     $animales[$index]['resultado'] = $isDraft ? 'Pendiente' : '';
                 }
             }
@@ -116,7 +153,9 @@ class InspeccionController extends Controller
         }
 
         if (empty($request->folio)) {
-            $request->merge(['folio' => null]);
+            $request->merge([
+                'folio' => 'D-' . now()->format('Ymd') . '-' . strtoupper(Str::random(6))
+            ]);
         }
 
         if ($request->has('fecha_inyeccion') && $request->fecha_inyeccion) {
@@ -144,7 +183,7 @@ class InspeccionController extends Controller
                 'hora_lectura' => 'required',
                 'animales' => 'required|array|min:1',
                 'animales.*.identificador' => 'required',
-                'animales.*.resultado' => 'required|in:Negativo,Positivo,Sospechoso',
+                'animales.*.resultado' => 'required|in:Negativo,Positivo,Sospechoso,No Aplica',
             ]);
         }
 
@@ -181,6 +220,7 @@ class InspeccionController extends Controller
                 'hato_libre_fecha' => $request->hato_libre_fecha,
                 'observaciones' => $request->observaciones,
                 'estado' => $request->estado ?? 'sincronizado',
+                'clave_interna' => $request->clave_interna,
             ];
 
             if ($existingDraft) {
@@ -232,7 +272,8 @@ class InspeccionController extends Controller
 
             DB::commit();
 
-            $msg = $isDraft ? 'Borrador guardado correctamente.' : 'Inspección finalizada correctamente.';
+            $folioDisplay = $inspeccion->folio ?? 'Sin folio';
+            $msg = $isDraft ? "Borrador ({$folioDisplay}) guardado correctamente." : "Dictamen {$folioDisplay} finalizado correctamente.";
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true,
@@ -307,7 +348,7 @@ class InspeccionController extends Controller
 
         $isDraft = $request->estado === 'borrador';
 
-        // Mapear sexo (H/M) y resultado pendiente
+        // Mapear sexo (H/M) y resultado
         if ($request->has('animales') && is_array($request->animales)) {
             $animales = $request->animales;
             foreach ($animales as $index => $item) {
@@ -318,7 +359,10 @@ class InspeccionController extends Controller
                         $animales[$index]['sexo'] = 'Macho';
                     }
                 }
-                if (empty($item['resultado'])) {
+                $edadMeses = $item['edad_meses'] ?? 0;
+                if ($edadMeses > 0 && $edadMeses < self::EDAD_MINIMA_PRUEBA_MESES) {
+                    $animales[$index]['resultado'] = 'No Aplica';
+                } elseif (empty($item['resultado'])) {
                     $animales[$index]['resultado'] = $isDraft ? 'Pendiente' : '';
                 }
             }
@@ -326,7 +370,9 @@ class InspeccionController extends Controller
         }
 
         if (empty($request->folio)) {
-            $request->merge(['folio' => null]);
+            $request->merge([
+                'folio' => 'D-' . now()->format('Ymd') . '-' . strtoupper(Str::random(6))
+            ]);
         }
 
         if ($request->has('fecha_inyeccion') && $request->fecha_inyeccion) {
@@ -350,7 +396,7 @@ class InspeccionController extends Controller
                 'hora_lectura' => 'required',
                 'animales' => 'required|array|min:1',
                 'animales.*.identificador' => 'required',
-                'animales.*.resultado' => 'required|in:Negativo,Positivo,Sospechoso',
+                'animales.*.resultado' => 'required|in:Negativo,Positivo,Sospechoso,No Aplica',
             ]);
         }
 
@@ -363,6 +409,17 @@ class InspeccionController extends Controller
 
             // Sync animals (simplistic: delete and recreate for this MVP)
             if ($request->has('animales')) {
+                // Determinar si estamos en fase de lectura y capturar aretes existentes
+                $isLectura = $inspeccion->visita && $inspeccion->visita->inyeccion;
+                $existingAretes = [];
+                if ($isLectura) {
+                    $existingAretes = $inspeccion->detalles()
+                        ->with('animal')
+                        ->get()
+                        ->pluck('animal.numero_arete_siniiga')
+                        ->toArray();
+                }
+
                 $inspeccion->detalles()->delete();
                 foreach ($request->animales as $item) {
                     if (!$item['identificador'] && $isDraft) continue;
@@ -371,6 +428,8 @@ class InspeccionController extends Controller
                         ['numero_arete_siniiga' => $item['identificador']],
                         ['predio_id' => $request->predio_id, 'raza' => $item['raza'] ?? 'N/A', 'edad' => $item['edad_meses'] ?? 0]
                     );
+
+                    $agregadoEnLectura = $isLectura && !in_array($item['identificador'], $existingAretes);
 
                     DetalleInspeccion::create([
                         'inspeccion_id' => $inspeccion->id,
@@ -382,6 +441,7 @@ class InspeccionController extends Controller
                         'fierro' => $item['fierro'] ?? null,
                         'resultado_prueba' => $item['resultado'],
                         'observaciones_animal' => $item['observaciones'] ?? null,
+                        'agregado_en_lectura' => $agregadoEnLectura,
                     ]);
                 }
             }
@@ -398,16 +458,17 @@ class InspeccionController extends Controller
             }
 
             DB::commit();
+            $folioDisplay = $inspeccion->folio ?? 'Sin folio';
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Dictamen actualizado.',
+                    'message' => "Dictamen {$folioDisplay} actualizado.",
                     'id' => $inspeccion->id,
                     'redirect' => route('inspecciones.index'),
                 ]);
             }
 
-            return redirect()->route('inspecciones.index')->with('success', 'Dictamen actualizado.');
+            return redirect()->route('inspecciones.index')->with('success', "Dictamen {$folioDisplay} actualizado.");
 
         } catch (\Exception $e) {
             DB::rollBack();

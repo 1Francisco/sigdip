@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const qr = require('qrcode-terminal');
 
-const APK_PATH = 'C:\\Users\\franc\\Desktop\\SIGDIP-Mobile.apk';
+const APK_PATH = path.join(__dirname, 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk');
 const PORT = 9090;
 const IP = '192.168.1.91';
 const URL = `http://${IP}:${PORT}/SIGDIP-Mobile.apk`;

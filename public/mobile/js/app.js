@@ -19,6 +19,11 @@ const toggleScanner = () => {
 };
 
 const startScanner = () => {
+    if (html5QrCode) {
+        if (html5QrCode.isScanning) return;
+        html5QrCode = null;
+    }
+
     html5QrCode = new Html5Qrcode("reader");
     const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
@@ -34,9 +39,11 @@ const startScanner = () => {
 
 const stopScanner = () => {
     if (html5QrCode) {
-        html5QrCode.stop().then(() => {
+        if (html5QrCode.isScanning) {
+            html5QrCode.stop().catch(() => {}).finally(() => { html5QrCode = null; });
+        } else {
             html5QrCode = null;
-        }).catch(err => console.error("Error stopping scanner:", err));
+        }
     }
 };
 
