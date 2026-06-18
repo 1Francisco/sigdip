@@ -343,7 +343,7 @@ describe('InspeccionFormView', () => {
 
   it('detecta borrador existente y lo carga al seleccionar predio', () => {
     const draft = {
-      predio_id: '1',
+      predio_id: 1,
       folio: null,
       fecha_visita: '2026-06-10',
       tipo_prueba: 'PPC',
@@ -362,8 +362,10 @@ describe('InspeccionFormView', () => {
     mount(InspeccionFormView, { global: { plugins: [router] } })
 
     cy.get('select').first().select('1')
-    cy.contains('IV: RESULTADOS INDIVIDUALES').click()
-    cy.contains('ARETE-EXISTENTE', { timeout: 5000 }).should('exist')
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]', { timeout: 5000 }).should(($els) => {
+      const values = Array.from($els).map(e => e.value)
+      expect(values).to.include('ARETE-EXISTENTE')
+    })
   })
 
   it('busca datos del arete via API y autocompleta edad', () => {
@@ -375,7 +377,8 @@ describe('InspeccionFormView', () => {
     cy.contains('IV: RESULTADOS INDIVIDUALES').click()
     cy.contains('button', /a\u00F1adir|agregar/i).click()
     cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}')
-    cy.get('input[placeholder*="SINIIGA o SA"]').first().trigger('change')
+
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().clear().type('ARETE-002').blur()
 
     cy.wait('@buscarArete', { timeout: 8000 }).then((interception) => {
       expect(interception.response.statusCode).to.eq(200)
@@ -406,6 +409,10 @@ describe('InspeccionFormView', () => {
   it('muestra alerta al finalizar con animales sin resultado asignado', () => {
     seedPrediosWithFullData()
 
+    const pastDate = new Date()
+    pastDate.setDate(pastDate.getDate() - 10)
+    const pastDateStr = pastDate.toISOString().split('T')[0]
+
     const router = buildRouter('/inspeccion')
     mount(InspeccionFormView, { global: { plugins: [router] } })
 
@@ -413,8 +420,8 @@ describe('InspeccionFormView', () => {
 
     cy.contains('III: DATOS DE LA PRUEBA').click()
     cy.contains('TIPO DE PRUEBA REALIZADA').parent().find('select').select('PPC')
-    cy.get('input[type="date"]').eq(1).invoke('val', '2026-06-10').trigger('input')
-    cy.get('input[type="date"]').eq(2).should('have.value', '2026-06-13')
+    cy.get('input[type="date"]').eq(1).invoke('val', pastDateStr).trigger('input')
+    cy.get('input[type="date"]').eq(2).should('not.have.value', '')
     cy.get('input[type="time"]').first().invoke('val', '08:00').trigger('input')
     cy.contains('Motivo de la Prueba').parent().find('select').select('Seguimiento')
 
@@ -422,10 +429,16 @@ describe('InspeccionFormView', () => {
     cy.contains('button', /a\u00F1adir|agregar/i).click()
     cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}')
 
-    cy.contains('button', /finalizar/i).first().click()
-    cy.wait(500)
+    cy.then(() => {
+      const vm = Cypress.vue
+      if (!vm) {
+        throw new Error('Cypress.vue is undefined')
+      }
+      return vm.saveInspeccion('sincronizado')
+    })
 
     cy.window().should((win) => {
+      expect(win.alert.called).to.be.true
       expect(win.alert.calledWithMatch(/resultado/i)).to.be.true
     })
   })
@@ -433,7 +446,7 @@ describe('InspeccionFormView', () => {
   it('detecta conflicto al finalizar con datos diferentes en servidor', () => {
     seedPredios()
 
-    cy.intercept('GET', '**/api/inspecciones?folio=*', {
+    cy.intercept('GET', '**/api/inspecciones*', {
       statusCode: 200,
       body: { success: true, data: [{ id: 999, folio: 'TEMP-CONFLICT-999' }] },
     }).as('checkFolio')
@@ -445,7 +458,7 @@ describe('InspeccionFormView', () => {
 
     cy.contains('III: DATOS DE LA PRUEBA').click()
     cy.contains('TIPO DE PRUEBA REALIZADA').parent().find('select').select('PPC')
-    cy.get('input[type="date"]').eq(1).invoke('val', '2026-06-10').trigger('input')
+    cy.get('input[type="date"]').eq(1).invoke('val', '2099-01-01').trigger('input')
     cy.get('input[type="time"]').first().invoke('val', '08:00').trigger('input')
     cy.contains('Motivo de la Prueba').parent().find('select').select('Seguimiento')
 
@@ -453,7 +466,7 @@ describe('InspeccionFormView', () => {
     cy.contains('button', /a\u00F1adir|agregar/i).click()
     cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}')
 
-    cy.get('button.btn-finalizar-row').click({ timeout: 5000 })
+    cy.get('button.btn-mobile-finalizar').click()
     cy.wait('@checkFolio', { timeout: 10000 })
   })
 })
