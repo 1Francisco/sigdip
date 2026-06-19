@@ -50,6 +50,8 @@ describe('Full CRUD Flow (E2E)', () => {
       { path: '/#/medicos', text: 'Médicos' },
       { path: '/#/descargas', text: 'Descargas' },
       { path: '/#/sync', text: 'Sincronización' },
+      { path: '/#/animales', text: 'Animales Registrados' },
+      { path: '/#/aretes-censo', text: 'Aretes del Censo' },
     ]
 
     views.forEach(({ path }) => {

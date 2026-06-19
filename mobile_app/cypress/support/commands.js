@@ -6,6 +6,7 @@ Cypress.Commands.add('mockCapacitor', () => {
 
 Cypress.Commands.add('setLoginState', ({ token, user }) => {
   cy.window().then((win) => {
+    if (!win) return;
     win.localStorage.setItem('sigdip_token', token || 'fake-token-123')
     win.localStorage.setItem('sigdip_user', JSON.stringify(user || {
       id: 1,
@@ -18,6 +19,7 @@ Cypress.Commands.add('setLoginState', ({ token, user }) => {
 
 Cypress.Commands.add('setOfflineCredentials', (creds) => {
   cy.window().then((win) => {
+    if (!win) return;
     win.localStorage.setItem('sigdip_offline_credentials', JSON.stringify(creds || {
       email: 'admin@test.com',
       hash: 'fakehash',
@@ -58,6 +60,7 @@ Cypress.Commands.add('resetAppState', () => {
   cy.wipeLocalStorage()
   cy.clearIndexedDB()
   cy.window().then((win) => {
+    if (!win) return;
     win.sessionStorage.clear()
   })
 })

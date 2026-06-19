@@ -210,7 +210,7 @@ export default {
       return this.filteredPredios.length;
     },
     totalPages() {
-      return Math.max(1, Math.ceil(this.totalResults / 10));
+      return Math.max(1, Math.ceil(this.totalResults / 20));
     },
     startResult() {
       return this.totalResults === 0 ? 0 : ((this.currentPage - 1) * 10) + 1;
@@ -219,7 +219,7 @@ export default {
       return Math.min(this.currentPage * 10, this.totalResults);
     },
     paginatedPredios() {
-      return this.filteredPredios.slice((this.currentPage - 1) * 10, this.currentPage * 10);
+      return this.filteredPredios.slice((this.currentPage - 1) * 20, this.currentPage * 20);
     }
   },
   watch: {

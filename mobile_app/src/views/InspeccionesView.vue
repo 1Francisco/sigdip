@@ -268,20 +268,20 @@ export default {
   },
   computed: {
     totalPages() {
-      return Math.ceil(this.totalResults / 10) || 1;
+      return Math.ceil(this.totalResults / 20) || 1;
     },
     totalResults() {
       return this.inspecciones.length;
     },
     startResult() {
-      return this.totalResults === 0 ? 0 : ((this.currentPage - 1) * 10) + 1;
+      return this.totalResults === 0 ? 0 : ((this.currentPage - 1) * 20) + 1;
     },
     endResult() {
-      return Math.min(this.currentPage * 10, this.totalResults);
+      return Math.min(this.currentPage * 20, this.totalResults);
     },
     paginatedInspecciones() {
-      const start = (this.currentPage - 1) * 10;
-      const end = this.currentPage * 10;
+      const start = (this.currentPage - 1) * 20;
+      const end = this.currentPage * 20;
       return this.inspecciones.slice(start, end);
     }
   },

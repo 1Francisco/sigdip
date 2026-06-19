@@ -450,7 +450,7 @@ export default {
       return this.filteredProductores.length;
     },
     totalPages() {
-      return Math.ceil(this.totalResults / 10) || 1;
+      return Math.ceil(this.totalResults / 20) || 1;
     },
     startResult() {
       return this.totalResults === 0 ? 0 : (this.currentPage - 1) * 10 + 1;
@@ -459,7 +459,7 @@ export default {
       return Math.min(this.currentPage * 10, this.totalResults);
     },
     paginatedProductores() {
-      return this.filteredProductores.slice((this.currentPage - 1) * 10, this.currentPage * 10);
+      return this.filteredProductores.slice((this.currentPage - 1) * 20, this.currentPage * 20);
     }
   },
   async mounted() {

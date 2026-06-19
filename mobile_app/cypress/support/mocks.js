@@ -9,10 +9,17 @@ export function mockCapacitorNetwork(online = true) {
 
 export function mockCapacitorModules(cy) {
   cy.window().then((win) => {
-    win.Capacitor = {
-      isNativePlatform: () => false,
-      platform: 'web',
-    }
+    if (!win) return;
+    try {
+
+    Object.defineProperty(win, 'Capacitor', {
+      value: {
+        isNativePlatform: () => false,
+        platform: 'web',
+      },
+      writable: true,
+      configurable: true,
+    })
 
     win.CapacitorPlugins = {
       Network: {
@@ -96,5 +103,8 @@ export function mockCapacitorModules(cy) {
     }
 
     win.CustomEvent = win.CustomEvent || (() => {})
+    } catch (e) {
+      // Silently fail - window might be undefined in headless mode during cleanup
+    }
   })
 }

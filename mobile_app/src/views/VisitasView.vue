@@ -483,7 +483,7 @@ export default {
   },
   computed: {
     totalPages() {
-      return Math.ceil(this.totalResults / 10) || 1;
+      return Math.ceil(this.totalResults / 20) || 1;
     },
     totalResults() {
       return this.visitas.length;

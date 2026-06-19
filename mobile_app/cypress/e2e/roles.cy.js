@@ -23,6 +23,8 @@ describe('Role-based Navigation (E2E)', () => {
       cy.get('.sidebar').contains('Inspecciones').should('be.visible')
       cy.get('.sidebar').contains('Agenda / Visitas').should('be.visible')
       cy.get('.sidebar').contains('Médicos').should('be.visible')
+      cy.get('.sidebar').contains('Animales').should('be.visible')
+      cy.get('.sidebar').contains('Aretes del Censo').should('be.visible')
       cy.get('.sidebar').contains('Importar Excel').should('be.visible')
       cy.get('.sidebar').contains('Descargas').should('be.visible')
       cy.get('.sidebar').contains('Sábana Excel').should('be.visible')
@@ -88,6 +90,22 @@ describe('Role-based Navigation (E2E)', () => {
       cy.wait('@getMedicos', { timeout: 10000 })
       cy.get('h2', { timeout: 5000 }).should('be.visible')
     })
+
+    it('navega a Animales', () => {
+      cy.intercept('GET', '**/api/animales', { statusCode: 200, body: { data: [] } }).as('getAnimales')
+
+      cy.visit('/#/animales')
+      cy.wait('@getAnimales', { timeout: 10000 })
+      cy.get('h2', { timeout: 5000 }).should('contain', 'Animales Registrados')
+    })
+
+    it('navega a Aretes del Censo', () => {
+      cy.intercept('GET', '**/api/aretes-censo', { statusCode: 200, body: { data: [] } }).as('getAretes')
+
+      cy.visit('/#/aretes-censo')
+      cy.wait('@getAretes', { timeout: 10000 })
+      cy.get('h2', { timeout: 5000 }).should('contain', 'Aretes del Censo')
+    })
   })
 
   describe('como Medico', () => {
@@ -114,6 +132,8 @@ describe('Role-based Navigation (E2E)', () => {
       cy.get('.sidebar').contains('Sincronizar').should('be.visible')
 
       cy.get('.sidebar').contains('Médicos').should('not.exist')
+      cy.get('.sidebar').contains('Animales').should('not.exist')
+      cy.get('.sidebar').contains('Aretes del Censo').should('not.exist')
       cy.get('.sidebar').contains('Importar Excel').should('not.exist')
       cy.get('.sidebar').contains('Sábana Excel').should('not.exist')
     })
@@ -169,6 +189,16 @@ describe('Role-based Navigation (E2E)', () => {
       cy.visit('/#/medicos')
       cy.location('hash', { timeout: 5000 }).should('eq', '#/dashboard')
     })
+
+    it('es redirigido al dashboard al visitar Animales', () => {
+      cy.visit('/#/animales')
+      cy.location('hash', { timeout: 5000 }).should('eq', '#/dashboard')
+    })
+
+    it('es redirigido al dashboard al visitar Aretes del Censo', () => {
+      cy.visit('/#/aretes-censo')
+      cy.location('hash', { timeout: 5000 }).should('eq', '#/dashboard')
+    })
   })
 
   describe('sin sesion', () => {
@@ -178,7 +208,7 @@ describe('Role-based Navigation (E2E)', () => {
     })
 
     it('redirige a login al intentar acceder a cualquier ruta protegida', () => {
-      const rutas = ['/productores', '/predios', '/inspecciones', '/visitas', '/sync', '/medicos', '/descargas', '/inspeccion']
+      const rutas = ['/productores', '/predios', '/inspecciones', '/visitas', '/sync', '/medicos', '/descargas', '/inspeccion', '/animales', '/aretes-censo']
       rutas.forEach(ruta => {
         cy.visit('/#' + ruta)
         cy.location('hash').should('eq', '#/login')

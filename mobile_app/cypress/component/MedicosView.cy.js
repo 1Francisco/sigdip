@@ -126,16 +126,16 @@ describe('MedicosView', () => {
       mount(MedicosView, { global: { plugins: [router] } })
 
       cy.wait('@getMedicos', { timeout: 10000 })
-      cy.contains('Pág. 1 de 3', { timeout: 5000 }).should('be.visible')
-      cy.contains('Mostrando 1 a 10 de 25 registros').should('be.visible')
+      cy.contains('Pág. 1 de 2', { timeout: 5000 }).should('be.visible')
+      cy.contains('Mostrando 1 a 20 de 25 registros').should('be.visible')
 
       cy.get('.next-btn').click()
-      cy.contains('Pág. 2 de 3', { timeout: 5000 }).should('be.visible')
-      cy.contains('Mostrando 11 a 20 de 25 registros').should('be.visible')
+      cy.contains('Pág. 2 de 2', { timeout: 5000 }).should('be.visible')
+      cy.contains('Mostrando 21 a 25 de 25 registros').should('be.visible')
 
       cy.get('.prev-btn').click()
-      cy.contains('Pág. 1 de 3', { timeout: 5000 }).should('be.visible')
-      cy.contains('Mostrando 1 a 10 de 25 registros').should('be.visible')
+      cy.contains('Pág. 1 de 2', { timeout: 5000 }).should('be.visible')
+      cy.contains('Mostrando 1 a 20 de 25 registros').should('be.visible')
     })
 
     it('elimina medico con confirmacion', () => {
@@ -189,6 +189,83 @@ describe('MedicosView', () => {
 
       cy.wait('@getMedicos', { timeout: 10000 })
       cy.get('.connectivity-badge', { timeout: 5000 }).should('be.visible')
+    })
+
+    it('filtra medicos por busqueda de nombre', () => {
+      cy.intercept('GET', '**/api/medicos', {
+        statusCode: 200,
+        body: { data: fakeMedicos },
+      }).as('getMedicos')
+
+      const router = buildRouter()
+      router.push('/medicos')
+      mount(MedicosView, { global: { plugins: [router] } })
+
+      cy.wait('@getMedicos', { timeout: 10000 })
+
+      cy.window().then(() => {
+        const el = document.querySelector('input[placeholder*="Buscar"]')
+        if (el) {
+          el.value = 'Juan'
+          el.dispatchEvent(new Event('input'))
+        }
+      })
+      cy.contains('Dr. Juan Perez Lopez').should('be.visible')
+      cy.contains('Dra. Maria Garcia Hernandez').should('not.exist')
+    })
+
+    it('filtra medicos por busqueda de correo', () => {
+      cy.intercept('GET', '**/api/medicos', {
+        statusCode: 200,
+        body: { data: fakeMedicos },
+      }).as('getMedicos')
+
+      const router = buildRouter()
+      router.push('/medicos')
+      mount(MedicosView, { global: { plugins: [router] } })
+
+      cy.wait('@getMedicos', { timeout: 10000 })
+
+      cy.window().then(() => {
+        const el = document.querySelector('input[placeholder*="Buscar"]')
+        if (el) {
+          el.value = 'maria.garcia'
+          el.dispatchEvent(new Event('input'))
+        }
+      })
+      cy.contains('Dra. Maria Garcia Hernandez').should('be.visible')
+      cy.contains('Dr. Juan Perez Lopez').should('not.exist')
+    })
+
+    it('muestra todos los medicos cuando search se limpia', () => {
+      cy.intercept('GET', '**/api/medicos', {
+        statusCode: 200,
+        body: { data: fakeMedicos },
+      }).as('getMedicos')
+
+      const router = buildRouter()
+      router.push('/medicos')
+      mount(MedicosView, { global: { plugins: [router] } })
+
+      cy.wait('@getMedicos', { timeout: 10000 })
+
+      cy.window().then(() => {
+        const el = document.querySelector('input[placeholder*="Buscar"]')
+        if (el) {
+          el.value = 'ZZZZ'
+          el.dispatchEvent(new Event('input'))
+        }
+      })
+      cy.contains('Dr. Juan Perez Lopez').should('not.exist')
+
+      cy.window().then(() => {
+        const el = document.querySelector('input[placeholder*="Buscar"]')
+        if (el) {
+          el.value = ''
+          el.dispatchEvent(new Event('input'))
+        }
+      })
+      cy.contains('Dr. Juan Perez Lopez').should('be.visible')
     })
   })
 

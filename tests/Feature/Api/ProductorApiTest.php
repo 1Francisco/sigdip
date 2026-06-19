@@ -146,9 +146,19 @@ class ProductorApiTest extends TestCase
 
     public function test_search_predios()
     {
-        $productor = Productor::factory()->create(['nombre' => 'Carlos']);
-        Predio::factory()->create(['nombre_rancho' => 'Rancho Sol', 'productor_id' => $productor->id]);
-        Predio::factory()->create(['nombre_rancho' => 'Rancho Luna', 'productor_id' => $productor->id]);
+        $productor = Productor::factory()->create(['nombre' => 'Carlos', 'apellido_paterno' => 'Lopez']);
+        Predio::factory()->create([
+            'nombre_rancho' => 'Rancho Sol',
+            'clave_unidad_produccion' => 'CUP-SOL',
+            'localidad' => 'LocalidadX',
+            'productor_id' => $productor->id,
+        ]);
+        Predio::factory()->create([
+            'nombre_rancho' => 'Rancho Luna',
+            'clave_unidad_produccion' => 'CUP-LUNA',
+            'localidad' => 'LocalidadY',
+            'productor_id' => $productor->id,
+        ]);
 
         $response = $this->getJson('/api/predios?search=Sol');
 

@@ -38,6 +38,20 @@
               </button>
             </div>
           </div>
+          <!-- Search bar -->
+          <div class="mt-3">
+            <div class="input-group">
+              <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+              <input
+                v-model="search"
+                type="text"
+                class="form-control border-start-0 px-2 py-2 fs-6-5"
+                placeholder="Buscar por nombre o correo..."
+                style="outline: none; box-shadow: none; border-color: #dee2e6;"
+                @input="currentPage = 1"
+              >
+            </div>
+          </div>
         </div>
 
         <div class="card-body p-0 text-start">
@@ -198,28 +212,38 @@ export default {
       loading: false,
       refreshing: false,
       medicos: [],
+      search: '',
       currentPage: 1,
+      perPage: 20,
       successMsg: '',
       errorMsg: ''
     };
   },
   computed: {
+    filteredMedicos() {
+      if (!this.search) return this.medicos;
+      const q = this.search.toLowerCase();
+      return this.medicos.filter(m =>
+        (m.name && m.name.toLowerCase().includes(q)) ||
+        (m.email && m.email.toLowerCase().includes(q))
+      );
+    },
     totalPages() {
-      return Math.ceil(this.totalResults / 10) || 1;
+      return Math.ceil(this.totalResults / this.perPage) || 1;
     },
     totalResults() {
-      return this.medicos.length;
+      return this.filteredMedicos.length;
     },
     startResult() {
-      return this.totalResults === 0 ? 0 : ((this.currentPage - 1) * 10) + 1;
+      return this.totalResults === 0 ? 0 : ((this.currentPage - 1) * this.perPage) + 1;
     },
     endResult() {
-      return Math.min(this.currentPage * 10, this.totalResults);
+      return Math.min(this.currentPage * this.perPage, this.totalResults);
     },
     paginatedMedicos() {
-      const start = (this.currentPage - 1) * 10;
-      const end = this.currentPage * 10;
-      return this.medicos.slice(start, end);
+      const start = (this.currentPage - 1) * this.perPage;
+      const end = this.currentPage * this.perPage;
+      return this.filteredMedicos.slice(start, end);
     }
   },
   async mounted() {
