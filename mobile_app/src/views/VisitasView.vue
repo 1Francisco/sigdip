@@ -1,109 +1,6 @@
 <template>
-  <div class="app-container bg-light-page">
-    <!-- Sidebar (Drawer) -->
-    <div class="sidebar-overlay" :class="{ active: sidebarActive }" @click="sidebarActive = false"></div>
-    
-    <aside class="sidebar" :class="{ active: sidebarActive }">
-      <div class="sidebar-brand">
-        <img src="/icon_png.png" alt="SIGDIP" class="sidebar-logo">
-        <span>SIGDIP</span>
-        <button class="btn-close-sidebar" @click="sidebarActive = false">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <nav class="nav flex-column">
-        <template v-if="isAdmin">
-          <a class="nav-link" @click.prevent="$router.push('/dashboard')">
-            <i class="bi bi-grid-1x2-fill"></i> Dashboard
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/productores')">
-            <i class="bi bi-people"></i> Productores
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/predios')">
-            <i class="bi bi-house-door"></i> Predios
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspecciones')">
-            <i class="bi bi-clipboard-check"></i> Inspecciones
-          </a>
-          <a class="nav-link active" @click.prevent="sidebarActive = false">
-            <i class="bi bi-calendar-event"></i> Agenda / Visitas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/medicos')">
-            <i class="bi bi-person-badge"></i> Médicos
-          </a>
-          <a class="nav-link" @click.prevent="alertWebOnly('Importar Excel')">
-            <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
-          </a>
-          <hr class="mx-3 text-slate-200">
-          <a class="nav-link" @click.prevent="$router.push('/descargas')">
-            <i class="bi bi-download"></i> Descargas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspecciones?downloadExcel=true')">
-            <i class="bi bi-file-earmark-excel"></i> Sábana Excel
-          </a>
-        </template>
-        <template v-else>
-          <a class="nav-link" @click.prevent="$router.push('/dashboard')">
-            <i class="bi bi-grid-1x2-fill"></i> Dashboard
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/productores')">
-            <i class="bi bi-people"></i> Productores
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/predios')">
-            <i class="bi bi-house-door"></i> Predios
-          </a>
-          <a class="nav-link active" @click.prevent="sidebarActive = false">
-            <i class="bi bi-calendar-event"></i> Agenda / Visitas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspecciones')">
-            <i class="bi bi-clipboard-check"></i> Inspecciones
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspeccion')">
-            <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/descargas')">
-            <i class="bi bi-download"></i> Descargas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/sync')">
-            <i class="bi bi-arrow-repeat"></i> Sincronizar
-          </a>
-        </template>
-
-        <hr class="mx-3 text-slate-200">
-        <a class="nav-link text-danger logout-btn" @click.prevent="doLogout">
-          <i class="bi bi-box-arrow-left"></i> Salir
-        </a>
-      </nav>
-    </aside>
-
-    <!-- Mobile Header -->
-    <header class="mobile-header shadow-sm">
-      <button class="header-hamburger-btn rounded-circle" @click="sidebarActive = true">
-        <i class="bi bi-list fs-4"></i>
-      </button>
-      
-      <div class="brand-title flex-grow-1 text-center">
-        <img src="/icon_png.png" alt="SIGDIP" class="brand-icon">
-        <span class="fw-bold">SIGDIP</span>
-      </div>
-
-      <!-- Connectivity Badge Mobile -->
-      <div 
-        class="badge rounded-pill px-2-5 py-1-5 d-flex align-items-center gap-1.5 fw-semibold me-2 border connectivity-badge shadow-sm"
-        :class="isOnline ? 'bg-success-subtle text-success border-success-subtle' : 'bg-danger-subtle text-danger border-danger-subtle'"
-      >
-        <span class="pulse-dot" :class="isOnline ? 'bg-success' : 'bg-danger'"></span>
-        <span class="badge-text d-none d-sm-inline">{{ isOnline ? 'Online' : 'Offline' }}</span>
-      </div>
-
-      <button class="avatar-circle rounded-circle" @click="sidebarActive = true">
-        <i class="bi bi-person"></i>
-      </button>
-    </header>
-
-    <!-- Main Content -->
-    <main class="app-content main-content bg-light">
-      
+  <AppLayout>
+    <PullToRefresh @refresh="onRefresh" :loading="refreshing">
       <!-- Top Action Bar (Premium Web Replica) -->
       <div class="welcome-header mb-4 text-start d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
         <div>
@@ -279,6 +176,14 @@
                             <i class="bi bi-pencil"></i>
                           </button>
                           <button 
+                            @click="$router.push('/visitas/' + visita.id)" 
+                            class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center bg-transparent border-secondary text-secondary" 
+                            title="Ver Detalle"
+                            style="width: 32px; height: 32px;"
+                          >
+                            <i class="bi bi-eye"></i>
+                          </button>
+                          <button 
                             v-if="visita.estado !== 'cancelada'"
                             @click="cancelar(visita)" 
                             class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center bg-transparent border-danger text-danger" 
@@ -428,6 +333,14 @@
                         <i class="bi bi-pencil"></i>
                       </button>
                       <button 
+                        @click="$router.push('/visitas/' + visita.id)" 
+                        class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center bg-transparent border-secondary text-secondary" 
+                        title="Ver Detalle"
+                        style="width: 40px; height: 40px; border-radius: 10px;"
+                      >
+                        <i class="bi bi-eye"></i>
+                      </button>
+                      <button 
                         v-if="visita.estado !== 'cancelada'"
                         @click="cancelar(visita)" 
                         class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center bg-transparent border-danger text-danger" 
@@ -476,93 +389,80 @@
           </div>
         </div>
       </div>
-    </main>
+    </PullToRefresh>
+  </AppLayout>
 
-    <!-- Bottom Nav -->
-    <nav class="bottom-nav">
-      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
-        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
-        <span>Inicio</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
-        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
-        <span>Productores</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
-        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
-        <span>Predios</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
-        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
-        <span>Dictámenes</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
-        <i class="bi bi-arrow-repeat"></i>
-        <span>Sincronizar</span>
-      </a>
-    </nav>
-
-    <!-- Modal for programming visits -->
-    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-card shadow-lg">
-        <div class="modal-header">
-          <span class="modal-title fw-bold text-dark fs-5">
-            <i class="bi bi-calendar2-week text-primary me-2"></i>
-            {{ formMode === 'create' ? 'Programar Visita' : 'Editar Visita' }}
-          </span>
-          <button class="btn-close-modal d-flex align-items-center justify-content-center" @click="closeModal">
-            <i class="bi bi-x-lg"></i>
-          </button>
+  <!-- Modal for programming visits -->
+  <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+    <div class="modal-card shadow-lg">
+      <div class="modal-header">
+        <span class="modal-title fw-bold text-dark fs-5">
+          <i class="bi bi-calendar2-week text-primary me-2"></i>
+          {{ formMode === 'create' ? 'Programar Visita' : 'Editar Visita' }}
+        </span>
+        <button class="btn-close-modal d-flex align-items-center justify-content-center" @click="closeModal">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body text-start">
+        <div class="form-group-custom">
+          <label class="form-label-custom">Predio / Rancho *</label>
+          <select v-model="form.predio_id" class="form-control-custom" required>
+            <option value="">Selecciona un predio</option>
+            <option v-for="predio in predios" :key="predio.id" :value="predio.id">
+              {{ predio.nombre_rancho || predio.nombre }} - {{ predio.productor?.nombre }} {{ predio.productor?.apellido_paterno }}
+            </option>
+          </select>
         </div>
-        <div class="modal-body text-start">
-          <div class="form-group-custom">
-            <label class="form-label-custom">Predio / Rancho *</label>
-            <select v-model="form.predio_id" class="form-control-custom" required>
-              <option value="">Selecciona un predio</option>
-              <option v-for="predio in predios" :key="predio.id" :value="predio.id">
-                {{ predio.nombre_rancho || predio.nombre }} - {{ predio.productor?.nombre }} {{ predio.productor?.apellido_paterno }}
-              </option>
-            </select>
-          </div>
-          <div class="form-group-custom">
-            <label class="form-label-custom">Fecha Programada *</label>
-            <input v-model="form.fecha_programada" type="date" class="form-control-custom" required>
-          </div>
-          <div class="form-group-custom">
-            <label class="form-label-custom">Observaciones</label>
-            <textarea v-model="form.observaciones" class="form-control-custom" rows="3" placeholder="Ingresa notas o indicaciones para la visita..."></textarea>
-          </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Médico Veterinario *</label>
+          <select v-model="form.veterinario_id" class="form-control-custom" required>
+            <option value="">Selecciona un médico</option>
+            <option v-for="medico in medicos" :key="medico.id" :value="medico.id">
+              {{ medico.name }} {{ medico.email ? `(${medico.email})` : '' }}
+            </option>
+          </select>
         </div>
-        <div class="modal-footer">
-          <button class="btn-modal-cancel" @click="closeModal">Cancelar</button>
-          <button class="btn-modal-save" @click="saveVisita" :disabled="saving">
-            {{ saving ? 'Guardando...' : 'Guardar Datos' }}
-          </button>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Fecha Programada *</label>
+          <input v-model="form.fecha_programada" type="date" class="form-control-custom" required>
         </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Observaciones</label>
+          <textarea v-model="form.observaciones" class="form-control-custom" rows="3" placeholder="Ingresa notas o indicaciones para la visita..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" @click="closeModal">Cancelar</button>
+        <button class="btn-modal-save" @click="saveVisita" :disabled="saving">
+          {{ saving ? 'Guardando...' : 'Guardar Datos' }}
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { Network } from '@capacitor/network';
+import AppLayout from '../components/AppLayout.vue';
+import PullToRefresh from '../components/PullToRefresh.vue';
 import api from '../services/api.js';
 import db from '../services/db.js';
 
 export default {
   name: 'VisitasView',
+  components: { AppLayout, PullToRefresh },
   data() {
     return {
       userName: '',
       isAdmin: false,
       isOnline: true,
-      sidebarActive: false,
-      networkListener: null,
       loading: false,
+      refreshing: false,
       saving: false,
       visitas: [],
       visitasPendientes: [],
       predios: [],
+      medicos: [],
       filters: {
         fecha: ''
       },
@@ -572,7 +472,8 @@ export default {
       form: {
         predio_id: '',
         fecha_programada: '',
-        observaciones: ''
+        observaciones: '',
+        veterinario_id: ''
       },
       currentPage: 1,
       syncingVisita: null,
@@ -607,50 +508,36 @@ export default {
 
     await this.loadAll();
 
-    try {
-      const status = await Network.getStatus();
-      this.isOnline = status.connected;
-      this.networkListener = await Network.addListener('networkStatusChange', (status) => {
-        this.isOnline = status.connected;
-      });
-    } catch (e) {
-      this._onWindowOnline = () => this.isOnline = true;
-      this._onWindowOffline = () => this.isOnline = false;
-      window.addEventListener('online', this._onWindowOnline);
-      window.addEventListener('offline', this._onWindowOffline);
-    }
+    this._onWindowOnline = () => this.isOnline = true;
+    this._onWindowOffline = () => this.isOnline = false;
+    window.addEventListener('online', this._onWindowOnline);
+    window.addEventListener('offline', this._onWindowOffline);
 
     window.addEventListener('sigdip-sync-complete', this.refreshOnSync);
   },
   beforeUnmount() {
-    if (this.networkListener) {
-      this.networkListener.remove();
-    }
-    if (this._onWindowOnline) window.removeEventListener('online', this._onWindowOnline);
-    if (this._onWindowOffline) window.removeEventListener('offline', this._onWindowOffline);
+    window.removeEventListener('online', this._onWindowOnline);
+    window.removeEventListener('offline', this._onWindowOffline);
     window.removeEventListener('sigdip-sync-complete', this.refreshOnSync);
   },
   methods: {
-    alertWebOnly(seccion) {
-      alert(`La sección de ${seccion} es una función administrativa disponible en la web de escritorio.`);
-      this.sidebarActive = false;
-    },
-    async doLogout() {
-      try { 
-        await api.logout(); 
-      } catch (e) { 
-        // Silenciar errores en offline
-      }
-      localStorage.removeItem('sigdip_token');
-      localStorage.removeItem('sigdip_user');
-      sessionStorage.clear();
-      this.$router.push('/login');
-    },
     async loadAll() {
       this.errorMsg = '';
       await this.loadPredios();
+      await this.loadMedicos();
       await Promise.all([this.loadVisitas(), this.loadVisitasPendientes()]);
       this.mergePendingVisitas();
+    },
+
+    async onRefresh() {
+      this.refreshing = true;
+      try {
+        await this.loadAll();
+      } catch (e) {
+        console.warn('Refresh error:', e);
+      } finally {
+        this.refreshing = false;
+      }
     },
 
     mergePendingVisitas() {
@@ -685,6 +572,15 @@ export default {
       } catch (e) {
         console.warn('Error loading pending visits:', e);
         this.visitasPendientes = [];
+      }
+    },
+    async loadMedicos() {
+      try {
+        const res = await api.getMedicos();
+        this.medicos = res.data || [];
+      } catch (e) {
+        console.warn('No se pudieron cargar los médicos:', e.message);
+        this.medicos = [];
       }
     },
     async loadPredios() {

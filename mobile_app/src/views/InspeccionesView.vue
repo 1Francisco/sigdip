@@ -1,109 +1,6 @@
 <template>
-  <div class="app-container bg-light-page">
-    <!-- Sidebar (Drawer) -->
-    <div class="sidebar-overlay" :class="{ active: sidebarActive }" @click="sidebarActive = false"></div>
-    
-    <aside class="sidebar" :class="{ active: sidebarActive }">
-      <div class="sidebar-brand">
-        <img src="/icon_png.png" alt="SIGDIP" class="sidebar-logo">
-        <span>SIGDIP</span>
-        <button class="btn-close-sidebar" @click="sidebarActive = false">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <nav class="nav flex-column">
-        <template v-if="isAdmin">
-          <a class="nav-link" @click.prevent="$router.push('/dashboard')">
-            <i class="bi bi-grid-1x2-fill"></i> Dashboard
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/productores')">
-            <i class="bi bi-people"></i> Productores
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/predios')">
-            <i class="bi bi-house-door"></i> Predios
-          </a>
-          <a class="nav-link active" @click.prevent="sidebarActive = false">
-            <i class="bi bi-clipboard-check"></i> Inspecciones
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/visitas')">
-            <i class="bi bi-calendar-event"></i> Agenda / Visitas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/medicos')">
-            <i class="bi bi-person-badge"></i> Médicos
-          </a>
-          <a class="nav-link" @click.prevent="alertWebOnly('Importar Excel')">
-            <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
-          </a>
-          <hr class="mx-3 text-slate-200">
-          <a class="nav-link" @click.prevent="$router.push('/descargas')">
-            <i class="bi bi-download"></i> Descargas
-          </a>
-          <a class="nav-link" @click.prevent="downloadSábana()">
-            <i class="bi bi-file-earmark-excel"></i> Sábana Excel
-          </a>
-        </template>
-        <template v-else>
-          <a class="nav-link" @click.prevent="$router.push('/dashboard')">
-            <i class="bi bi-grid-1x2-fill"></i> Dashboard
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/productores')">
-            <i class="bi bi-people"></i> Productores
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/predios')">
-            <i class="bi bi-house-door"></i> Predios
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/visitas')">
-            <i class="bi bi-calendar-event"></i> Agenda / Visitas
-          </a>
-          <a class="nav-link active" @click.prevent="sidebarActive = false">
-            <i class="bi bi-clipboard-check"></i> Inspecciones
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspeccion')">
-            <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/descargas')">
-            <i class="bi bi-download"></i> Descargas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/sync')">
-            <i class="bi bi-arrow-repeat"></i> Sincronizar
-          </a>
-        </template>
-
-        <hr class="mx-3 text-slate-200">
-        <a class="nav-link text-danger logout-btn" @click.prevent="doLogout">
-          <i class="bi bi-box-arrow-left"></i> Salir
-        </a>
-      </nav>
-    </aside>
-
-    <!-- Mobile Header -->
-    <header class="mobile-header shadow-sm">
-      <button class="header-hamburger-btn rounded-circle" @click="sidebarActive = true">
-        <i class="bi bi-list fs-4"></i>
-      </button>
-      
-      <div class="brand-title flex-grow-1 text-center">
-        <img src="/icon_png.png" alt="SIGDIP" class="brand-icon">
-        <span class="fw-bold">SIGDIP</span>
-      </div>
-
-      <!-- Connectivity Badge Mobile -->
-      <div 
-        class="badge rounded-pill px-2-5 py-1-5 d-flex align-items-center gap-1.5 fw-semibold me-2 border connectivity-badge shadow-sm"
-        :class="isOnline ? 'bg-success-subtle text-success border-success-subtle' : 'bg-danger-subtle text-danger border-danger-subtle'"
-      >
-        <span class="pulse-dot" :class="isOnline ? 'bg-success' : 'bg-danger'"></span>
-        <span class="badge-text d-none d-sm-inline">{{ isOnline ? 'Online' : 'Offline' }}</span>
-      </div>
-
-      <button class="avatar-circle rounded-circle" @click="sidebarActive = true">
-        <i class="bi bi-person"></i>
-      </button>
-    </header>
-
-    <!-- Main Content -->
-    <main class="app-content main-content bg-light">
-      
+  <AppLayout>
+    <PullToRefresh @refresh="onRefresh" :loading="refreshing">
       <!-- Top Action Bar (Premium Web Replica) -->
       <div class="welcome-header mb-4 text-start d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
         <div>
@@ -339,36 +236,13 @@
           </div>
         </div>
       </div>
-    </main>
-
-    <!-- Bottom Nav -->
-    <nav class="bottom-nav">
-      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
-        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
-        <span>Inicio</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
-        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
-        <span>Productores</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
-        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
-        <span>Predios</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
-        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
-        <span>Dictámenes</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
-        <i class="bi bi-arrow-repeat"></i>
-        <span>Sincronizar</span>
-      </a>
-    </nav>
-  </div>
+    </PullToRefresh>
+  </AppLayout>
 </template>
 
 <script>
-import { Network } from '@capacitor/network';
+import AppLayout from '../components/AppLayout.vue';
+import PullToRefresh from '../components/PullToRefresh.vue';
 import api from '../services/api.js';
 import db from '../services/db.js';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -376,14 +250,14 @@ import { Share } from '@capacitor/share';
 
 export default {
   name: 'InspeccionesView',
+  components: { AppLayout, PullToRefresh },
   data() {
     return {
       userName: '',
       isAdmin: false,
       isOnline: true,
-      sidebarActive: false,
-      networkListener: null,
       loading: false,
+      refreshing: false,
       inspecciones: [],
       localDrafts: [],
       prediosCatalog: [],
@@ -419,16 +293,10 @@ export default {
 
     await this.loadAll();
 
-    try {
-      const status = await Network.getStatus();
-      this.isOnline = status.connected;
-      this.networkListener = await Network.addListener('networkStatusChange', (status) => {
-        this.isOnline = status.connected;
-      });
-    } catch (e) {
-      window.addEventListener('online', () => this.isOnline = true);
-      window.addEventListener('offline', () => this.isOnline = false);
-    }
+    this._onWindowOnline = () => this.isOnline = true;
+    this._onWindowOffline = () => this.isOnline = false;
+    window.addEventListener('online', this._onWindowOnline);
+    window.addEventListener('offline', this._onWindowOffline);
 
     if (this.$route.query.downloadExcel === 'true') {
       this.$router.replace({ query: {} });
@@ -436,26 +304,10 @@ export default {
     }
   },
   beforeUnmount() {
-    if (this.networkListener) {
-      this.networkListener.remove();
-    }
+    window.removeEventListener('online', this._onWindowOnline);
+    window.removeEventListener('offline', this._onWindowOffline);
   },
   methods: {
-    alertWebOnly(seccion) {
-      alert(`La sección de ${seccion} es una función administrativa disponible en la web de escritorio.`);
-      this.sidebarActive = false;
-    },
-    async doLogout() {
-      try { 
-        await api.logout(); 
-      } catch (e) { 
-        // Silenciar errores en offline
-      }
-      localStorage.removeItem('sigdip_token');
-      localStorage.removeItem('sigdip_user');
-      sessionStorage.clear();
-      this.$router.push('/login');
-    },
     async loadAll() {
       this.loading = true;
       this.errorMsg = '';
@@ -537,6 +389,16 @@ export default {
         this.loading = false;
       }
     },
+    async onRefresh() {
+      this.refreshing = true;
+      try {
+        await this.loadAll();
+      } catch (e) {
+        console.warn('Refresh error:', e);
+      } finally {
+        this.refreshing = false;
+      }
+    },
     isBorrador(inspeccion) {
       return inspeccion.estado === 'borrador' || inspeccion.__localDraft;
     },
@@ -563,10 +425,10 @@ export default {
       }
     },
     continueDraft(item) {
-      this.$router.push(`/inspeccion/${item.predio_id}?inspeccion_id=${item.id || item.folio}${item.visita_id ? `&visita_id=${item.visita_id}` : ''}`);
+      this.$router.push(`/inspeccion/editar/${item.id || item.folio}${item.visita_id ? `?visita_id=${item.visita_id}` : ''}`);
     },
     continueFromServer(inspeccion) {
-      this.$router.push(`/inspeccion/${inspeccion.predio?.id}?inspeccion_id=${inspeccion.id}${inspeccion.visita_id ? `&visita_id=${inspeccion.visita_id}` : ''}`);
+      this.$router.push(`/inspeccion/editar/${inspeccion.id}${inspeccion.visita_id ? `?visita_id=${inspeccion.visita_id}` : ''}`);
     },
     editInspeccion(inspeccion) {
       if (inspeccion.__localDraft) {
@@ -623,9 +485,6 @@ export default {
       }
     },
     async downloadSábana() {
-      if (this.sidebarActive) {
-        this.sidebarActive = false;
-      }
       this.loading = true;
       this.errorMsg = '';
       this.successMsg = '';

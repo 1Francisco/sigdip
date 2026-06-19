@@ -12,6 +12,22 @@
             <i class="bi bi-plus-lg me-1"></i> Nuevo Médico
         </a>
     </div>
+    <div class="card-body bg-light border-bottom py-2 px-4">
+        <form method="GET" class="row g-2 align-items-center">
+            <div class="col-md-4 col-sm-6">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control border-start-0 rounded-end-pill" placeholder="Buscar por nombre o email..." value="{{ request('search') }}">
+                </div>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-sm btn-primary rounded-pill px-3" type="submit"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+                @if(request('search'))
+                    <a href="{{ route('usuarios.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-x-lg"></i> Limpiar</a>
+                @endif
+            </div>
+        </form>
+    </div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -40,13 +56,21 @@
                         <td>{{ $medico->email }}</td>
                         <td>{{ $medico->created_at->format('d/m/Y') }}</td>
                         <td class="text-end pe-4">
-                            <form action="{{ route('usuarios.destroy', $medico) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de eliminar a este médico? No podrá volver a iniciar sesión.');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-trash"></i> Eliminar
-                                </button>
-                            </form>
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{{ route('usuarios.show', $medico) }}" class="btn btn-sm btn-outline-info" title="Ver Detalle">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ route('usuarios.edit', $medico) }}" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ route('usuarios.destroy', $medico) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de eliminar a este médico? No podrá volver a iniciar sesión.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     @empty

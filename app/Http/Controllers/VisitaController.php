@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Visita;
-use App\Models\Predio;
-use App\Models\User;
 use App\Models\Productor;
+use App\Models\User;
+use App\Models\Visita;
 use Illuminate\Http\Request;
 
 class VisitaController extends Controller
@@ -13,18 +12,33 @@ class VisitaController extends Controller
     public function index(Request $request)
     {
         $query = Visita::with(['predio.productor', 'veterinario', 'inspeccion']);
-        
+
         if ($request->filled('fecha')) {
             $query->whereDate('fecha_programada', $request->fecha);
         }
-        
+
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('codigo_unico', 'like', "%{$search}%")
+                    ->orWhere('observaciones', 'like', "%{$search}%")
+                    ->orWhereHas('predio', function ($pq) use ($search) {
+                        $pq->where('nombre_rancho', 'like', "%{$search}%")
+                            ->orWhereHas('productor', function ($prq) use ($search) {
+                                $prq->where('nombre', 'like', "%{$search}%")
+                                    ->orWhere('apellido_paterno', 'like', "%{$search}%");
+                            });
+                    });
+            });
+        }
+
         $query->orderBy('id', 'desc');
-        
-        if (!auth()->user()->hasRole('Administrador')) {
+
+        if (! auth()->user()->hasRole('Administrador')) {
             $query->where('veterinario_id', auth()->id());
         }
-        
+
         $visitas = $query->paginate(10)->withQueryString();
+
         return view('visitas.index', compact('visitas'));
     }
 
@@ -32,6 +46,7 @@ class VisitaController extends Controller
     {
         $productores = Productor::with('predios')->get();
         $veterinarios = User::role('Medico_Campo')->get();
+
         return view('visitas.create', compact('productores', 'veterinarios'));
     }
 
@@ -45,7 +60,7 @@ class VisitaController extends Controller
         ]);
 
         // Security: Non-admins can only assign visits to themselves
-        if (!auth()->user()->hasRole('Administrador')) {
+        if (! auth()->user()->hasRole('Administrador')) {
             $validated['veterinario_id'] = auth()->id();
         }
 
@@ -68,6 +83,7 @@ class VisitaController extends Controller
         $visita->load('predio.productor');
         $productores = Productor::with('predios')->get();
         $veterinarios = User::role('Medico_Campo')->get();
+
         return view('visitas.edit', compact('visita', 'productores', 'veterinarios'));
     }
 
@@ -80,13 +96,28 @@ class VisitaController extends Controller
             'observaciones' => 'nullable|string',
         ]);
 
-        if (!auth()->user()->hasRole('Administrador')) {
+        if (! auth()->user()->hasRole('Administrador')) {
             $validated['veterinario_id'] = $visita->veterinario_id; // No puede reasignar
         }
 
         $visita->update($validated);
 
         return redirect()->route('visitas.index')->with('success', 'Visita actualizada.');
+    }
+
+    public function show(Visita $visita)
+    {
+        $visita->load(['predio.productor', 'veterinario', 'inspeccion']);
+
+        return view('visitas.show', compact('visita'));
+    }
+
+    public function destroy(Visita $visita)
+    {
+        $visita->delete();
+
+        return redirect()->route('visitas.index')
+            ->with('success', 'Visita eliminada.');
     }
 
     public function reprogramar(Request $request, Visita $visita)
@@ -100,6 +131,6 @@ class VisitaController extends Controller
             'estado' => 'pendiente',
         ]);
 
-        return back()->with('success', 'Visita reprogramada con éxito para el ' . $visita->fecha_programada->format('d/m/Y') . '.');
+        return back()->with('success', 'Visita reprogramada con éxito para el '.$visita->fecha_programada->format('d/m/Y').'.');
     }
 }

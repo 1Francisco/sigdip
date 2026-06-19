@@ -466,6 +466,12 @@
             </a>
             @endrole
             @role('Administrador')
+            <a class="nav-link {{ request()->routeIs('animales.*') ? 'active' : '' }}" href="{{ route('animales.index') }}">
+                <i class="bi bi-gender-ambiguous"></i> Animales
+            </a>
+            <a class="nav-link {{ request()->routeIs('aretes-censo.*') ? 'active' : '' }}" href="{{ route('aretes-censo.index') }}">
+                <i class="bi bi-upc-scan"></i> Aretes del Censo
+            </a>
             <hr class="mx-3 text-slate-200">
             <a class="nav-link" href="{{ route('reportes.excel') }}">
                 <i class="bi bi-file-earmark-excel"></i> Sábana Excel

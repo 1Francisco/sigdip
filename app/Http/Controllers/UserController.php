@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -12,10 +11,19 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Obtener solo a los usuarios que son Médicos de Campo
-        $medicos = User::role('Medico_Campo')->get();
+        $query = User::role('Medico_Campo');
+
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $medicos = $query->get();
+
         return view('users.index', compact('medicos'));
     }
 
@@ -53,9 +61,11 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(User $user)
+    public function show(User $usuario)
     {
-        //
+        $usuario->load('roles');
+
+        return view('users.show', compact('usuario'));
     }
 
     /**
@@ -73,7 +83,7 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $usuario->id,
+            'email' => 'required|string|email|max:255|unique:users,email,'.$usuario->id,
             'password' => 'nullable|string|min:8|confirmed',
         ]);
 
@@ -95,6 +105,7 @@ class UserController extends Controller
     public function destroy(User $usuario)
     {
         $usuario->delete();
+
         return redirect()->route('usuarios.index')->with('success', 'Médico eliminado del sistema.');
     }
 }

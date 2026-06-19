@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\Inspeccion;
-use App\Models\DetalleInspeccion;
-use App\Models\Predio;
 use App\Models\Animal;
+use App\Models\DetalleInspeccion;
+use App\Models\Inspeccion;
+use App\Models\Predio;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
 
         // 2. Ejecutar seeders base
         $this->call([
+            RolesAndPermissionsSeeder::class,
             ProductoresAndPrediosSeeder::class,
             AnimalesSeeder::class,
         ]);
@@ -38,11 +39,11 @@ class DatabaseSeeder extends Seeder
             $inspeccion = Inspeccion::create([
                 'veterinario_id' => $user->id,
                 'predio_id' => $predio->id,
-                'folio' => 'INS-' . date('Ymd') . '-' . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                'folio' => 'INS-'.date('Ymd').'-'.str_pad($index + 1, 3, '0', STR_PAD_LEFT),
                 'fecha' => now()->subDays(rand(0, 30)),
                 'tipo_inspeccion' => 'Movilización',
                 'observaciones' => 'Inspección de prueba generada automáticamente.',
-                'estado' => 'sincronizado'
+                'estado' => 'sincronizado',
             ]);
 
             // Asignar 10 animales aleatorios a esta inspección

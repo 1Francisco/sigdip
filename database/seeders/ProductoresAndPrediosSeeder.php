@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Productor;
 use App\Models\Predio;
+use App\Models\Productor;
 use Illuminate\Database\Seeder;
 
 class ProductoresAndPrediosSeeder extends Seeder
@@ -21,7 +21,7 @@ class ProductoresAndPrediosSeeder extends Seeder
                 'telefono' => '3111234567',
                 'rancho' => 'Rancho La Esperanza',
                 'cup' => '18-001-0001-001',
-                'localidad' => 'Tepic'
+                'localidad' => 'Tepic',
             ],
             [
                 'nombre' => 'María Elena Rodríguez',
@@ -30,7 +30,7 @@ class ProductoresAndPrediosSeeder extends Seeder
                 'telefono' => '3119876543',
                 'rancho' => 'El Mirador',
                 'cup' => '18-001-0002-005',
-                'localidad' => 'Xalisco'
+                'localidad' => 'Xalisco',
             ],
             [
                 'nombre' => 'Roberto Sánchez Ruiz',
@@ -39,7 +39,7 @@ class ProductoresAndPrediosSeeder extends Seeder
                 'telefono' => '3115556677',
                 'rancho' => 'San José',
                 'cup' => '18-002-0010-012',
-                'localidad' => 'Santiago Ixcuintla'
+                'localidad' => 'Santiago Ixcuintla',
             ],
             [
                 'nombre' => 'Ana Lucía Méndez',
@@ -48,7 +48,7 @@ class ProductoresAndPrediosSeeder extends Seeder
                 'telefono' => '3114443322',
                 'rancho' => 'La Providencia',
                 'cup' => '18-003-0015-020',
-                'localidad' => 'Compostela'
+                'localidad' => 'Compostela',
             ],
             [
                 'nombre' => 'Carlos Alberto Flores',
@@ -57,7 +57,7 @@ class ProductoresAndPrediosSeeder extends Seeder
                 'telefono' => '3111112233',
                 'rancho' => 'Santa Fe',
                 'cup' => '18-004-0020-030',
-                'localidad' => 'Ixtlán del Río'
+                'localidad' => 'Ixtlán del Río',
             ],
         ];
 
@@ -67,7 +67,7 @@ class ProductoresAndPrediosSeeder extends Seeder
                 'upp' => $data['rpp'], // Usamos rpp del array como upp
                 'curp' => $data['curp'],
                 'telefono' => $data['telefono'],
-                'localidad' => $data['localidad']
+                'localidad' => $data['localidad'],
             ]);
 
             Predio::create([

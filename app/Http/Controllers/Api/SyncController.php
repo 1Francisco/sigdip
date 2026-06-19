@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Predio;
-use App\Models\Visita;
-use App\Models\Inspeccion;
 use App\Models\Animal;
 use App\Models\DetalleInspeccion;
+use App\Models\Inspeccion;
+use App\Models\Predio;
+use App\Models\Productor;
+use App\Models\User;
+use App\Models\Visita;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -27,7 +29,7 @@ class SyncController extends Controller
 
         // Obtener todas las visitas asignadas a este veterinario (o todas si es Administrador) con relaciones completas
         $query = Visita::with(['predio.productor', 'veterinario', 'inspeccion']);
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             $query->where('veterinario_id', $veterinarioId);
         }
         $visitas = $query->orderByDesc('id')->get()->map(function ($visita) {
@@ -84,8 +86,8 @@ class SyncController extends Controller
         });
 
         // Obtener productores y médicos para caché offline completo
-        $productores = \App\Models\Productor::with('predios')->get();
-        $medicos = \App\Models\User::role('Medico_Campo')
+        $productores = Productor::with('predios')->get();
+        $medicos = User::role('Medico_Campo')
             ->select('id', 'name', 'email')
             ->orderBy('name')
             ->get();
@@ -97,7 +99,7 @@ class SyncController extends Controller
                 'productores' => $productores,
                 'medicos' => $medicos,
                 'visitas' => $visitas,
-            ]
+            ],
         ]);
     }
 
@@ -119,8 +121,9 @@ class SyncController extends Controller
         try {
             foreach ($request->inspecciones as $data) {
                 // Validación básica de cada objeto
-                if (!isset($data['folio']) || !isset($data['predio_id'])) {
+                if (! isset($data['folio']) || ! isset($data['predio_id'])) {
                     $errores[] = ['folio' => $data['folio'] ?? 'Desconocido', 'error' => 'Faltan datos requeridos (folio o predio_id)'];
+
                     continue;
                 }
 
@@ -154,6 +157,7 @@ class SyncController extends Controller
 
                 // Procesar Animales si existen
                 if (isset($data['animales']) && is_array($data['animales'])) {
+                    $inspeccion->load('visita');
                     // Determinar si estamos en fase de lectura y capturar aretes existentes
                     $isLectura = $inspeccion->visita && $inspeccion->visita->inyeccion;
                     $existingAretes = [];
@@ -169,7 +173,9 @@ class SyncController extends Controller
                     DetalleInspeccion::where('inspeccion_id', $inspeccion->id)->delete();
 
                     foreach ($data['animales'] as $item) {
-                        if (empty($item['identificador']) && $isDraft) continue;
+                        if (empty($item['identificador']) && $isDraft) {
+                            continue;
+                        }
 
                         $sexo = $item['sexo'] ?? 'Macho';
                         if ($sexo === 'H' || $sexo === 'Hembra') {
@@ -187,19 +193,19 @@ class SyncController extends Controller
                         $animal = Animal::firstOrCreate(
                             ['numero_arete_siniiga' => $item['identificador']],
                             [
-                                'raza' => $item['raza'] ?? 'No especificada', 
-                                'sexo' => $sexo, 
+                                'raza' => $item['raza'] ?? 'No especificada',
+                                'sexo' => $sexo,
                                 'predio_id' => $data['predio_id'],
-                                'edad' => $edadMeses
+                                'edad' => $edadMeses,
                             ]
                         );
 
-                        $agregadoEnLectura = $isLectura && !in_array($item['identificador'], $existingAretes);
+                        $agregadoEnLectura = $isLectura && ! in_array($item['identificador'], $existingAretes);
 
                         DetalleInspeccion::create([
                             'inspeccion_id' => $inspeccion->id,
                             'animal_id' => $animal->id,
-                            'tipo_arete' => !empty($item['tipo_arete']) ? $item['tipo_arete'] : ($item['tipo_arete_default'] ?? 'SINIIGA'),
+                            'tipo_arete' => ! empty($item['tipo_arete']) ? $item['tipo_arete'] : ($item['tipo_arete_default'] ?? 'SINIIGA'),
                             'edad_meses' => $item['edad_meses'] ?? null,
                             'raza' => $item['raza'] ?? null,
                             'sexo' => $sexo,
@@ -216,11 +222,11 @@ class SyncController extends Controller
                     $visita = Visita::find($data['visita_id']);
                     if ($visita) {
                         $visitaUpdate = [];
-                        if (!$isDraft || !empty($data['fecha_inyeccion']) || ($data['inyeccion_realizada'] ?? false)) {
+                        if (! $isDraft || ! empty($data['fecha_inyeccion']) || ($data['inyeccion_realizada'] ?? false)) {
                             $visitaUpdate['inyeccion'] = true;
                             $visitaUpdate['estado'] = 'completada';
                         }
-                        if (!empty($visitaUpdate)) {
+                        if (! empty($visitaUpdate)) {
                             $visita->update($visitaUpdate);
                         }
                     }
@@ -235,16 +241,17 @@ class SyncController extends Controller
                 'status' => 'success',
                 'message' => 'Sincronización completada',
                 'procesados' => $inspeccionesProcesadas,
-                'errores' => $errores
+                'errores' => $errores,
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error en sincronización móvil: ' . $e->getMessage());
+            Log::error('Error en sincronización móvil: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Hubo un error crítico al sincronizar los datos.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -262,8 +269,9 @@ class SyncController extends Controller
         $errores = [];
 
         foreach ($request->visitas as $data) {
-            if (!isset($data['codigo'])) {
+            if (! isset($data['codigo'])) {
                 $errores[] = ['error' => 'Falta código de visita'];
+
                 continue;
             }
 
@@ -271,6 +279,7 @@ class SyncController extends Controller
                 $existing = Visita::where('codigo', $data['codigo'])->first();
                 if ($existing) {
                     $procesados[] = $data['codigo'];
+
                     continue;
                 }
 

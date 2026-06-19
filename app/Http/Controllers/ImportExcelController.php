@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use ZipArchive;
-use Illuminate\Support\Facades\File;
-use Illuminate\Http\Request;
-use App\Models\Productor;
 use App\Models\AreteCenso;
 use App\Models\Predio;
+use App\Models\Productor;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use ZipArchive;
 
 class ImportExcelController extends Controller
 {
@@ -51,9 +52,9 @@ class ImportExcelController extends Controller
             $extension = $file->getClientOriginalExtension();
 
             if ($extension === 'zip') {
-                $zip = new \ZipArchive();
+                $zip = new ZipArchive;
                 $excelFiles = [];
-                if ($zip->open($file->getPathname()) === TRUE) {
+                if ($zip->open($file->getPathname()) === true) {
                     for ($i = 0; $i < $zip->numFiles; $i++) {
                         $filename = $zip->getNameIndex($i);
                         if (preg_match('/\.(xlsx|xls)$/i', $filename)) {
@@ -64,22 +65,26 @@ class ImportExcelController extends Controller
                 }
 
                 if (empty($excelFiles)) {
-                    throw new \Exception("El archivo ZIP no contiene archivos Excel válidos (.xlsx o .xls).");
+                    throw new \Exception('El archivo ZIP no contiene archivos Excel válidos (.xlsx o .xls).');
                 }
 
                 // --- Obtener muestra de los primeros 2 archivos ---
-                $tempPath = storage_path('app/temp_preview_' . time());
+                $tempPath = storage_path('app/temp_preview_'.time());
                 $previewFiles = array_slice($excelFiles, 0, 2); // Primeros 2 archivos
                 $allSamples = [];
 
-                if ($zip->open($file->getPathname()) === TRUE) {
-                    if (!File::exists($tempPath)) File::makeDirectory($tempPath, 0777, true);
+                if ($zip->open($file->getPathname()) === true) {
+                    if (! File::exists($tempPath)) {
+                        File::makeDirectory($tempPath, 0777, true);
+                    }
                     $zip->extractTo($tempPath, $previewFiles);
                     $zip->close();
 
                     foreach ($previewFiles as $previewFile) {
-                        $fullPath = $tempPath . '/' . $previewFile;
-                        if (!file_exists($fullPath)) continue;
+                        $fullPath = $tempPath.'/'.$previewFile;
+                        if (! file_exists($fullPath)) {
+                            continue;
+                        }
 
                         $reader = IOFactory::createReaderForFile($fullPath);
                         $reader->setReadDataOnly(true);
@@ -97,17 +102,27 @@ class ImportExcelController extends Controller
                                     $cellIterator->setIterateOnlyExistingCells(false);
                                     $rowData = [];
                                     foreach ($cellIterator as $cell) {
-                                        try { $val = $cell->getCalculatedValue(); } catch (\Exception $e) { $val = $cell->getValue(); }
+                                        try {
+                                            $val = $cell->getCalculatedValue();
+                                        } catch (\Exception $e) {
+                                            $val = $cell->getValue();
+                                        }
                                         $rowData[] = $val;
                                     }
-                                    if (array_filter($rowData)) $tempData[] = $rowData;
+                                    if (array_filter($rowData)) {
+                                        $tempData[] = $rowData;
+                                    }
                                 }
-                                if (empty($tempData)) continue;
+                                if (empty($tempData)) {
+                                    continue;
+                                }
 
                                 $headersRaw = $tempData[0];
 
                                 if ($upperName === 'BASE') {
-                                    $headers = array_map(function($h) { return strtoupper(trim($h ?? '---')); }, $headersRaw);
+                                    $headers = array_map(function ($h) {
+                                        return strtoupper(trim($h ?? '---'));
+                                    }, $headersRaw);
                                     $headers[] = 'PREDIO_DETECTADO';
 
                                     // Encontrar columnas clave
@@ -128,11 +143,15 @@ class ImportExcelController extends Controller
                                         $row = $tempData[$i];
                                         $rowStr = strtoupper(implode(' ', array_map('strval', array_filter($row))));
 
-                                        if (strpos($rowStr, 'PREDIO:') !== false || strpos($rowStr, 'RANCHO:') !== false || strpos($rowStr, 'TOTAL') !== false || strpos($rowStr, 'FIRMA') !== false) continue;
+                                        if (strpos($rowStr, 'PREDIO:') !== false || strpos($rowStr, 'RANCHO:') !== false || strpos($rowStr, 'TOTAL') !== false || strpos($rowStr, 'FIRMA') !== false) {
+                                            continue;
+                                        }
 
                                         if ($prodColIdx !== -1) {
-                                            $prodVal = trim((string)($row[$prodColIdx] ?? ''));
-                                            if (empty($prodVal) || strlen($prodVal) < 3 || !preg_match('/[A-Za-z]/', $prodVal)) continue;
+                                            $prodVal = trim((string) ($row[$prodColIdx] ?? ''));
+                                            if (empty($prodVal) || strlen($prodVal) < 3 || ! preg_match('/[A-Za-z]/', $prodVal)) {
+                                                continue;
+                                            }
                                         }
 
                                         // Detectar predio
@@ -140,11 +159,11 @@ class ImportExcelController extends Controller
                                         if (isset($tempData[$i + 1])) {
                                             $nextRow = $tempData[$i + 1];
                                             foreach ($nextRow as $ci => $val) {
-                                                $v = strtoupper(trim((string)($val ?? '')));
+                                                $v = strtoupper(trim((string) ($val ?? '')));
                                                 if (strpos($v, 'PREDIO:') !== false || strpos($v, 'RANCHO:') !== false) {
                                                     $nombre = trim(str_ireplace(['PREDIO:', 'RANCHO:'], '', $v));
                                                     if (empty($nombre) && isset($nextRow[$ci + 1])) {
-                                                        $nombre = trim((string)($nextRow[$ci + 1] ?? ''));
+                                                        $nombre = trim((string) ($nextRow[$ci + 1] ?? ''));
                                                     }
                                                     $predio = $nombre;
                                                     break;
@@ -152,19 +171,25 @@ class ImportExcelController extends Controller
                                             }
                                         }
 
-                                        $rowValues = array_map(function($v) { return $v ?? ''; }, array_values($row));
-                                        while (count($rowValues) < count($headers) - 1) { $rowValues[] = ''; }
+                                        $rowValues = array_map(function ($v) {
+                                            return $v ?? '';
+                                        }, array_values($row));
+                                        while (count($rowValues) < count($headers) - 1) {
+                                            $rowValues[] = '';
+                                        }
                                         $rowValues[] = $predio;
 
                                         // Dividir productores separados por "/"
-                                        $prodName = $prodColIdx !== -1 ? trim((string)($row[$prodColIdx] ?? '')) : '';
+                                        $prodName = $prodColIdx !== -1 ? trim((string) ($row[$prodColIdx] ?? '')) : '';
                                         if (strpos($prodName, '/') !== false && $prodColIdx !== -1) {
                                             $names = array_map('trim', explode('/', $prodName));
-                                            $uppVal = $uppColIdx !== -1 ? trim((string)($row[$uppColIdx] ?? '')) : '';
+                                            $uppVal = $uppColIdx !== -1 ? trim((string) ($row[$uppColIdx] ?? '')) : '';
                                             $upps = strpos($uppVal, '/') !== false ? array_map('trim', explode('/', $uppVal)) : (strpos($uppVal, "\n") !== false ? array_map('trim', explode("\n", $uppVal)) : [$uppVal]);
 
                                             foreach ($names as $k => $name) {
-                                                if (empty($name) || strlen($name) < 3) continue;
+                                                if (empty($name) || strlen($name) < 3) {
+                                                    continue;
+                                                }
                                                 $subRow = $rowValues;
                                                 $subRow[$prodColIdx] = $name;
                                                 if ($uppColIdx !== -1) {
@@ -183,7 +208,9 @@ class ImportExcelController extends Controller
                                         }
                                     }
                                 } else {
-                                    $headersLower = array_map(function($h) { return strtolower(trim($h ?? '')); }, $headersRaw);
+                                    $headersLower = array_map(function ($h) {
+                                        return strtolower(trim($h ?? ''));
+                                    }, $headersRaw);
                                     $areteMapping = [
                                         'ARETE' => ['arete', 'siniiga', 'numero'],
                                         'RAZA' => ['raza'],
@@ -195,7 +222,10 @@ class ImportExcelController extends Controller
                                     foreach ($areteMapping as $label => $patterns) {
                                         foreach ($headersLower as $idx => $h) {
                                             foreach ($patterns as $p) {
-                                                if (strpos($h, $p) !== false) { $areteIndices[$label] = $idx; break 2; }
+                                                if (strpos($h, $p) !== false) {
+                                                    $areteIndices[$label] = $idx;
+                                                    break 2;
+                                                }
                                             }
                                         }
                                     }
@@ -205,11 +235,15 @@ class ImportExcelController extends Controller
                                     $totalReal = 0;
                                     for ($i = 1; $i < count($tempData); $i++) {
                                         $row = $tempData[$i];
-                                        $arete = isset($areteIndices['ARETE']) ? trim((string)($row[$areteIndices['ARETE']] ?? '')) : '';
-                                        if (empty($arete)) continue;
+                                        $arete = isset($areteIndices['ARETE']) ? trim((string) ($row[$areteIndices['ARETE']] ?? '')) : '';
+                                        if (empty($arete)) {
+                                            continue;
+                                        }
 
                                         $totalReal++;
-                                        if (count($finalRows) >= 10) continue;
+                                        if (count($finalRows) >= 10) {
+                                            continue;
+                                        }
 
                                         $nacRaw = isset($areteIndices['NAC']) ? ($row[$areteIndices['NAC']] ?? '') : '';
                                         $nacFormatted = $nacRaw;
@@ -217,27 +251,28 @@ class ImportExcelController extends Controller
                                         try {
                                             if ($nacRaw) {
                                                 if (is_numeric($nacRaw)) {
-                                                    $date = Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($nacRaw));
+                                                    $date = Carbon::instance(Date::excelToDateTimeObject($nacRaw));
                                                 } else {
                                                     $date = Carbon::parse($nacRaw);
                                                 }
-                                                $edad = $date->diffInMonths(Carbon::now()) . ' m';
+                                                $edad = $date->diffInMonths(Carbon::now()).' m';
                                                 $nacFormatted = $date->format('d/m/Y');
                                             }
-                                        } catch (\Exception $e) {}
+                                        } catch (\Exception $e) {
+                                        }
 
                                         $finalRows[] = [
                                             $arete,
                                             $edad,
-                                            isset($areteIndices['RAZA']) ? trim((string)($row[$areteIndices['RAZA']] ?? '')) : '',
-                                            isset($areteIndices['SEXO']) ? trim((string)($row[$areteIndices['SEXO']] ?? '')) : '',
+                                            isset($areteIndices['RAZA']) ? trim((string) ($row[$areteIndices['RAZA']] ?? '')) : '',
+                                            isset($areteIndices['SEXO']) ? trim((string) ($row[$areteIndices['SEXO']] ?? '')) : '',
                                             $nacFormatted,
-                                            isset($areteIndices['SAC?']) ? trim((string)($row[$areteIndices['SAC?']] ?? '')) : '',
+                                            isset($areteIndices['SAC?']) ? trim((string) ($row[$areteIndices['SAC?']] ?? '')) : '',
                                         ];
                                     }
                                 }
 
-                                if (!empty($finalRows)) {
+                                if (! empty($finalRows)) {
                                     // --- NUEVO: Eliminar columnas completamente vacías en la muestra ---
                                     $nonEmptyIndices = [];
                                     foreach ($headers as $idx => $h) {
@@ -248,26 +283,28 @@ class ImportExcelController extends Controller
                                             $hasData = true;
                                         } else {
                                             foreach ($finalRows as $row) {
-                                                $val = trim((string)($row[$idx] ?? ''));
-                                                if (!empty($val) && $val !== '---' && $val !== '0') {
+                                                $val = trim((string) ($row[$idx] ?? ''));
+                                                if (! empty($val) && $val !== '---' && $val !== '0') {
                                                     $hasData = true;
                                                     break;
                                                 }
                                             }
                                         }
-                                        if ($hasData) $nonEmptyIndices[] = $idx;
+                                        if ($hasData) {
+                                            $nonEmptyIndices[] = $idx;
+                                        }
                                     }
 
                                     // Filtrar headers y filas
                                     $headers = array_values(array_intersect_key($headers, array_flip($nonEmptyIndices)));
-                                    $finalRows = array_map(function($row) use ($nonEmptyIndices) {
+                                    $finalRows = array_map(function ($row) use ($nonEmptyIndices) {
                                         return array_values(array_intersect_key($row, array_flip($nonEmptyIndices)));
                                     }, $finalRows);
 
                                     $sampleData[$sheetName] = [
                                         'headers' => $headers,
                                         'rows' => $finalRows,
-                                        'total' => $totalReal
+                                        'total' => $totalReal,
                                     ];
                                 }
                             }
@@ -287,18 +324,18 @@ class ImportExcelController extends Controller
                     'file_count' => count($excelFiles),
                     'files' => $excelFiles,
                     'samples' => $allSamples,
-                    'message' => 'Se detectó un archivo ZIP con ' . count($excelFiles) . ' archivos. Mostrando muestra de los primeros ' . count($previewFiles) . '.'
+                    'message' => 'Se detectó un archivo ZIP con '.count($excelFiles).' archivos. Mostrando muestra de los primeros '.count($previewFiles).'.',
                 ]);
             }
-            
+
             // Cargar rápido (Solo datos) para archivos Excel individuales
             $reader = IOFactory::createReaderForFile($file->getPathname());
             $reader->setReadDataOnly(true);
             $spreadsheet = $reader->load($file->getPathname());
-            
+
             $results = [];
             $allSheetNames = $spreadsheet->getSheetNames();
-            
+
             foreach ($allSheetNames as $sheetName) {
                 $upperName = strtoupper(trim($sheetName));
                 if ($upperName === 'BASE' || $upperName === 'ARETE' || $upperName === 'ARETES') {
@@ -310,19 +347,29 @@ class ImportExcelController extends Controller
                         $cellIterator->setIterateOnlyExistingCells(false);
                         $rowData = [];
                         foreach ($cellIterator as $cell) {
-                            try { $val = $cell->getCalculatedValue(); } catch (\Exception $e) { $val = $cell->getValue(); }
+                            try {
+                                $val = $cell->getCalculatedValue();
+                            } catch (\Exception $e) {
+                                $val = $cell->getValue();
+                            }
                             $rowData[] = $val;
                         }
-                        if (array_filter($rowData)) $tempData[] = $rowData;
+                        if (array_filter($rowData)) {
+                            $tempData[] = $rowData;
+                        }
                     }
 
-                    if (empty($tempData)) continue;
+                    if (empty($tempData)) {
+                        continue;
+                    }
 
                     $headersRaw = $tempData[0];
 
                     if ($upperName === 'BASE') {
                         // BASE: Mostrar TODAS las columnas originales + PREDIO_DETECTADO
-                        $headers = array_map(function($h) { return strtoupper(trim($h ?? '---')); }, $headersRaw);
+                        $headers = array_map(function ($h) {
+                            return strtoupper(trim($h ?? '---'));
+                        }, $headersRaw);
                         $headers[] = 'PREDIO_DETECTADO';
 
                         // Encontrar columnas clave
@@ -344,12 +391,16 @@ class ImportExcelController extends Controller
                             $rowStr = strtoupper(implode(' ', array_map('strval', array_filter($row))));
 
                             // Saltar filas de info/resumen
-                            if (strpos($rowStr, 'PREDIO:') !== false || strpos($rowStr, 'RANCHO:') !== false || strpos($rowStr, 'TOTAL') !== false || strpos($rowStr, 'FIRMA') !== false) continue;
+                            if (strpos($rowStr, 'PREDIO:') !== false || strpos($rowStr, 'RANCHO:') !== false || strpos($rowStr, 'TOTAL') !== false || strpos($rowStr, 'FIRMA') !== false) {
+                                continue;
+                            }
 
                             // Solo mostrar filas con un nombre de productor válido (con letras)
                             if ($prodColIdx !== -1) {
-                                $prodVal = trim((string)($row[$prodColIdx] ?? ''));
-                                if (empty($prodVal) || strlen($prodVal) < 3 || !preg_match('/[A-Za-z]/', $prodVal)) continue;
+                                $prodVal = trim((string) ($row[$prodColIdx] ?? ''));
+                                if (empty($prodVal) || strlen($prodVal) < 3 || ! preg_match('/[A-Za-z]/', $prodVal)) {
+                                    continue;
+                                }
                             }
 
                             // Detectar predio
@@ -357,12 +408,12 @@ class ImportExcelController extends Controller
                             if (isset($tempData[$i + 1])) {
                                 $nextRow = $tempData[$i + 1];
                                 foreach ($nextRow as $ci => $val) {
-                                    $v = strtoupper(trim((string)($val ?? '')));
+                                    $v = strtoupper(trim((string) ($val ?? '')));
                                     if (strpos($v, 'PREDIO:') !== false || strpos($v, 'RANCHO:') !== false) {
                                         // Extraer nombre: puede estar en la misma celda o en la siguiente
                                         $nombre = trim(str_ireplace(['PREDIO:', 'RANCHO:'], '', $v));
                                         if (empty($nombre) && isset($nextRow[$ci + 1])) {
-                                            $nombre = trim((string)($nextRow[$ci + 1] ?? ''));
+                                            $nombre = trim((string) ($nextRow[$ci + 1] ?? ''));
                                         }
                                         $predio = $nombre;
                                         break;
@@ -370,19 +421,25 @@ class ImportExcelController extends Controller
                                 }
                             }
 
-                            $rowValues = array_map(function($v) { return $v ?? ''; }, array_values($row));
-                            while (count($rowValues) < count($headers) - 1) { $rowValues[] = ''; }
+                            $rowValues = array_map(function ($v) {
+                                return $v ?? '';
+                            }, array_values($row));
+                            while (count($rowValues) < count($headers) - 1) {
+                                $rowValues[] = '';
+                            }
                             $rowValues[] = $predio;
 
                             // Dividir productores separados por "/"
-                            $prodName = $prodColIdx !== -1 ? trim((string)($row[$prodColIdx] ?? '')) : '';
+                            $prodName = $prodColIdx !== -1 ? trim((string) ($row[$prodColIdx] ?? '')) : '';
                             if (strpos($prodName, '/') !== false && $prodColIdx !== -1) {
                                 $names = array_map('trim', explode('/', $prodName));
-                                $uppVal = $uppColIdx !== -1 ? trim((string)($row[$uppColIdx] ?? '')) : '';
+                                $uppVal = $uppColIdx !== -1 ? trim((string) ($row[$uppColIdx] ?? '')) : '';
                                 $upps = strpos($uppVal, '/') !== false ? array_map('trim', explode('/', $uppVal)) : (strpos($uppVal, "\n") !== false ? array_map('trim', explode("\n", $uppVal)) : [$uppVal]);
 
                                 foreach ($names as $k => $name) {
-                                    if (empty($name) || strlen($name) < 3) continue;
+                                    if (empty($name) || strlen($name) < 3) {
+                                        continue;
+                                    }
                                     $subRow = $rowValues;
                                     $subRow[$prodColIdx] = $name;
                                     if ($uppColIdx !== -1) {
@@ -402,7 +459,9 @@ class ImportExcelController extends Controller
                         }
                     } else {
                         // ARETES: Mapear las 6 columnas exactas
-                        $headersLower = array_map(function($h) { return strtolower(trim($h ?? '')); }, $headersRaw);
+                        $headersLower = array_map(function ($h) {
+                            return strtolower(trim($h ?? ''));
+                        }, $headersRaw);
                         $areteMapping = [
                             'ARETE' => ['arete', 'siniiga', 'numero'],
                             'RAZA' => ['raza'],
@@ -414,7 +473,10 @@ class ImportExcelController extends Controller
                         foreach ($areteMapping as $label => $patterns) {
                             foreach ($headersLower as $idx => $h) {
                                 foreach ($patterns as $p) {
-                                    if (strpos($h, $p) !== false) { $areteIndices[$label] = $idx; break 2; }
+                                    if (strpos($h, $p) !== false) {
+                                        $areteIndices[$label] = $idx;
+                                        break 2;
+                                    }
                                 }
                             }
                         }
@@ -424,11 +486,15 @@ class ImportExcelController extends Controller
                         $totalReal = 0;
                         for ($i = 1; $i < count($tempData); $i++) {
                             $row = $tempData[$i];
-                            $arete = isset($areteIndices['ARETE']) ? trim((string)($row[$areteIndices['ARETE']] ?? '')) : '';
-                            if (empty($arete)) continue;
+                            $arete = isset($areteIndices['ARETE']) ? trim((string) ($row[$areteIndices['ARETE']] ?? '')) : '';
+                            if (empty($arete)) {
+                                continue;
+                            }
 
                             $totalReal++;
-                            if (count($finalRows) >= 25) continue;
+                            if (count($finalRows) >= 25) {
+                                continue;
+                            }
 
                             $nacRaw = isset($areteIndices['NAC']) ? ($row[$areteIndices['NAC']] ?? '') : '';
                             $nacFormatted = $nacRaw;
@@ -436,27 +502,28 @@ class ImportExcelController extends Controller
                             try {
                                 if ($nacRaw) {
                                     if (is_numeric($nacRaw)) {
-                                        $date = Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($nacRaw));
+                                        $date = Carbon::instance(Date::excelToDateTimeObject($nacRaw));
                                     } else {
                                         $date = Carbon::parse($nacRaw);
                                     }
-                                    $edad = $date->diffInMonths(Carbon::now()) . ' m';
+                                    $edad = $date->diffInMonths(Carbon::now()).' m';
                                     $nacFormatted = $date->format('d/m/Y');
                                 }
-                            } catch (\Exception $e) {}
+                            } catch (\Exception $e) {
+                            }
 
                             $finalRows[] = [
                                 $arete,
                                 $edad,
-                                isset($areteIndices['RAZA']) ? trim((string)($row[$areteIndices['RAZA']] ?? '')) : '',
-                                isset($areteIndices['SEXO']) ? trim((string)($row[$areteIndices['SEXO']] ?? '')) : '',
+                                isset($areteIndices['RAZA']) ? trim((string) ($row[$areteIndices['RAZA']] ?? '')) : '',
+                                isset($areteIndices['SEXO']) ? trim((string) ($row[$areteIndices['SEXO']] ?? '')) : '',
                                 $nacFormatted,
-                                isset($areteIndices['SAC?']) ? trim((string)($row[$areteIndices['SAC?']] ?? '')) : '',
+                                isset($areteIndices['SAC?']) ? trim((string) ($row[$areteIndices['SAC?']] ?? '')) : '',
                             ];
                         }
                     }
 
-                    if (!empty($finalRows)) {
+                    if (! empty($finalRows)) {
                         // --- NUEVO: Eliminar columnas completamente vacías en la muestra ---
                         $nonEmptyIndices = [];
                         foreach ($headers as $idx => $h) {
@@ -466,30 +533,33 @@ class ImportExcelController extends Controller
                                 $hasData = true;
                             } else {
                                 foreach ($finalRows as $row) {
-                                    $val = trim((string)($row[$idx] ?? ''));
-                                    if (!empty($val) && $val !== '---' && $val !== '0') {
+                                    $val = trim((string) ($row[$idx] ?? ''));
+                                    if (! empty($val) && $val !== '---' && $val !== '0') {
                                         $hasData = true;
                                         break;
                                     }
                                 }
                             }
-                            if ($hasData) $nonEmptyIndices[] = $idx;
+                            if ($hasData) {
+                                $nonEmptyIndices[] = $idx;
+                            }
                         }
 
                         // Filtrar headers y filas
                         $headers = array_values(array_intersect_key($headers, array_flip($nonEmptyIndices)));
-                        $finalRows = array_map(function($row) use ($nonEmptyIndices) {
+                        $finalRows = array_map(function ($row) use ($nonEmptyIndices) {
                             return array_values(array_intersect_key($row, array_flip($nonEmptyIndices)));
                         }, $finalRows);
 
                         $results[$sheetName] = [
                             'headers' => $headers,
                             'rows' => $finalRows,
-                            'total' => $totalReal
+                            'total' => $totalReal,
                         ];
                     }
                 }
             }
+
             return response()->json([
                 'status' => 'success',
                 'archivo' => $file->getClientOriginalName(),
@@ -499,7 +569,7 @@ class ImportExcelController extends Controller
             return response()->json([
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'line' => $e->getLine(),
             ], 500);
         }
     }
@@ -530,9 +600,9 @@ class ImportExcelController extends Controller
         try {
             if ($file->getClientOriginalExtension() === 'zip') {
                 $zip = new ZipArchive;
-                $tempPath = storage_path('app/temp_import_' . time());
-                
-                if ($zip->open($file->getPathname()) === TRUE) {
+                $tempPath = storage_path('app/temp_import_'.time());
+
+                if ($zip->open($file->getPathname()) === true) {
                     $zip->extractTo($tempPath);
                     $zip->close();
 
@@ -544,7 +614,7 @@ class ImportExcelController extends Controller
                                 $totalProductores += $res['productores'];
                                 $totalAretes += $res['aretes'];
                                 $archivosProcesados++;
-                                
+
                                 // Liberar memoria después de cada archivo
                                 if (isset($res['spreadsheet'])) {
                                     $res['spreadsheet']->disconnectWorksheets();
@@ -552,7 +622,7 @@ class ImportExcelController extends Controller
                                 }
                                 gc_collect_cycles();
                             } catch (\Exception $e) {
-                                $errores[] = "Error en {$f->getFilename()}: " . $e->getMessage();
+                                $errores[] = "Error en {$f->getFilename()}: ".$e->getMessage();
                             }
                         }
                     }
@@ -569,13 +639,13 @@ class ImportExcelController extends Controller
 
             $msg = "Importación completada: {$archivosProcesados} archivos procesados. Total: {$totalProductores} productores y {$totalAretes} aretes.";
             if (count($errores) > 0) {
-                $msg .= " (Se encontraron algunos errores: " . implode(', ', $errores) . ")";
+                $msg .= ' (Se encontraron algunos errores: '.implode(', ', $errores).')';
             }
 
             return back()->with('success', $msg);
 
         } catch (\Exception $e) {
-            return back()->with('error', 'Error al procesar: ' . $e->getMessage());
+            return back()->with('error', 'Error al procesar: '.$e->getMessage());
         }
     }
 
@@ -596,12 +666,20 @@ class ImportExcelController extends Controller
 
             foreach ($allSheetNames as $name) {
                 $upper = strtoupper(trim($name));
-                if ($upper === 'BASE') $sheetBase = $spreadsheet->getSheetByName($name);
-                if ($upper === 'ARETE' || $upper === 'ARETES') $sheetAretes = $spreadsheet->getSheetByName($name);
+                if ($upper === 'BASE') {
+                    $sheetBase = $spreadsheet->getSheetByName($name);
+                }
+                if ($upper === 'ARETE' || $upper === 'ARETES') {
+                    $sheetAretes = $spreadsheet->getSheetByName($name);
+                }
             }
 
-            if (!$sheetBase) throw new \Exception("No se encontró la pestaña 'BASE'");
-            if (!$sheetAretes) throw new \Exception("No se encontró la pestaña de aretes ('ARETE' o 'ARETES')");
+            if (! $sheetBase) {
+                throw new \Exception("No se encontró la pestaña 'BASE'");
+            }
+            if (! $sheetAretes) {
+                throw new \Exception("No se encontró la pestaña de aretes ('ARETE' o 'ARETES')");
+            }
 
             // ===== PROCESAR PESTAÑA BASE =====
             $dataBase = $sheetBase->toArray(null, true, false, true);
@@ -632,7 +710,7 @@ class ImportExcelController extends Controller
             $colMap = [];
             $usedIdxBase = [];
             foreach ($mappedRaw as $mKey => $mIdx) {
-                if ($mIdx !== null && !in_array($mIdx, $usedIdxBase)) {
+                if ($mIdx !== null && ! in_array($mIdx, $usedIdxBase)) {
                     $colMap[$mKey] = $mIdx;
                     $usedIdxBase[] = $mIdx;
                 } else {
@@ -655,43 +733,52 @@ class ImportExcelController extends Controller
 
                 // Saltar filas de basura (mismo filtro que la vista previa)
                 if (strpos($rowStr, 'PREDIO:') !== false || strpos($rowStr, 'RANCHO:') !== false || strpos($rowStr, 'TOTAL') !== false || strpos($rowStr, 'FIRMA') !== false) {
-                    if (strpos($rowStr, 'TOTAL') !== false) break;
+                    if (strpos($rowStr, 'TOTAL') !== false) {
+                        break;
+                    }
+
                     continue;
                 }
 
                 if ($colMap['nombre']) {
-                    $prodVal = trim((string)($originalRow[$colMap['nombre']] ?? ''));
-                    if (empty($prodVal) || strlen($prodVal) < 3 || !preg_match('/[A-Z]/', strtoupper($prodVal))) continue;
+                    $prodVal = trim((string) ($originalRow[$colMap['nombre']] ?? ''));
+                    if (empty($prodVal) || strlen($prodVal) < 3 || ! preg_match('/[A-Z]/', strtoupper($prodVal))) {
+                        continue;
+                    }
                 }
 
                 // Separar productores y UPPs
                 $subRows = $this->explodeRow($originalRow, [
                     'productor' => $colMap['nombre'],
-                    'upp' => $colMap['upp']
+                    'upp' => $colMap['upp'],
                 ]);
 
-                 foreach ($subRows as $subIdx => $row) {
-                    $nombreVal = trim((string)($row[$colMap['nombre']] ?? ''));
+                foreach ($subRows as $subIdx => $row) {
+                    $nombreVal = trim((string) ($row[$colMap['nombre']] ?? ''));
                     $uppIdxImport = $colMap['upp'] ?? null;
-                    $uppVal = ($uppIdxImport !== null) ? trim((string)($row[$uppIdxImport] ?? '')) : '';
+                    $uppVal = ($uppIdxImport !== null) ? trim((string) ($row[$uppIdxImport] ?? '')) : '';
                     $nombreUpper = strtoupper($nombreVal);
-                     if (strpos($nombreUpper, 'TOTAL') !== false || strpos($nombreUpper, 'FIRMA') !== false) break 2;
+                    if (strpos($nombreUpper, 'TOTAL') !== false || strpos($nombreUpper, 'FIRMA') !== false) {
+                        break 2;
+                    }
 
                     // Solo procesar si tiene nombre (con letras) y UPP
-                    if (empty($nombreVal) || empty($uppVal) || strlen($nombreVal) < 3 || !preg_match('/[A-Z]/', $nombreUpper)) continue;
+                    if (empty($nombreVal) || empty($uppVal) || strlen($nombreVal) < 3 || ! preg_match('/[A-Z]/', $nombreUpper)) {
+                        continue;
+                    }
 
                     // Detectar Predio (Estructura vertical o columna dedicada)
                     $predioNombre = '';
                     $predioIdx = $colMap['predio_nombre'] ?? -1;
 
                     // 1. Intentar obtener de columna mapeada de predio en la misma fila
-                    if ($predioIdx !== -1 && !empty($row[$predioIdx])) {
+                    if ($predioIdx !== -1 && ! empty($row[$predioIdx])) {
                         $predioNombre = trim($row[$predioIdx]);
                     }
 
                     // 2. Si no hay, buscar en la SIGUIENTE fila (estructura vertical) o en TODAS las columnas
-                    if (empty($predioNombre) && isset($rowsBase[$i+1])) {
-                        $nextRow = $rowsBase[$i+1];
+                    if (empty($predioNombre) && isset($rowsBase[$i + 1])) {
+                        $nextRow = $rowsBase[$i + 1];
                         $cols = array_keys($nextRow);
                         foreach ($cols as $idx => $colKey) {
                             $cVal = strtoupper(trim($nextRow[$colKey] ?? ''));
@@ -709,7 +796,7 @@ class ImportExcelController extends Controller
                         }
                     }
 
-                    if ($colMap['cuarentena'] && !empty($row[$colMap['cuarentena']])) {
+                    if ($colMap['cuarentena'] && ! empty($row[$colMap['cuarentena']])) {
                         $claveCuarentenaGlobal = trim($row[$colMap['cuarentena']]);
                     }
 
@@ -719,14 +806,14 @@ class ImportExcelController extends Controller
 
                     // Lógica de búsqueda inteligente para evitar duplicados y "limpiar" nombres viejos
                     $productor = null;
-                    
+
                     // 1. Intentar por CURP (si existe)
-                    if (!empty($curpVal)) {
+                    if (! empty($curpVal)) {
                         $productor = Productor::where('curp', $curpVal)->first();
                     }
 
                     // 2. Si no hay CURP o no se encontró, intentar por Nombre + Apellidos ya separados
-                    if (!$productor) {
+                    if (! $productor) {
                         $productor = Productor::where('nombre', $split['nombre'])
                             ->where('apellido_paterno', $split['apellido_paterno'])
                             ->where('apellido_materno', $split['apellido_materno'])
@@ -734,7 +821,7 @@ class ImportExcelController extends Controller
                     }
 
                     // 3. Si sigue sin aparecer, buscar por el nombre "amontonado" (limpieza de importaciones previas)
-                    if (!$productor) {
+                    if (! $productor) {
                         $fullNameRaw = trim($nombreVal);
                         $productor = Productor::where('nombre', $fullNameRaw)
                             ->whereNull('apellido_paterno')
@@ -742,41 +829,41 @@ class ImportExcelController extends Controller
                     }
 
                     // Crear o actualizar con los datos limpios
-                        if ($productor) {
-                            $productor->update([
-                                'nombre' => $split['nombre'],
-                                'apellido_paterno' => $split['apellido_paterno'],
-                                'apellido_materno' => $split['apellido_materno'],
-                                'curp' => $curpVal,
-                                'upp' => $uppVal,
-                                'telefono' => $colMap['telefono'] ? trim($row[$colMap['telefono']] ?? '') : $productor->telefono,
-                                'domicilio' => $colMap['domicilio'] ? trim($row[$colMap['domicilio']] ?? '') : $productor->domicilio,
-                                'municipio' => $colMap['municipio'] ? trim($row[$colMap['municipio']] ?? '') : $productor->municipio,
-                                'localidad' => $colMap['localidad'] ? trim($row[$colMap['localidad']] ?? '') : $productor->localidad,
-                                'clave_cuarentena' => $claveCuarentenaGlobal,
-                            ]);
-                        } else {
-                            $productor = Productor::create([
-                                'nombre' => $split['nombre'],
-                                'apellido_paterno' => $split['apellido_paterno'],
-                                'apellido_materno' => $split['apellido_materno'],
-                                'curp' => $curpVal,
-                                'upp' => $uppVal,
-                                'telefono' => $colMap['telefono'] ? trim($row[$colMap['telefono']] ?? '') : '',
-                                'domicilio' => $colMap['domicilio'] ? trim($row[$colMap['domicilio']] ?? '') : '',
-                                'municipio' => $colMap['municipio'] ? trim($row[$colMap['municipio']] ?? '') : '',
-                                'localidad' => $colMap['localidad'] ? trim($row[$colMap['localidad']] ?? '') : '',
-                                'medico_id' => $medicoId,
-                                'zona' => $zona,
-                                'clave_cuarentena' => $claveCuarentenaGlobal,
-                            ]);
-                        }
+                    if ($productor) {
+                        $productor->update([
+                            'nombre' => $split['nombre'],
+                            'apellido_paterno' => $split['apellido_paterno'],
+                            'apellido_materno' => $split['apellido_materno'],
+                            'curp' => $curpVal,
+                            'upp' => $uppVal,
+                            'telefono' => $colMap['telefono'] ? trim($row[$colMap['telefono']] ?? '') : $productor->telefono,
+                            'domicilio' => $colMap['domicilio'] ? trim($row[$colMap['domicilio']] ?? '') : $productor->domicilio,
+                            'municipio' => $colMap['municipio'] ? trim($row[$colMap['municipio']] ?? '') : $productor->municipio,
+                            'localidad' => $colMap['localidad'] ? trim($row[$colMap['localidad']] ?? '') : $productor->localidad,
+                            'clave_cuarentena' => $claveCuarentenaGlobal,
+                        ]);
+                    } else {
+                        $productor = Productor::create([
+                            'nombre' => $split['nombre'],
+                            'apellido_paterno' => $split['apellido_paterno'],
+                            'apellido_materno' => $split['apellido_materno'],
+                            'curp' => $curpVal,
+                            'upp' => $uppVal,
+                            'telefono' => $colMap['telefono'] ? trim($row[$colMap['telefono']] ?? '') : '',
+                            'domicilio' => $colMap['domicilio'] ? trim($row[$colMap['domicilio']] ?? '') : '',
+                            'municipio' => $colMap['municipio'] ? trim($row[$colMap['municipio']] ?? '') : '',
+                            'localidad' => $colMap['localidad'] ? trim($row[$colMap['localidad']] ?? '') : '',
+                            'medico_id' => $medicoId,
+                            'zona' => $zona,
+                            'clave_cuarentena' => $claveCuarentenaGlobal,
+                        ]);
+                    }
 
                     $claveUpp = $colMap['upp'] ? trim($row[$colMap['upp']] ?? '') : '';
                     $predio = Predio::updateOrCreate(
-                        ['clave_unidad_produccion' => $claveUpp ?: 'UPP-' . $productor->id],
+                        ['clave_unidad_produccion' => $claveUpp ?: 'UPP-'.$productor->id],
                         [
-                            'nombre_rancho' => $predioNombre ?: 'Rancho de ' . $nombreVal,
+                            'nombre_rancho' => $predioNombre ?: 'Rancho de '.$nombreVal,
                             'productor_id' => $productor->id,
                             'localidad' => $colMap['localidad'] ? trim($row[$colMap['localidad']] ?? '') : 'CONOCIDO',
                             'municipio' => $colMap['municipio'] ? trim($row[$colMap['municipio']] ?? '') : '',
@@ -813,7 +900,7 @@ class ImportExcelController extends Controller
             $colAretes = [];
             $usedIdxAretes = [];
             foreach ($colAretesRaw as $mKey => $mIdx) {
-                if ($mIdx !== null && !in_array($mIdx, $usedIdxAretes)) {
+                if ($mIdx !== null && ! in_array($mIdx, $usedIdxAretes)) {
                     $colAretes[$mKey] = $mIdx;
                     $usedIdxAretes[] = $mIdx;
                 } else {
@@ -828,15 +915,17 @@ class ImportExcelController extends Controller
                 $row = $dataAretes[$i] ?? [];
 
                 $arete = $colAretes['arete'] ? trim($row[$colAretes['arete']] ?? '') : '';
-                if (empty($arete)) continue;
+                if (empty($arete)) {
+                    continue;
+                }
 
                 $nacimiento = null;
                 $edadMeses = null;
-                if ($colAretes['nacimiento'] && !empty($row[$colAretes['nacimiento']])) {
+                if ($colAretes['nacimiento'] && ! empty($row[$colAretes['nacimiento']])) {
                     $nacRaw = $row[$colAretes['nacimiento']];
                     try {
                         if (is_numeric($nacRaw)) {
-                            $nacimiento = Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($nacRaw));
+                            $nacimiento = Carbon::instance(Date::excelToDateTimeObject($nacRaw));
                         } else {
                             $nacimiento = Carbon::parse($nacRaw);
                         }
@@ -855,13 +944,16 @@ class ImportExcelController extends Controller
                         'sexo' => $colAretes['sexo'] ? trim($row[$colAretes['sexo']] ?? '') : null,
                         'fecha_nacimiento' => $nacimiento,
                         'edad_meses' => $edadMeses,
-                        'sacrificio' => (function() use ($colAretes, $row) {
-                            if (!$colAretes['sacrificio']) return null;
-                            $val = trim((string)($row[$colAretes['sacrificio']] ?? ''));
+                        'sacrificio' => (function () use ($colAretes, $row) {
+                            if (! $colAretes['sacrificio']) {
+                                return null;
+                            }
+                            $val = trim((string) ($row[$colAretes['sacrificio']] ?? ''));
                             $vUpper = strtoupper($val);
-                            if (!empty($val) && !in_array($vUpper, ['0', 'NO', '-', '.', 'FALSE'])) {
+                            if (! empty($val) && ! in_array($vUpper, ['0', 'NO', '-', '.', 'FALSE'])) {
                                 return 'SI';
                             }
+
                             return null;
                         })(),
                         'archivo_origen' => $nombreArchivo,
@@ -875,7 +967,7 @@ class ImportExcelController extends Controller
             return [
                 'productores' => $productoresCreados,
                 'aretes' => $aretesCreados,
-                'spreadsheet' => $spreadsheet
+                'spreadsheet' => $spreadsheet,
             ];
 
         } catch (\Exception $e) {
@@ -890,17 +982,19 @@ class ImportExcelController extends Controller
     private function aiMapColumns(array $rows, array $mappings): ?array
     {
         $apiKey = env('GEMINI_API_KEY');
-        if (!$apiKey) return null;
+        if (! $apiKey) {
+            return null;
+        }
 
         $sample = array_slice($rows, 0, 6);
         $sampleJson = json_encode($sample);
 
-        $prompt = "Analiza este fragmento de Excel. Identifica los índices de columna (0, 1, 2...) para: " . implode(', ', array_keys($mappings)) . ". 
-        Estructura esperada: {\"mapping\": {\"campo\": indice, ...}, \"structure\": \"standard\"|\"vertical_predio\"}";
+        $prompt = 'Analiza este fragmento de Excel. Identifica los índices de columna (0, 1, 2...) para: '.implode(', ', array_keys($mappings)).'. 
+        Estructura esperada: {"mapping": {"campo": indice, ...}, "structure": "standard"|"vertical_predio"}';
 
         try {
-            $response = \Illuminate\Support\Facades\Http::post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
-                'contents' => [['parts' => [['text' => $prompt . "\n\nDatos: " . $sampleJson]]]]
+            $response = Http::post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
+                'contents' => [['parts' => [['text' => $prompt."\n\nDatos: ".$sampleJson]]]],
             ]);
 
             if ($response->successful()) {
@@ -908,10 +1002,14 @@ class ImportExcelController extends Controller
                 $result = json_decode(trim($text), true);
                 if (isset($result['mapping'])) {
                     session(['excel_structure' => $result['structure'] ?? 'standard']);
+
                     return $result['mapping'];
                 }
             }
-        } catch (\Exception $e) { \Log::error("Gemini Error: " . $e->getMessage()); }
+        } catch (\Exception $e) {
+            \Log::error('Gemini Error: '.$e->getMessage());
+        }
+
         return null;
     }
 
@@ -920,7 +1018,9 @@ class ImportExcelController extends Controller
      */
     private function smartMapColumns(array $rows, array $mappings): array
     {
-        $headers = array_map(function($h) { return strtolower(trim($h ?? '')); }, $rows[0] ?? []);
+        $headers = array_map(function ($h) {
+            return strtolower(trim($h ?? ''));
+        }, $rows[0] ?? []);
         $sampleData = array_slice($rows, 1, 10);
         $result = [];
 
@@ -929,25 +1029,45 @@ class ImportExcelController extends Controller
             foreach ($headers as $colIdx => $headerName) {
                 $score = 0;
                 foreach ($patterns as $pattern) {
-                    if (stripos($headerName, $pattern) !== false) $score += 30; // Peso alto a cabeceras
+                    if (stripos($headerName, $pattern) !== false) {
+                        $score += 30;
+                    } // Peso alto a cabeceras
                 }
-                if (empty($headerName)) $score -= 20; // Penalizar fuertemente columnas sin nombre
-                
+                if (empty($headerName)) {
+                    $score -= 20;
+                } // Penalizar fuertemente columnas sin nombre
+
                 foreach ($sampleData as $rowData) {
-                    $val = trim((string)($rowData[$colIdx] ?? ''));
-                    if (empty($val)) continue;
+                    $val = trim((string) ($rowData[$colIdx] ?? ''));
+                    if (empty($val)) {
+                        continue;
+                    }
                     $valUpper = strtoupper($val);
                     switch ($key) {
-                        case 'curp': if (preg_match('/^[A-Z]{4}[0-9]{6}[A-Z]{6}[0-9A-Z]{2}$/i', $val)) $score += 5; break;
-                        case 'upp': if (strpos($val, '18') === 0) $score += 8; break;
-                        case 'arete': if (is_numeric($val) && strlen($val) >= 9) $score += 5; break;
-                        case 'sexo': if (in_array($valUpper, ['H', 'M', 'HEMBRA', 'MACHO'])) $score += 5; break;
-                        case 'predio': if (strpos($valUpper, 'PREDIO:') !== false || strpos($valUpper, 'RANCHO:') !== false) $score += 7; break;
-                        case 'nacimiento': 
-                            if (is_numeric($val) && $val > 30000 && $val < 60000) $score += 4;
+                        case 'curp': if (preg_match('/^[A-Z]{4}[0-9]{6}[A-Z]{6}[0-9A-Z]{2}$/i', $val)) {
+                            $score += 5;
+                        } break;
+                        case 'upp': if (strpos($val, '18') === 0) {
+                            $score += 8;
+                        } break;
+                        case 'arete': if (is_numeric($val) && strlen($val) >= 9) {
+                            $score += 5;
+                        } break;
+                        case 'sexo': if (in_array($valUpper, ['H', 'M', 'HEMBRA', 'MACHO'])) {
+                            $score += 5;
+                        } break;
+                        case 'predio': if (strpos($valUpper, 'PREDIO:') !== false || strpos($valUpper, 'RANCHO:') !== false) {
+                            $score += 7;
+                        } break;
+                        case 'nacimiento':
+                            if (is_numeric($val) && $val > 30000 && $val < 60000) {
+                                $score += 4;
+                            }
                             break;
                         case 'sacrificio':
-                            if (in_array($valUpper, ['X', 'SI', 'S', '1', 'YES'])) $score += 2;
+                            if (in_array($valUpper, ['X', 'SI', 'S', '1', 'YES'])) {
+                                $score += 2;
+                            }
                             break;
                     }
                 }
@@ -957,6 +1077,7 @@ class ImportExcelController extends Controller
             $bestIdx = key($scores);
             $result[$key] = ($scores[$bestIdx] ?? 0) > 0 ? $bestIdx : null;
         }
+
         return $result;
     }
 
@@ -968,13 +1089,15 @@ class ImportExcelController extends Controller
         $prodIdx = $colMap['productor'] ?? $colMap['nombre'] ?? -1;
         $uppIdx = $colMap['upp'] ?? -1;
 
-        if ($prodIdx === -1) return [$row];
+        if ($prodIdx === -1) {
+            return [$row];
+        }
 
-        $prodVal = (string)($row[$prodIdx] ?? '');
-        $uppVal = $uppIdx !== -1 ? (string)($row[$uppIdx] ?? '') : '';
+        $prodVal = (string) ($row[$prodIdx] ?? '');
+        $uppVal = $uppIdx !== -1 ? (string) ($row[$uppIdx] ?? '') : '';
 
         // Si no hay saltos de línea ni separadores, devolver la fila original
-        if (strpos($prodVal, "\n") === false && strpos($prodVal, "/") === false && strpos($uppVal, "\n") === false) {
+        if (strpos($prodVal, "\n") === false && strpos($prodVal, '/') === false && strpos($uppVal, "\n") === false) {
             return [$row];
         }
 
@@ -993,10 +1116,10 @@ class ImportExcelController extends Controller
         $count = max(count($productores), count($upps));
         $exploded = [];
 
-         for ($i = 0; $i < $count; $i++) {
+        for ($i = 0; $i < $count; $i++) {
             $newRow = $row;
             $newRow[$prodIdx] = $productores[$i] ?? '';
-            
+
             if ($uppIdx !== -1) {
                 $newRow[$uppIdx] = $upps[$i] ?? '';
             }
@@ -1018,10 +1141,12 @@ class ImportExcelController extends Controller
         $result = [
             'nombre' => $fullName,
             'apellido_paterno' => '',
-            'apellido_materno' => ''
+            'apellido_materno' => '',
         ];
 
-        if ($count === 0) return $result;
+        if ($count === 0) {
+            return $result;
+        }
 
         if ($count === 2) {
             $result['nombre'] = $parts[0];

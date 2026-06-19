@@ -3,22 +3,43 @@
 namespace App\Exports;
 
 use App\Models\Inspeccion;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class InspeccionExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
+class InspeccionExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping, WithStyles
 {
+    private ?string $desde;
+
+    private ?string $hasta;
+
+    public function __construct(?string $desde = null, ?string $hasta = null)
+    {
+        $this->desde = $desde;
+        $this->hasta = $hasta;
+    }
+
     /**
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     public function collection()
     {
-        return Inspeccion::with(['predio.productor', 'detalles'])->get();
+        $query = Inspeccion::with(['predio.productor', 'detalles']);
+
+        if ($this->desde) {
+            $query->whereDate('fecha', '>=', $this->desde);
+        }
+
+        if ($this->hasta) {
+            $query->whereDate('fecha', '<=', $this->hasta);
+        }
+
+        return $query->get();
     }
 
     public function headings(): array
@@ -64,11 +85,11 @@ class InspeccionExport implements FromCollection, WithHeadings, WithMapping, Sho
             $inspeccion->folio,
             $inspeccion->predio->nombre_rancho,
             $inspeccion->predio->clave_unidad_produccion,
-            $inspeccion->predio->productor->nombre . ' ' . $inspeccion->predio->productor->apellido_paterno . ' ' . $inspeccion->predio->productor->apellido_materno,
+            $inspeccion->predio->productor->nombre.' '.$inspeccion->predio->productor->apellido_paterno.' '.$inspeccion->predio->productor->apellido_materno,
             $inspeccion->predio->municipio ?? $inspeccion->predio->localidad,
             $inspeccion->predio->localidad,
-            $inspeccion->semental + $inspeccion->vacas + $inspeccion->vaquillas + $inspeccion->becerras + $inspeccion->becerros,
-            $inspeccion->semental,
+            $inspeccion->sementales + $inspeccion->vacas + $inspeccion->vaquillas + $inspeccion->becerras + $inspeccion->becerros,
+            $inspeccion->sementales,
             $inspeccion->vacas,
             $inspeccion->vaquillas,
             $inspeccion->becerras,

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Visita extends Model
 {
@@ -44,7 +45,7 @@ class Visita extends Model
     /**
      * Get the inspection draft associated with this visit.
      */
-    public function inspeccion()
+    public function inspeccion(): HasOne
     {
         return $this->hasOne(Inspeccion::class);
     }

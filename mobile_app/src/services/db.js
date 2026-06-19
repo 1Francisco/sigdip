@@ -149,6 +149,24 @@ export default {
     return await catalogStore.getItem('dashboard_data');
   },
 
+  // ====== ANIMALES OFFLINE CACHE ======
+  async saveAnimales(animales) {
+    await catalogStore.setItem('animales', clean(animales));
+  },
+
+  async getAnimales() {
+    return (await catalogStore.getItem('animales')) || [];
+  },
+
+  // ====== ARETES CENSO OFFLINE CACHE ======
+  async saveAretesCenso(aretes) {
+    await catalogStore.setItem('aretes_censo', clean(aretes));
+  },
+
+  async getAretesCenso() {
+    return (await catalogStore.getItem('aretes_censo')) || [];
+  },
+
   // ====== LIMPIEZA ======
   async clearAll() {
     await catalogStore.clear();

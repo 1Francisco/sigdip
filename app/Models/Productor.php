@@ -4,7 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Productor extends Model
 {
@@ -38,11 +40,27 @@ class Productor extends Model
     }
 
     /**
+     * Aretes del censo para este productor.
+     */
+    public function aretesCenso(): HasMany
+    {
+        return $this->hasMany(AreteCenso::class);
+    }
+
+    /**
      * Get the medico (official MVZ) responsible for this producer.
      */
-    public function medico()
+    public function medico(): BelongsTo
     {
         return $this->belongsTo(User::class, 'medico_id');
+    }
+
+    /**
+     * Get all visits through predios.
+     */
+    public function visitas(): HasManyThrough
+    {
+        return $this->hasManyThrough(Visita::class, Predio::class);
     }
 
     /**

@@ -24,23 +24,25 @@
             <i class="bi bi-calendar-plus"></i> Programar Visita
         </a>
     </div>
-    <div class="card-body bg-light border-bottom py-3 px-4">
-        <form action="{{ route('visitas.index') }}" method="GET" class="row g-3 justify-content-end align-items-end">
-            <div class="col-md-4 col-sm-6">
-                <label class="form-label fw-semibold small text-muted mb-1"><i class="bi bi-funnel"></i> Filtrar por Fecha</label>
+    <div class="card-body bg-light border-bottom py-2 px-4">
+        <form method="GET" action="{{ route('visitas.index') }}" class="row g-2 align-items-end">
+            <div class="col-md-3 col-sm-6">
                 <div class="input-group input-group-sm">
-                    <input type="date" name="fecha" class="form-control rounded-start-pill" value="{{ request('fecha') }}">
-                    @if(request('fecha'))
-                        <a href="{{ route('visitas.index') }}" class="btn btn-outline-secondary" title="Limpiar Filtro">
-                            <i class="bi bi-x-lg"></i>
-                        </a>
-                    @endif
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control border-start-0 rounded-end-pill" placeholder="Buscar por código, predio, productor..." value="{{ request('search') }}">
                 </div>
             </div>
-            <div class="col-md-2 col-sm-6">
-                <button type="submit" class="btn btn-sm btn-primary w-100 rounded-pill px-3">
-                    <i class="bi bi-search me-1"></i> Buscar
-                </button>
+            <div class="col-md-2 col-sm-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar"></i></span>
+                    <input type="date" name="fecha" class="form-control border-start-0" value="{{ request('fecha') }}">
+                </div>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-sm btn-primary rounded-pill px-3" type="submit"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+                @if(request('search') || request('fecha'))
+                    <a href="{{ route('visitas.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-x-lg"></i> Limpiar</a>
+                @endif
             </div>
         </form>
     </div>
@@ -172,6 +174,11 @@
                                     </button>
                                     <ul class="dropdown-menu border-0 shadow-sm">
                                         <li>
+                                            <a href="{{ route('visitas.show', $v->id) }}" class="dropdown-item">
+                                                <i class="bi bi-eye me-1"></i> Ver detalle
+                                            </a>
+                                        </li>
+                                        <li>
                                             <button type="button" class="dropdown-item text-primary" onclick="openReprogramarModal('{{ route('visitas.reprogramar', $v->id) }}', '{{ $v->fecha_programada->format('Y-m-d') }}')">
                                                 <i class="bi bi-calendar-week me-1"></i> Reprogramar
                                             </button>
@@ -185,6 +192,13 @@
                                                 </form>
                                             </li>
                                         @endif
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form action="{{ route('visitas.destroy', $v->id) }}" method="POST" onsubmit="return confirm('¿Eliminar esta visita permanentemente?');">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-1"></i> Eliminar</button>
+                                            </form>
+                                        </li>
                                     </ul>
                                 </div>
                             </div>

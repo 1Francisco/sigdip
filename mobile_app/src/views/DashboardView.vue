@@ -1,108 +1,6 @@
 <template>
-  <div class="app-container">
-    <!-- Sidebar (Drawer) -->
-    <div class="sidebar-overlay" :class="{ active: sidebarActive }" @click="sidebarActive = false"></div>
-    
-    <aside class="sidebar" :class="{ active: sidebarActive }">
-      <div class="sidebar-brand">
-        <img src="/icon_png.png" alt="SIGDIP" style="width: 22px; height: 22px; object-fit: contain;">
-        <span>SIGDIP</span>
-        <button class="btn-close-sidebar" @click="sidebarActive = false">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <nav class="nav flex-column">
-        <template v-if="isAdmin">
-          <a class="nav-link active" @click.prevent="sidebarActive = false">
-            <i class="bi bi-grid-1x2-fill"></i> Dashboard
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/productores')">
-            <i class="bi bi-people"></i> Productores
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/predios')">
-            <i class="bi bi-house-door"></i> Predios
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspecciones')">
-            <i class="bi bi-clipboard-check"></i> Inspecciones
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/visitas')">
-            <i class="bi bi-calendar-event"></i> Agenda / Visitas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/medicos')">
-            <i class="bi bi-person-badge"></i> Médicos
-          </a>
-          <a class="nav-link" @click.prevent="alertWebOnly('Importar Excel')">
-            <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
-          </a>
-          <hr class="mx-3 text-slate-200">
-          <a class="nav-link" @click.prevent="$router.push('/descargas')">
-            <i class="bi bi-download"></i> Descargas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspecciones?downloadExcel=true')">
-            <i class="bi bi-file-earmark-excel"></i> Sábana Excel
-          </a>
-        </template>
-        <template v-else>
-          <a class="nav-link active" @click.prevent="sidebarActive = false">
-            <i class="bi bi-grid-1x2-fill"></i> Dashboard
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/productores')">
-            <i class="bi bi-people"></i> Productores
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/predios')">
-            <i class="bi bi-house-door"></i> Predios
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/visitas')">
-            <i class="bi bi-calendar-event"></i> Agenda / Visitas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspecciones')">
-            <i class="bi bi-clipboard-check"></i> Inspecciones
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspeccion')">
-            <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/descargas')">
-            <i class="bi bi-download"></i> Descargas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/sync')">
-            <i class="bi bi-arrow-repeat"></i> Sincronizar
-          </a>
-        </template>
-
-        <hr class="mx-3 text-slate-200">
-        <a class="nav-link text-danger logout-btn" @click.prevent="doLogout">
-          <i class="bi bi-box-arrow-left"></i> Salir
-        </a>
-      </nav>
-    </aside>
-
-    <!-- Mobile Header -->
-    <header class="mobile-header shadow-sm">
-      <button class="header-hamburger-btn rounded-circle" @click="sidebarActive = true">
-        <i class="bi bi-list fs-4"></i>
-      </button>
-      
-      <div class="brand-title flex-grow-1 text-center">
-        <img src="/icon_png.png" alt="SIGDIP" style="width: 20px; height: 20px; object-fit: contain; vertical-align: -3px; margin-right: 6px;">
-        <span class="fw-bold">SIGDIP</span>
-      </div>
-
-      <!-- Connectivity Badge Mobile -->
-      <div 
-        class="badge rounded-pill px-2-5 py-1-5 d-flex align-items-center gap-1.5 fw-semibold me-2 border connectivity-badge shadow-sm"
-        :class="isOnline ? 'bg-success-subtle text-success border-success-subtle' : 'bg-danger-subtle text-danger border-danger-subtle'"
-      >
-        <span class="pulse-dot" :class="isOnline ? 'bg-success' : 'bg-danger'"></span>
-        <span class="badge-text">{{ isOnline ? 'Online' : 'Offline' }}</span>
-      </div>
-
-      <div class="avatar-circle rounded-circle">
-        <i class="bi bi-person"></i>
-      </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="app-content main-content bg-light">
+  <AppLayout>
+    <PullToRefresh @refresh="onRefresh" :loading="refreshing">
       <!-- Welcome Header -->
       <div class="welcome-header mb-4 text-start">
         <h2 class="h4 fw-bold mb-1">{{ isAdmin ? 'Resumen Administrativo' : 'Dashboard' }}</h2>
@@ -152,50 +50,24 @@
         <!-- Contenedores de Gráficos (HTML/CSS Autogenerados Offline-Safe) -->
         <div class="row g-4 mb-4">
           <div class="col-12 col-lg-8">
-            <div class="card border-0 shadow-sm h-100 chart-card-wrapper">
-              <div class="card-header bg-white border-bottom border-slate-100 d-flex justify-content-between align-items-center py-3">
-                <span class="fw-bold text-dark"><i class="bi bi-bar-chart-fill me-2 text-primary"></i> Inspecciones por Localidad</span>
-              </div>
-              <div class="card-body">
-                <div class="pure-bar-chart">
-                  <!-- Grid Lines -->
-                  <div class="chart-grid-lines">
-                    <div class="grid-line" v-for="n in 5" :key="n"></div>
-                  </div>
-                  <!-- Bars -->
-                  <div class="chart-bars-container">
-                    <div class="chart-bar-wrapper" v-for="item in adminStats.inspeccionesPorLocalidad" :key="item.localidad">
-                      <div class="bar-value">{{ item.total }}</div>
-                      <div class="bar-outer">
-                        <div class="bar-inner" :style="{ height: getBarHeightPercent(item.total) + '%' }"></div>
-                      </div>
-                      <div class="bar-label" :title="item.localidad">{{ item.localidad }}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ChartCard
+              title="Inspecciones por Localidad"
+              type="bar"
+              iconClass="bi bi-bar-chart-fill"
+              :height="280"
+              :labels="chartLocalidadesLabels"
+              :datasets="chartLocalidadesDatasets"
+            />
           </div>
           <div class="col-12 col-lg-4">
-            <div class="card border-0 shadow-sm h-100 chart-card-wrapper">
-              <div class="card-header bg-white border-bottom border-slate-100 d-flex justify-content-between align-items-center py-3">
-                <span class="fw-bold text-dark"><i class="bi bi-pie-chart-fill me-2 text-primary"></i> Rendimiento Veterinarios</span>
-              </div>
-              <div class="card-body d-flex flex-column justify-content-center">
-                <div class="pure-doughnut-chart-wrapper">
-                  <div class="pure-doughnut-chart" :style="{ background: getDoughnutGradient() }">
-                    <div class="inner-hole"></div>
-                  </div>
-                  <!-- Legend -->
-                  <div class="chart-legend-grid">
-                    <div class="legend-item" v-for="(item, idx) in adminStats.rendimientoVeterinarios" :key="item.name">
-                      <span class="legend-dot" :style="{ backgroundColor: getDoughnutColor(idx) }"></span>
-                      <span class="legend-text">{{ item.name }}: <strong class="text-dark">{{ item.total }}</strong></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ChartCard
+              title="Rendimiento Veterinarios"
+              type="doughnut"
+              iconClass="bi bi-pie-chart-fill"
+              :height="260"
+              :labels="chartVeterinariosLabels"
+              :datasets="chartVeterinariosDatasets"
+            />
           </div>
         </div>
 
@@ -380,49 +252,27 @@
           </div>
         </div>
       </div>
-    </main>
-
-    <!-- Bottom Nav -->
-    <nav class="bottom-nav">
-      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
-        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
-        <span>Inicio</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
-        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
-        <span>Productores</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
-        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
-        <span>Predios</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
-        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
-        <span>Dictámenes</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
-        <i class="bi bi-arrow-repeat"></i>
-        <span>Sincronizar</span>
-      </a>
-    </nav>
-  </div>
+    </PullToRefresh>
+  </AppLayout>
 </template>
 
 <script>
-import { Network } from '@capacitor/network';
+import AppLayout from '../components/AppLayout.vue';
+import ChartCard from '../components/ChartCard.vue';
+import PullToRefresh from '../components/PullToRefresh.vue';
 import Chart from 'chart.js/auto';
 import api from '../services/api.js';
 import db from '../services/db.js';
 
 export default {
   name: 'DashboardView',
+  components: { AppLayout, ChartCard, PullToRefresh },
   data() {
     return {
       userName: '',
       isAdmin: false,
-      sidebarActive: false,
       isOnline: true,
-      networkListener: null,
+      refreshing: false,
       
       // Datos Generales
       lastSyncDate: '',
@@ -447,9 +297,6 @@ export default {
       },
 
       // Gráficos
-      chartLocalidadesInstance: null,
-      chartVeterinariosInstance: null,
-      chartError: null
     };
   },
   async mounted() {
@@ -477,31 +324,15 @@ export default {
       });
     }
 
-    // 3. Inicializar estado de conectividad nativa
-    try {
-      const status = await Network.getStatus();
-      this.isOnline = status.connected;
-
-      this.networkListener = await Network.addListener('networkStatusChange', (status) => {
-        const wasOffline = !this.isOnline;
-        this.isOnline = status.connected;
-        api.invalidateConnectivityCache();
-        if (this.isOnline && wasOffline) {
-          // Si vuelve a conectarse, recargar en vivo
-          this.loadLiveData();
-        }
-      });
-    } catch (e) {
-      console.warn('Network API no disponible en navegador, usando fallback.', e);
-      this.isOnline = navigator.onLine;
-      this._onWindowOnline = () => {
-        this.isOnline = true;
-        this.loadLiveData();
-      };
-      this._onWindowOffline = () => this.isOnline = false;
-      window.addEventListener('online', this._onWindowOnline);
-      window.addEventListener('offline', this._onWindowOffline);
-    }
+    // 3. Inicializar estado de conectividad
+    this.isOnline = navigator.onLine;
+    this._onWindowOnline = () => {
+      this.isOnline = true;
+      this.loadLiveData();
+    };
+    this._onWindowOffline = () => this.isOnline = false;
+    window.addEventListener('online', this._onWindowOnline);
+    window.addEventListener('offline', this._onWindowOffline);
 
     // 4. Cargar caché de IndexedDB para renderizar instantáneamente (Offline-First)
     await this.loadCachedStats();
@@ -510,17 +341,10 @@ export default {
     await this.loadLiveData();
   },
   beforeUnmount() {
-    if (this.networkListener) {
-      this.networkListener.remove();
-    }
-    if (this._onWindowOnline) window.removeEventListener('online', this._onWindowOnline);
-    if (this._onWindowOffline) window.removeEventListener('offline', this._onWindowOffline);
+    window.removeEventListener('online', this._onWindowOnline);
+    window.removeEventListener('offline', this._onWindowOffline);
   },
   methods: {
-    alertWebOnly(seccion) {
-      alert(`La sección de ${seccion} es una función administrativa exclusiva del portal web.`);
-      this.sidebarActive = false;
-    },
     formatDate(dateStr) {
       if (!dateStr) return '';
       try {
@@ -544,17 +368,6 @@ export default {
     },
     continueBorrador(borrador) {
       this.$router.push(`/inspeccion/${borrador.predio_id}?inspeccion_id=${borrador.id || borrador.folio}${borrador.visita_id ? `&visita_id=${borrador.visita_id}` : ''}`);
-    },
-    async doLogout() {
-      try { 
-        await api.logout(); 
-      } catch (e) { 
-        // Silenciar errores en offline
-      }
-      localStorage.removeItem('sigdip_token');
-      localStorage.removeItem('sigdip_user');
-      sessionStorage.clear();
-      this.$router.push('/login');
     },
 
     // Cargar caché local de IndexedDB
@@ -618,6 +431,17 @@ export default {
       }
     },
 
+    async onRefresh() {
+      this.refreshing = true;
+      try {
+        await this.loadLiveData();
+      } catch (e) {
+        console.warn('Refresh error:', e);
+      } finally {
+        this.refreshing = false;
+      }
+    },
+
     getBarHeightPercent(total) {
       if (!this.adminStats.inspeccionesPorLocalidad || this.adminStats.inspeccionesPorLocalidad.length === 0) return 0;
       const maxVal = Math.max(...this.adminStats.inspeccionesPorLocalidad.map(item => item.total), 1);
@@ -647,6 +471,31 @@ export default {
       });
 
       return `conic-gradient(${segments.join(', ')})`;
+    }
+  },
+  computed: {
+    chartLocalidadesLabels() {
+      return (this.adminStats.inspeccionesPorLocalidad || []).map(item => item.localidad);
+    },
+    chartLocalidadesDatasets() {
+      return [{
+        label: 'Inspecciones',
+        data: (this.adminStats.inspeccionesPorLocalidad || []).map(item => item.total),
+        backgroundColor: '#2563eb',
+        borderRadius: 8,
+        barThickness: 30
+      }];
+    },
+    chartVeterinariosLabels() {
+      return (this.adminStats.rendimientoVeterinarios || []).map(item => item.name);
+    },
+    chartVeterinariosDatasets() {
+      return [{
+        data: (this.adminStats.rendimientoVeterinarios || []).map(item => item.total),
+        backgroundColor: ['#2563eb', '#60a5fa', '#93c5fd', '#bfdbfe', '#e2e8f0'],
+        borderWidth: 0,
+        cutout: '70%'
+      }];
     }
   }
 };
@@ -1058,125 +907,4 @@ export default {
 
 /* Bottom Navigation adjustments */
 
-/* ===== Pure HTML/CSS/SVG Premium Charting ===== */
-.pure-bar-chart {
-  position: relative;
-  height: 220px;
-  width: 100%;
-  margin-top: 15px;
-}
-.chart-grid-lines {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 30px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  pointer-events: none;
-}
-.grid-line {
-  width: 100%;
-  border-top: 1px dashed #f1f5f9;
-}
-.chart-bars-container {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  display: flex;
-  justify-content: space-around;
-  align-items: flex-end;
-}
-.chart-bar-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-grow: 1;
-  max-width: 50px;
-  height: 100%;
-  justify-content: flex-end;
-  z-index: 2;
-}
-.bar-value {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--color-primary);
-  margin-bottom: 4px;
-}
-.bar-outer {
-  width: 20px;
-  height: 140px;
-  background-color: #f1f5f9;
-  border-radius: 6px;
-  display: flex;
-  align-items: flex-end;
-  overflow: hidden;
-}
-.bar-inner {
-  width: 100%;
-  background-color: var(--color-primary);
-  border-top-left-radius: 6px;
-  border-top-right-radius: 6px;
-  transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.bar-label {
-  font-size: 0.65rem;
-  color: var(--text-secondary);
-  font-weight: 600;
-  margin-top: 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 55px;
-}
-
-.pure-doughnut-chart-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  padding: 10px 0;
-}
-.pure-doughnut-chart {
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-sm);
-  transition: background 0.4s ease;
-}
-.inner-hole {
-  width: 90px;
-  height: 90px;
-  background-color: white;
-  border-radius: 50%;
-}
-.chart-legend-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-  padding: 0 10px;
-  text-align: left;
-}
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-.legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  flex-shrink: 0;
-}
-.legend-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 </style>

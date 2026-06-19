@@ -105,9 +105,13 @@
 <script>
 import { Html5Qrcode } from 'html5-qrcode';
 import { Camera } from '@capacitor/camera';
+import { useInspeccionStore } from '../stores/inspeccion.js';
 
 export default {
   name: 'ScanView',
+  created() {
+    this.inspeccionStore = useInspeccionStore();
+  },
   data() {
     return {
       manualCode: '',
@@ -119,14 +123,13 @@ export default {
   },
   async mounted() {
     // Check if we're in single-scan mode (coming from a specific animal row)
-    const targetIndex = sessionStorage.getItem('scan_target_index');
+    const targetIndex = this.inspeccionStore.scanTargetIndex;
     if (targetIndex !== null) {
       this.isSingleMode = true;
-      this.singleIndex = parseInt(targetIndex);
+      this.singleIndex = targetIndex;
     } else {
       // Batch mode: recover previously scanned animals if any
-      const saved = sessionStorage.getItem('scanned_animals');
-      if (saved) this.scannedAnimals = JSON.parse(saved);
+      if (this.inspeccionStore.scannedAnimals.length) this.scannedAnimals = [...this.inspeccionStore.scannedAnimals];
     }
     
     // Check and request camera permission first
@@ -169,13 +172,13 @@ export default {
       this.saveToSession();
     },
     saveToSession() {
-      sessionStorage.setItem('scanned_animals', JSON.stringify(this.scannedAnimals));
+      this.inspeccionStore.setScannedAnimals(this.scannedAnimals);
     },
     confirmSingle() {
       if (!this.manualCode.trim()) return;
       // Save the single scanned arete and go back to the form
-      sessionStorage.setItem('scanned_single_arete', this.manualCode.trim().toUpperCase());
-      // scan_target_index and inspeccion_draft remain in sessionStorage for the form to read
+      this.inspeccionStore.setScannedSingleArete(this.manualCode.trim().toUpperCase());
+      // scan_target_index and inspeccion_draft remain in the store for the form to read
       this.$router.push('/inspeccion');
     },
     goToForm() {
@@ -184,10 +187,10 @@ export default {
     },
     goBack() {
       if (this.isSingleMode) {
-        // Clean up single-scan session data on cancel
-        sessionStorage.removeItem('scan_target_index');
-        sessionStorage.removeItem('scanned_single_arete');
-        // Keep inspeccion_draft so the form restores its state
+        // Clean up single-scan store data on cancel
+        this.inspeccionStore.clearScanTargetIndex();
+        this.inspeccionStore.clearScannedSingleArete();
+        // Keep inspeccionDraft so the form restores its state
         this.$router.push('/inspeccion');
       } else {
         this.$router.push('/dashboard');

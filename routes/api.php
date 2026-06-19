@@ -1,8 +1,9 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\AnimalesApiController;
+use App\Http\Controllers\Api\AreteCensoApiController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardApiController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -14,13 +15,16 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\DashboardApiController;
+use App\Http\Controllers\Api\InspeccionController as InspeccionDetallesController;
+use App\Http\Controllers\Api\InspeccionesApiController;
+use App\Http\Controllers\Api\MedicosApiController;
 use App\Http\Controllers\Api\ProductoresApiController;
 use App\Http\Controllers\Api\SyncController;
 use App\Http\Controllers\Api\VisitasApiController;
-use App\Http\Controllers\Api\InspeccionesApiController;
-use App\Http\Controllers\Api\MedicosApiController;
+use App\Http\Controllers\InspeccionController;
+use App\Http\Controllers\ReporteController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,14 +34,18 @@ use App\Http\Controllers\Api\MedicosApiController;
 
 // Rutas Públicas
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok', 'time' => now()->toIso8601String()]);
+});
 
 // Rutas Protegidas (Requieren el Token que devuelve el login)
 Route::middleware('auth:sanctum')->group(function () {
-    
+
     // Para que la app verifique quién es el usuario actual
     Route::get('/user', function (Request $request) {
         $user = $request->user();
         $user->roles = $user->getRoleNames();
+
         return $user;
     });
 
@@ -54,10 +62,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/productores', [ProductoresApiController::class, 'index']);
     Route::get('/productores/{id}', [ProductoresApiController::class, 'show']);
     Route::get('/predios', [ProductoresApiController::class, 'predios']);
+    Route::get('/predios/{id}', [ProductoresApiController::class, 'showPredio']);
     Route::post('/productores', [ProductoresApiController::class, 'storeProductor']);
     Route::put('/productores/{id}', [ProductoresApiController::class, 'updateProductor']);
+    Route::delete('/productores/{id}', [ProductoresApiController::class, 'destroyProductor']);
     Route::post('/predios', [ProductoresApiController::class, 'storeRancho']);
     Route::put('/predios/{id}', [ProductoresApiController::class, 'updateRancho']);
+    Route::delete('/predios/{id}', [ProductoresApiController::class, 'destroyPredio']);
+    Route::post('/predios/{id}/coordenadas', [ProductoresApiController::class, 'updateCoordenadas']);
 
     // Visitas desde la App Móvil
     Route::get('/visitas', [VisitasApiController::class, 'index']);
@@ -73,12 +85,31 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/inspecciones', [InspeccionesApiController::class, 'index']);
     Route::get('/inspecciones/{id}', [InspeccionesApiController::class, 'show']);
     Route::get('/inspecciones/{id}/pdf', [InspeccionesApiController::class, 'pdf']);
+    Route::get('/inspecciones/{id}/ver', [InspeccionesApiController::class, 'ver']);
     Route::patch('/inspecciones/{id}', [InspeccionesApiController::class, 'update']);
-    Route::get('/reportes/sábana-excel', [\App\Http\Controllers\ReporteController::class, 'exportExcel']);
-    Route::get('/censo/buscar-arete/{numero}', [\App\Http\Controllers\InspeccionController::class, 'buscarArete']);
+    Route::delete('/inspecciones/{id}', [InspeccionesApiController::class, 'destroy']);
+    Route::post('/inspecciones/{id}/sync-detalles', [InspeccionDetallesController::class, 'sync']);
+    Route::get('/reportes/sábana-excel', [ReporteController::class, 'exportExcel']);
+    Route::get('/censo/buscar-arete/{numero}', [InspeccionController::class, 'buscarArete']);
 
     // Médicos desde la App Móvil
     Route::get('/medicos', [MedicosApiController::class, 'index']);
+    Route::get('/medicos/{id}', [MedicosApiController::class, 'show']);
     Route::post('/medicos', [MedicosApiController::class, 'store']);
+    Route::put('/medicos/{id}', [MedicosApiController::class, 'update']);
     Route::delete('/medicos/{id}', [MedicosApiController::class, 'destroy']);
+
+    // Animales desde la App Móvil
+    Route::get('/animales', [AnimalesApiController::class, 'index']);
+    Route::get('/animales/{id}', [AnimalesApiController::class, 'show']);
+    Route::post('/animales', [AnimalesApiController::class, 'store']);
+    Route::put('/animales/{id}', [AnimalesApiController::class, 'update']);
+    Route::delete('/animales/{id}', [AnimalesApiController::class, 'destroy']);
+
+    // Aretes del Censo desde la App Móvil
+    Route::get('/aretes-censo', [AreteCensoApiController::class, 'index']);
+    Route::get('/aretes-censo/{id}', [AreteCensoApiController::class, 'show']);
+    Route::post('/aretes-censo', [AreteCensoApiController::class, 'store']);
+    Route::put('/aretes-censo/{id}', [AreteCensoApiController::class, 'update']);
+    Route::delete('/aretes-censo/{id}', [AreteCensoApiController::class, 'destroy']);
 });

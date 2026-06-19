@@ -16,13 +16,24 @@ class PredioController extends Controller
             $query->where('productor_id', $request->productor_id);
         }
 
-        $predios = $query->paginate(10);
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nombre_rancho', 'like', "%{$search}%")
+                    ->orWhere('clave_unidad_produccion', 'like', "%{$search}%")
+                    ->orWhere('localidad', 'like', "%{$search}%")
+                    ->orWhere('municipio', 'like', "%{$search}%");
+            });
+        }
+
+        $predios = $query->paginate(10)->withQueryString();
+
         return view('predios.index', compact('predios'));
     }
 
     public function create()
     {
         $productores = Productor::all();
+
         return view('predios.create', compact('productores'));
     }
 
@@ -48,6 +59,7 @@ class PredioController extends Controller
     public function edit(Predio $predio)
     {
         $productores = Productor::all();
+
         return view('predios.edit', compact('predio', 'productores'));
     }
 
@@ -68,6 +80,22 @@ class PredioController extends Controller
 
         return redirect()->route('predios.index')
             ->with('success', 'Datos del predio actualizados.');
+    }
+
+    public function show(Predio $predio)
+    {
+        $predio->load(['productor', 'animales']);
+
+        return view('predios.show', compact('predio'));
+    }
+
+    public function destroy(Predio $predio)
+    {
+        $predio->animales()->delete();
+        $predio->delete();
+
+        return redirect()->route('predios.index')
+            ->with('success', 'Predio y sus animales eliminados.');
     }
 
     /**
@@ -92,7 +120,7 @@ class PredioController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al guardar coordenadas: ' . $e->getMessage()
+                'message' => 'Error al guardar coordenadas: '.$e->getMessage(),
             ], 422);
         }
     }

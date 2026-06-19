@@ -17,7 +17,20 @@ class VisitasApiController extends Controller
             $query->whereDate('fecha_programada', $request->fecha);
         }
 
-        if (!$user->hasRole('Administrador')) {
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('codigo', 'like', "%{$search}%")
+                    ->orWhereHas('predio', function ($pq) use ($search) {
+                        $pq->where('nombre_rancho', 'like', "%{$search}%")
+                            ->orWhereHas('productor', function ($ppq) use ($search) {
+                                $ppq->where('nombre', 'like', "%{$search}%")
+                                    ->orWhere('apellido_paterno', 'like', "%{$search}%");
+                            });
+                    });
+            });
+        }
+
+        if (! $user->hasRole('Administrador')) {
             $query->where('veterinario_id', $user->id);
         }
 
@@ -56,7 +69,7 @@ class VisitasApiController extends Controller
         $visita = Visita::create([
             'codigo' => $validated['codigo'] ?? null,
             'predio_id' => $validated['predio_id'],
-            'veterinario_id' => $user->hasRole('Administrador') && !empty($validated['veterinario_id'])
+            'veterinario_id' => $user->hasRole('Administrador') && ! empty($validated['veterinario_id'])
                 ? $validated['veterinario_id']
                 : $user->id,
             'fecha_programada' => $validated['fecha_programada'],
@@ -80,7 +93,7 @@ class VisitasApiController extends Controller
         $this->authorizeVisita($request, $visita);
 
         $validated = $request->validate([
-            'codigo' => 'nullable|string|unique:visitas,codigo,' . $id,
+            'codigo' => 'nullable|string|unique:visitas,codigo,'.$id,
             'predio_id' => 'required|exists:predios,id',
             'veterinario_id' => 'nullable|exists:users,id',
             'fecha_programada' => 'required|date',
@@ -93,7 +106,7 @@ class VisitasApiController extends Controller
         $visita->update([
             'codigo' => $validated['codigo'] ?? $visita->codigo,
             'predio_id' => $validated['predio_id'],
-            'veterinario_id' => $user->hasRole('Administrador') && !empty($validated['veterinario_id'])
+            'veterinario_id' => $user->hasRole('Administrador') && ! empty($validated['veterinario_id'])
                 ? $validated['veterinario_id']
                 : $visita->veterinario_id,
             'fecha_programada' => $validated['fecha_programada'],
@@ -133,7 +146,7 @@ class VisitasApiController extends Controller
             ->where('codigo', $codigo)
             ->first();
 
-        if (!$visita) {
+        if (! $visita) {
             return response()->json(['exists' => false]);
         }
 
@@ -161,7 +174,7 @@ class VisitasApiController extends Controller
                     'veterinario' => $visita->veterinario ? [
                         'name' => $visita->veterinario->name,
                     ] : null,
-                ]
+                ],
             ]);
         }
 

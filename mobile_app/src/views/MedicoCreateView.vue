@@ -1,112 +1,5 @@
 <template>
-  <div class="app-container bg-light-page">
-    <!-- Sidebar (Drawer) -->
-    <div class="sidebar-overlay" :class="{ active: sidebarActive }" @click="sidebarActive = false"></div>
-    
-    <aside class="sidebar" :class="{ active: sidebarActive }">
-      <div class="sidebar-brand">
-        <img src="/icon_png.png" alt="SIGDIP" class="sidebar-logo">
-        <span>SIGDIP</span>
-        <button class="btn-close-sidebar" @click="sidebarActive = false">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <nav class="nav flex-column">
-        <template v-if="isAdmin">
-          <a class="nav-link" @click.prevent="$router.push('/dashboard')">
-            <i class="bi bi-grid-1x2-fill"></i> Dashboard
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/productores')">
-            <i class="bi bi-people"></i> Productores
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/predios')">
-            <i class="bi bi-house-door"></i> Predios
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspecciones')">
-            <i class="bi bi-clipboard-check"></i> Inspecciones
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/visitas')">
-            <i class="bi bi-calendar-event"></i> Agenda / Visitas
-          </a>
-          <a class="nav-link active" @click.prevent="sidebarActive = false">
-            <i class="bi bi-person-badge"></i> Médicos
-          </a>
-          <a class="nav-link" @click.prevent="alertWebOnly('Importar Excel')">
-            <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
-          </a>
-          <hr class="mx-3 text-slate-200">
-          <a class="nav-link" @click.prevent="$router.push('/descargas')">
-            <i class="bi bi-download"></i> Descargas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspecciones?downloadExcel=true')">
-            <i class="bi bi-file-earmark-excel"></i> Sábana Excel
-          </a>
-        </template>
-        <template v-else>
-          <a class="nav-link" @click.prevent="$router.push('/dashboard')">
-            <i class="bi bi-grid-1x2-fill"></i> Dashboard
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/productores')">
-            <i class="bi bi-people"></i> Productores
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/predios')">
-            <i class="bi bi-house-door"></i> Predios
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/visitas')">
-            <i class="bi bi-calendar-event"></i> Agenda / Visitas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspecciones')">
-            <i class="bi bi-clipboard-check"></i> Inspecciones
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspeccion')">
-            <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/descargas')">
-            <i class="bi bi-download"></i> Descargas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/sync')">
-            <i class="bi bi-arrow-repeat"></i> Sincronizar
-          </a>
-        </template>
-
-        <hr class="mx-3 text-slate-200">
-        <a class="nav-link text-danger logout-btn" @click.prevent="doLogout">
-          <i class="bi bi-box-arrow-left"></i> Salir
-        </a>
-      </nav>
-    </aside>
-
-    <!-- Mobile Header -->
-    <header class="mobile-header shadow-sm">
-      <div class="header-left">
-        <button class="header-back-btn rounded-circle" @click="$router.push('/medicos')">
-          <i class="bi bi-arrow-left fs-5"></i>
-        </button>
-      </div>
-      
-      <div class="brand-title">
-        <img src="/icon_png.png" alt="SIGDIP" class="brand-icon">
-        <span class="fw-bold">SIGDIP</span>
-      </div>
-
-      <div class="header-right">
-        <!-- Connectivity Badge Mobile -->
-        <div 
-          class="connectivity-badge-pill"
-          :class="isOnline ? 'online' : 'offline'"
-          :title="isOnline ? 'Conectado (Online)' : 'Desconectado (Offline)'"
-        >
-          <i :class="isOnline ? 'bi bi-cloud-check-fill' : 'bi bi-cloud-slash-fill'"></i>
-        </div>
-
-        <button class="avatar-circle rounded-circle" @click="sidebarActive = true">
-          <i class="bi bi-person"></i>
-        </button>
-      </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="app-content main-content bg-light-page">
+  <AppLayout>
       <div class="container-form-wrapper">
         <!-- Title Block -->
         <div class="welcome-header mb-4 text-start">
@@ -209,47 +102,21 @@
           </ul>
         </div>
       </div>
-    </main>
-
-    <!-- Bottom Nav -->
-    <nav class="bottom-nav">
-      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
-        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
-        <span>Inicio</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
-        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
-        <span>Productores</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
-        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
-        <span>Predios</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
-        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
-        <span>Dictámenes</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
-        <i class="bi bi-arrow-repeat"></i>
-        <span>Sincronizar</span>
-      </a>
-    </nav>
-  </div>
+  </AppLayout>
 </template>
 
 <script>
-import { Network } from '@capacitor/network';
+import AppLayout from '../components/AppLayout.vue';
 import api from '../services/api.js';
 
 export default {
   name: 'MedicoCreateView',
+  components: { AppLayout },
   data() {
     return {
       userName: '',
       isAdmin: false,
       isOnline: true,
-      sidebarActive: false,
-      networkListener: null,
       saving: false,
       form: {
         name: '',
@@ -274,38 +141,16 @@ export default {
       return;
     }
 
-    try {
-      const status = await Network.getStatus();
-      this.isOnline = status.connected;
-      this.networkListener = await Network.addListener('networkStatusChange', (status) => {
-        this.isOnline = status.connected;
-      });
-    } catch (e) {
-      window.addEventListener('online', () => this.isOnline = true);
-      window.addEventListener('offline', () => this.isOnline = false);
-    }
+    this._onWindowOnline = () => this.isOnline = true;
+    this._onWindowOffline = () => this.isOnline = false;
+    window.addEventListener('online', this._onWindowOnline);
+    window.addEventListener('offline', this._onWindowOffline);
   },
   beforeUnmount() {
-    if (this.networkListener) {
-      this.networkListener.remove();
-    }
+    window.removeEventListener('online', this._onWindowOnline);
+    window.removeEventListener('offline', this._onWindowOffline);
   },
   methods: {
-    alertWebOnly(seccion) {
-      alert(`La sección de ${seccion} es una función administrativa disponible en la web de escritorio.`);
-      this.sidebarActive = false;
-    },
-    async doLogout() {
-      try { 
-        await api.logout(); 
-      } catch (e) { 
-        // Silenciar errores en offline
-      }
-      localStorage.removeItem('sigdip_token');
-      localStorage.removeItem('sigdip_user');
-      sessionStorage.clear();
-      this.$router.push('/login');
-    },
     async saveMedico() {
       this.saving = true;
       this.errorMsg = '';

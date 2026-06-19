@@ -12,6 +12,22 @@
             <i class="bi bi-person-plus"></i> Nuevo Productor
         </a>
     </div>
+    <div class="card-body bg-light border-bottom py-2 px-4">
+        <form method="GET" class="row g-2 align-items-center">
+            <div class="col-md-4 col-sm-6">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control border-start-0 rounded-end-pill" placeholder="Buscar por nombre, CURP, UPP..." value="{{ request('search') }}">
+                </div>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-sm btn-primary rounded-pill px-3" type="submit"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+                @if(request('search'))
+                    <a href="{{ route('productores.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-x-lg"></i> Limpiar</a>
+                @endif
+            </div>
+        </form>
+    </div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 table-mobile-cards">
@@ -47,9 +63,19 @@
                                 <a href="{{ route('predios.create', ['productor_id' => $p->id]) }}" class="btn btn-sm btn-outline-primary" title="Añadir Rancho">
                                     <i class="bi bi-house-add"></i>
                                 </a>
+                                <a href="{{ route('productores.show', $p->id) }}" class="btn btn-sm btn-outline-info" title="Ver Detalle">
+                                    <i class="bi bi-eye"></i>
+                                </a>
                                 <a href="{{ route('productores.edit', $p->id) }}" class="btn btn-sm btn-outline-secondary" title="Editar Productor">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                <form action="{{ route('productores.destroy', $p->id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar este productor y todos sus predios?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>

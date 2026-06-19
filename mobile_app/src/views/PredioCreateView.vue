@@ -462,7 +462,7 @@ export default {
   async mounted() {
     const user = api.getCurrentUser();
     this.userName = user?.name || 'Administrador Central';
-    this.predioId = this.$route.query.predio_id || null;
+    this.predioId = this.$route.params.id || this.$route.query.predio_id || null;
     await this.loadProductores();
     this.prefillFromQuery();
     await this.loadPredioIfEditing();

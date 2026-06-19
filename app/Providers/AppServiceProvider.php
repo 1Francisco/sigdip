@@ -2,9 +2,10 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-
+use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,16 +26,16 @@ class AppServiceProvider extends ServiceProvider
 
         // Trust all proxies dynamically when running behind Cloudflare Tunnel, ngrok, or Railway
         if ($this->app->request->header('x-forwarded-proto') === 'https' || $this->app->request->secure()) {
-            \Illuminate\Http\Request::setTrustedProxies(
+            Request::setTrustedProxies(
                 [$this->app->request->getClientIp()],
-                \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR |
-                \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST |
-                \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT |
-                \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO
+                Request::HEADER_X_FORWARDED_FOR |
+                Request::HEADER_X_FORWARDED_HOST |
+                Request::HEADER_X_FORWARDED_PORT |
+                Request::HEADER_X_FORWARDED_PROTO
             );
 
             // Force HTTPS for all generated URLs and assets
-            \Illuminate\Support\Facades\URL::forceScheme('https');
+            URL::forceScheme('https');
 
             // Dynamically mark session cookie as Secure
             config(['session.secure' => true]);

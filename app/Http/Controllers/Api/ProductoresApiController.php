@@ -3,19 +3,29 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Productor;
 use App\Models\Predio;
+use App\Models\Productor;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class ProductoresApiController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Productor::with(['predios' => function ($prediosQuery) {
-            $prediosQuery->latest();
-        }])->withCount('predios')->latest();
+        $query = Productor::withCount('predios')->latest();
+
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nombre', 'like', "%{$search}%")
+                    ->orWhere('apellido_paterno', 'like', "%{$search}%")
+                    ->orWhere('apellido_materno', 'like', "%{$search}%")
+                    ->orWhere('curp', 'like', "%{$search}%")
+                    ->orWhere('upp', 'like', "%{$search}%");
+            });
+        }
 
         $productores = $query->get()->map(fn (Productor $productor) => $this->toProductorArray($productor));
 
@@ -37,9 +47,21 @@ class ProductoresApiController extends Controller
 
     public function predios(Request $request)
     {
-        $predios = Predio::with('productor')
-            ->latest()
-            ->get()
+        $query = Predio::with('productor')->latest();
+
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nombre_rancho', 'like', "%{$search}%")
+                    ->orWhere('clave_unidad_produccion', 'like', "%{$search}%")
+                    ->orWhere('localidad', 'like', "%{$search}%")
+                    ->orWhereHas('productor', function ($pq) use ($search) {
+                        $pq->where('nombre', 'like', "%{$search}%")
+                            ->orWhere('apellido_paterno', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $predios = $query->get()
             ->map(function (Predio $predio) {
                 return [
                     'id' => $predio->id,
@@ -73,6 +95,51 @@ class ProductoresApiController extends Controller
         return response()->json([
             'success' => true,
             'data' => $predios,
+        ]);
+    }
+
+    public function showPredio(Request $request, $id)
+    {
+        $predio = Predio::with(['productor', 'animales'])->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $predio->id,
+                'nombre' => $predio->nombre_rancho,
+                'nombre_rancho' => $predio->nombre_rancho,
+                'clave_unidad_produccion' => $predio->clave_unidad_produccion,
+                'upp' => $predio->clave_unidad_produccion,
+                'latitud' => $predio->latitud,
+                'longitud' => $predio->longitud,
+                'domicilio' => $predio->domicilio,
+                'municipio' => $predio->municipio,
+                'localidad' => $predio->localidad,
+                'productor_id' => $predio->productor_id,
+                'productor' => $predio->productor ? [
+                    'id' => $predio->productor->id,
+                    'nombre' => $predio->productor->nombre,
+                    'apellido_paterno' => $predio->productor->apellido_paterno,
+                    'apellido_materno' => $predio->productor->apellido_materno,
+                    'curp' => $predio->productor->curp,
+                    'upp' => $predio->productor->upp,
+                    'telefono' => $predio->productor->telefono,
+                    'domicilio' => $predio->productor->domicilio,
+                    'municipio' => $predio->productor->municipio,
+                    'localidad' => $predio->productor->localidad,
+                    'estado' => $predio->productor->estado,
+                    'email' => $predio->productor->email,
+                ] : null,
+                'animales' => $predio->animales->map(function ($animal) {
+                    return [
+                        'id' => $animal->id,
+                        'numero_arete_siniiga' => $animal->numero_arete_siniiga,
+                        'raza' => $animal->raza,
+                        'sexo' => $animal->sexo,
+                        'edad' => $animal->edad,
+                    ];
+                })->values(),
+            ],
         ]);
     }
 
@@ -127,7 +194,7 @@ class ProductoresApiController extends Controller
                         'productor_id' => $productor->id,
                         'domicilio' => 'Conocido',
                     ]);
-                    
+
                     // Cargar relación productor
                     $predio->load('productor');
                 }
@@ -136,22 +203,89 @@ class ProductoresApiController extends Controller
                     'success' => true,
                     'message' => $predio ? 'Productor y Unidad de Producción (UPP) registrados con éxito.' : 'Productor registrado con éxito.',
                     'productor' => $productor,
-                    'predio' => $predio
+                    'predio' => $predio,
                 ], 201);
             });
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error de validación.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error creando productor via API: ' . $e->getMessage());
+            Log::error('Error creando productor via API: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error crítico en el servidor: ' . $e->getMessage()
+                'message' => 'Error crítico en el servidor: '.$e->getMessage(),
             ], 500);
+        }
+    }
+
+    public function destroyProductor($id)
+    {
+        try {
+            $productor = Productor::findOrFail($id);
+            $productor->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Productor eliminado con éxito.',
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Productor no encontrado.',
+            ], 404);
+        }
+    }
+
+    public function updateCoordenadas(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'latitud' => 'required|numeric|between:-90,90',
+                'longitud' => 'required|numeric|between:-180,180',
+            ]);
+
+            $predio = Predio::findOrFail($id);
+            $predio->update([
+                'latitud' => $request->latitud,
+                'longitud' => $request->longitud,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Coordenadas actualizadas con éxito.',
+                'data' => [
+                    'id' => $predio->id,
+                    'latitud' => $predio->latitud,
+                    'longitud' => $predio->longitud,
+                ],
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['success' => false, 'message' => 'Predio no encontrado.'], 404);
+        } catch (ValidationException $e) {
+            return response()->json(['success' => false, 'message' => 'Error de validación.', 'errors' => $e->errors()], 422);
+        }
+    }
+
+    public function destroyPredio($id)
+    {
+        try {
+            $predio = Predio::findOrFail($id);
+            $predio->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Predio eliminado con éxito.',
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Predio no encontrado.',
+            ], 404);
         }
     }
 
@@ -167,8 +301,8 @@ class ProductoresApiController extends Controller
                 'nombre' => 'required|string|max:255',
                 'apellido_paterno' => 'required|string|max:255',
                 'apellido_materno' => 'nullable|string|max:255',
-                'curp' => 'nullable|string|size:18|unique:productores,curp,' . $productor->id,
-                'upp' => 'nullable|string|unique:productores,upp,' . $productor->id,
+                'curp' => 'nullable|string|size:18|unique:productores,curp,'.$productor->id,
+                'upp' => 'nullable|string|unique:productores,upp,'.$productor->id,
                 'telefono' => 'nullable|string|max:20',
                 'domicilio' => 'nullable|string',
                 'municipio' => 'nullable|string',
@@ -186,25 +320,26 @@ class ProductoresApiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Productor actualizado con éxito en el servidor.',
-                'productor' => $productor
+                'productor' => $productor,
             ]);
 
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Productor no encontrado en el servidor.'
+                'message' => 'Productor no encontrado en el servidor.',
             ], 404);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error de validación.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error actualizando productor via API: ' . $e->getMessage());
+            Log::error('Error actualizando productor via API: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error crítico en el servidor: ' . $e->getMessage()
+                'message' => 'Error crítico en el servidor: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -243,20 +378,21 @@ class ProductoresApiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Rancho creado con éxito en el servidor.',
-                'predio' => $predio
+                'predio' => $predio,
             ], 201);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error de validación.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error creando rancho via API: ' . $e->getMessage());
+            Log::error('Error creando rancho via API: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error crítico en el servidor: ' . $e->getMessage()
+                'message' => 'Error crítico en el servidor: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -271,7 +407,7 @@ class ProductoresApiController extends Controller
 
             $validated = $request->validate([
                 'nombre_rancho' => 'required|string|max:255',
-                'clave_unidad_produccion' => 'required|string|unique:predios,clave_unidad_produccion,' . $predio->id,
+                'clave_unidad_produccion' => 'required|string|unique:predios,clave_unidad_produccion,'.$predio->id,
                 'localidad' => 'required|string|max:255',
                 'municipio' => 'nullable|string|max:255',
                 'productor_id' => 'required|exists:productores,id',
@@ -322,25 +458,26 @@ class ProductoresApiController extends Controller
                         'estado' => $predio->productor->estado,
                         'email' => $predio->productor->email,
                     ] : null,
-                ]
+                ],
             ]);
 
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Rancho no encontrado en el servidor.'
+                'message' => 'Rancho no encontrado en el servidor.',
             ], 404);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error de validación.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error actualizando rancho via API: ' . $e->getMessage());
+            Log::error('Error actualizando rancho via API: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error crítico en el servidor: ' . $e->getMessage()
+                'message' => 'Error crítico en el servidor: '.$e->getMessage(),
             ], 500);
         }
     }

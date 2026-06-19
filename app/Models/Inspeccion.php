@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -84,5 +85,23 @@ class Inspeccion extends Model
     public function detalles(): HasMany
     {
         return $this->hasMany(DetalleInspeccion::class, 'inspeccion_id');
+    }
+
+    /**
+     * Generate a sanitized PDF filename for this inspection.
+     */
+    public function buildPdfFilename(): string
+    {
+        $productor = $this->predio?->productor;
+        $nombre = trim(($productor?->apellido_paterno ?? 'DICTAMEN').' '.($productor?->nombre ?? ''));
+        $nombre = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $nombre);
+        $nombre = preg_replace('/[^A-Za-z0-9 _-]/', '', $nombre);
+        $nombre = preg_replace('/\s+/', '_', trim($nombre));
+        $nombre = strtoupper($nombre ?: 'DICTAMEN');
+        $fecha = $this->fecha_inyeccion
+            ? Carbon::parse($this->fecha_inyeccion)->format('d-m-Y')
+            : now()->format('d-m-Y');
+
+        return "DICTAMEN_{$nombre}_{$fecha}.pdf";
     }
 }

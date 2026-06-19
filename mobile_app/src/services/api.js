@@ -341,8 +341,14 @@ export default {
   },
 
   async getInspecciones(params = {}) {
+    if (!params.perPage) params.perPage = 500;
     const query = new URLSearchParams(params).toString();
-    return await request('GET', `/inspecciones${query ? `?${query}` : ''}`);
+    const res = await request('GET', `/inspecciones${query ? `?${query}` : ''}`);
+    // Handle paginated API response — extract data array for backward compat
+    if (res && res.pagination) {
+      return { data: res.data };
+    }
+    return res;
   },
 
   async getInspeccion(id) {
@@ -351,6 +357,10 @@ export default {
 
   async updateInspeccion(id, inspeccion) {
     return await request('PATCH', `/inspecciones/${id}`, inspeccion);
+  },
+
+  async syncDetalles(id, detalles) {
+    return await request('POST', `/inspecciones/${id}/sync-detalles`, { detalles });
   },
 
   async getInspectionPdf(id) {
@@ -378,16 +388,82 @@ export default {
     return await request('PUT', `/predios/${id}`, rancho);
   },
 
+  async deleteProductor(id) {
+    return await request('DELETE', `/productores/${id}`);
+  },
+
+  async deletePredio(id) {
+    return await request('DELETE', `/predios/${id}`);
+  },
+
+  async updateCoordenadas(id, latitud, longitud) {
+    return await request('POST', `/predios/${id}/coordenadas`, { latitud, longitud });
+  },
+
+  async getPredio(id) {
+    return await request('GET', `/predios/${id}`);
+  },
+
   async getMedicos() {
     return await request('GET', '/medicos');
+  },
+
+  async getMedico(id) {
+    return await request('GET', `/medicos/${id}`);
   },
 
   async storeMedico(medico) {
     return await request('POST', '/medicos', medico);
   },
 
+  async updateMedico(id, medico) {
+    return await request('PUT', `/medicos/${id}`, medico);
+  },
+
   async deleteMedico(id) {
     return await request('DELETE', `/medicos/${id}`);
+  },
+
+  async getAnimales(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return await request('GET', `/animales${query ? `?${query}` : ''}`);
+  },
+
+  async getAnimal(id) {
+    return await request('GET', `/animales/${id}`);
+  },
+
+  async createAnimal(animal) {
+    return await request('POST', '/animales', animal);
+  },
+
+  async updateAnimal(id, animal) {
+    return await request('PUT', `/animales/${id}`, animal);
+  },
+
+  async deleteAnimal(id) {
+    return await request('DELETE', `/animales/${id}`);
+  },
+
+  async getAretesCenso(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return await request('GET', `/aretes-censo${query ? `?${query}` : ''}`);
+  },
+
+  async getAreteCenso(id) {
+    return await request('GET', `/aretes-censo/${id}`);
+  },
+
+  async createAreteCenso(data) {
+    return await request('POST', '/aretes-censo', data);
+  },
+
+  async updateAreteCenso(id, data) {
+    return await request('PUT', `/aretes-censo/${id}`, data);
+  },
+
+  async deleteAreteCenso(id) {
+    return await request('DELETE', `/aretes-censo/${id}`);
   },
 
   async buscarArete(numero) {

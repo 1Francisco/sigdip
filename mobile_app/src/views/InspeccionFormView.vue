@@ -1,112 +1,5 @@
 <template>
-  <div class="app-container bg-light-page">
-    <!-- Sidebar (Drawer) -->
-    <div class="sidebar-overlay" :class="{ active: sidebarActive }" @click="sidebarActive = false"></div>
-    
-    <aside class="sidebar" :class="{ active: sidebarActive }">
-      <div class="sidebar-brand">
-        <img src="/icon_png.png" alt="SIGDIP" class="sidebar-logo">
-        <span>SIGDIP</span>
-        <button class="btn-close-sidebar" @click="sidebarActive = false">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <nav class="nav flex-column">
-        <template v-if="isAdmin">
-          <a class="nav-link" @click.prevent="$router.push('/dashboard')">
-            <i class="bi bi-grid-1x2-fill"></i> Dashboard
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/productores')">
-            <i class="bi bi-people"></i> Productores
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/predios')">
-            <i class="bi bi-house-door"></i> Predios
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspecciones')">
-            <i class="bi bi-clipboard-check"></i> Inspecciones
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/visitas')">
-            <i class="bi bi-calendar-event"></i> Agenda / Visitas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/medicos')">
-            <i class="bi bi-person-badge"></i> Médicos
-          </a>
-          <a class="nav-link" @click.prevent="alertWebOnly('Importar Excel')">
-            <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
-          </a>
-          <hr class="mx-3 text-slate-200">
-          <a class="nav-link" @click.prevent="$router.push('/descargas')">
-            <i class="bi bi-download"></i> Descargas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspecciones?downloadExcel=true')">
-            <i class="bi bi-file-earmark-excel"></i> Sábana Excel
-          </a>
-        </template>
-        <template v-else>
-          <a class="nav-link" @click.prevent="$router.push('/dashboard')">
-            <i class="bi bi-grid-1x2-fill"></i> Dashboard
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/productores')">
-            <i class="bi bi-people"></i> Productores
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/predios')">
-            <i class="bi bi-house-door"></i> Predios
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/visitas')">
-            <i class="bi bi-calendar-event"></i> Agenda / Visitas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/inspecciones')">
-            <i class="bi bi-clipboard-check"></i> Inspecciones
-          </a>
-          <a class="nav-link active" @click.prevent="sidebarActive = false">
-            <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/descargas')">
-            <i class="bi bi-download"></i> Descargas
-          </a>
-          <a class="nav-link" @click.prevent="$router.push('/sync')">
-            <i class="bi bi-arrow-repeat"></i> Sincronizar
-          </a>
-        </template>
-
-        <hr class="mx-3 text-slate-200">
-        <a class="nav-link text-danger logout-btn" @click.prevent="doLogout">
-          <i class="bi bi-box-arrow-left"></i> Salir
-        </a>
-      </nav>
-    </aside>
-
-    <!-- Mobile Header -->
-    <header class="mobile-header shadow-sm">
-      <div class="header-left">
-        <button class="header-back-btn rounded-circle" @click="$router.push('/inspecciones')">
-          <i class="bi bi-arrow-left fs-5"></i>
-        </button>
-      </div>
-      
-      <div class="brand-title">
-        <img src="/icon_png.png" alt="SIGDIP" class="brand-icon">
-        <span class="fw-bold">SIGDIP</span>
-      </div>
-
-      <div class="header-right">
-        <!-- Connectivity Badge Mobile -->
-        <div 
-          class="connectivity-badge-pill"
-          :class="isOnline ? 'online' : 'offline'"
-          :title="isOnline ? 'Conectado (Online)' : 'Desconectado (Offline)'"
-        >
-          <i :class="isOnline ? 'bi bi-cloud-check-fill' : 'bi bi-cloud-slash-fill'"></i>
-        </div>
-
-        <button class="avatar-circle rounded-circle" @click="sidebarActive = true">
-          <i class="bi bi-person"></i>
-        </button>
-      </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="app-content main-content bg-light-page">
+  <AppLayout>
       <div class="container-form-wrapper">
         <!-- Title Block -->
         <div class="welcome-header mb-4 text-start">
@@ -798,118 +691,38 @@
         </div>
 
 
-        <!-- Botones de Acción para Escritorio -->
-        <div class="d-none d-lg-flex align-items-stretch gap-3 mt-4 mb-5">
-          <!-- Borrador Button (Card Style) -->
-          <button type="button" class="btn-borrador-card" @click="saveInspeccion('borrador')">
-            <i class="bi bi-box-arrow-in-down fs-4"></i>
-            <span>Borrador</span>
-          </button>
-
-          <!-- Finalizar Button (Long Blue Button) -->
-          <button 
-            type="button" 
-            class="btn-finalizar-row flex-grow-1" 
-            :class="{ 'blocked': esBotonFinalizarBloqueado }" 
-            :disabled="esBotonFinalizarBloqueado"
-            @click="saveInspeccion('sincronizado')"
-          >
-            <template v-if="esBotonFinalizarBloqueado">
-              <i class="bi bi-lock-fill"></i> Finalizar Inyección (Bloqueado)
-            </template>
-            <template v-else-if="!puedoEditarResultados()">
-              <i class="bi bi-check-circle-fill"></i> Finalizar Inyección
-            </template>
-            <template v-else>
-              <i class="bi bi-check-circle"></i> Finalizar
-            </template>
-          </button>
-        </div>
-
-        <!-- Sticky Bottom Actions for Mobile -->
-        <div class="mobile-sticky-actions d-flex d-lg-none">
-          <button type="button" class="btn-mobile-borrador" @click="saveInspeccion('borrador')">
-            <i class="bi bi-box-arrow-in-down fs-4"></i>
-            <span>Borrador</span>
-          </button>
-          
-          <button 
-            type="button" 
-            class="btn-mobile-finalizar flex-grow-1" 
-            :class="{ 'blocked': esBotonFinalizarBloqueado }" 
-            :disabled="esBotonFinalizarBloqueado"
-            @click="saveInspeccion('sincronizado')"
-          >
-            <template v-if="esBotonFinalizarBloqueado">
-              <i class="bi bi-lock-fill"></i> Finalizar Inyección (Bloqueado)
-            </template>
-            <template v-else-if="!puedoEditarResultados()">
-              <i class="bi bi-check-circle-fill"></i> Finalizar Inyección
-            </template>
-            <template v-else>
-              <i class="bi bi-cloud-arrow-up-fill"></i> Finalizar Dictamen
-            </template>
-          </button>
-        </div>
-
-        <!-- Floating Action Button for Adding Animals on Mobile -->
-        <button type="button" class="btn-fab-add d-lg-none" @click="addEmptyAnimal" title="Añadir Animal">
-          <i class="bi bi-plus-lg fs-4"></i>
-        </button>
+        <InspeccionActions
+          :finalizar-bloqueado="esBotonFinalizarBloqueado"
+          :en-fase-lectura="puedoEditarResultados()"
+          @save="saveInspeccion"
+          @add-animal="addEmptyAnimal"
+        />
       </div>
-    </main>
+  </AppLayout>
 
-    <!-- Bottom Nav -->
-    <nav class="bottom-nav">
-      <a class="bottom-nav-link" :class="{ active: $route.path === '/dashboard' }" @click.prevent="$router.push('/dashboard')">
-        <i class="bi" :class="$route.path === '/dashboard' ? 'bi-grid-1x2-fill' : 'bi-grid-1x2'"></i>
-        <span>Inicio</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/productores') }" @click.prevent="$router.push('/productores')">
-        <i class="bi" :class="$route.path.startsWith('/productores') ? 'bi-people-fill' : 'bi-people'"></i>
-        <span>Productores</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/predios') }" @click.prevent="$router.push('/predios')">
-        <i class="bi" :class="$route.path.startsWith('/predios') ? 'bi-house-door-fill' : 'bi-house-door'"></i>
-        <span>Predios</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion') }" @click.prevent="$router.push('/inspecciones')">
-        <i class="bi" :class="($route.path.startsWith('/inspeccione') || $route.path.startsWith('/inspeccion')) ? 'bi-clipboard-check-fill' : 'bi-clipboard-check'"></i>
-        <span>Dictámenes</span>
-      </a>
-      <a class="bottom-nav-link" :class="{ active: $route.path === '/sync' || $route.path === '/scan' }" @click.prevent="$router.push('/sync')">
-        <i class="bi bi-arrow-repeat"></i>
-        <span>Sincronizar</span>
-      </a>
-    </nav>
-
-    <!-- Scanner Modal Overlay -->
-    <div v-if="scannerActive" class="scanner-modal-overlay">
-      <div class="scanner-modal-content">
-        <div class="scanner-modal-header">
-          <h5 class="m-0"><i class="bi bi-qr-code-scan me-2"></i> Escanear Arete</h5>
-          <button type="button" class="btn-close-scanner" @click="stopFormScanner">✕</button>
-        </div>
-        <div class="scanner-modal-body">
-          <div id="form-reader" class="scanner-preview-box"></div>
-          <p class="scanner-instruction-text mt-2 mb-0">Apunta la cámara al código de barras del arete.</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  <ScannerModal
+    v-if="scannerActive"
+    @scanned="onScannerScanned"
+    @close="scannerActive = false; activeScanIndex = -1;"
+  />
 </template>
 
 <script>
-import { Network } from '@capacitor/network';
+import AppLayout from '../components/AppLayout.vue';
+import ScannerModal from '../components/ScannerModal.vue';
+import InspeccionActions from '../components/InspeccionActions.vue';
 import api from '../services/api.js';
 import { Geolocation } from '@capacitor/geolocation';
-import { Camera } from '@capacitor/camera';
 import db from '../services/db.js';
 import backgroundSync from '../services/backgroundSync.js';
-import { Html5Qrcode } from 'html5-qrcode';
+import { useInspeccionStore } from '../stores/inspeccion.js';
 
 export default {
   name: 'InspeccionFormView',
+  components: { AppLayout, ScannerModal, InspeccionActions },
+  created() {
+    this.inspeccionStore = useInspeccionStore();
+  },
   data() {
     return {
       predios: [],
@@ -922,15 +735,12 @@ export default {
       animalSearchQuery: '',
       visibleAnimalsLimit: 30,
       activeSection: 1, // Control de acordeón abierto
-      sidebarActive: false,
       isAdmin: false,
       userName: '',
       isOnline: true,
-      networkListener: null,
       originalFolio: '',
       scannerActive: false,
       activeScanIndex: -1,
-      html5QrCode: null,
       form: {
         folio: '',
         predio_id: '',
@@ -1129,21 +939,13 @@ export default {
     this.predios = await db.getPredios();
     this.visitas = await db.getVisitas();
 
-    try {
-      const status = await Network.getStatus();
-      this.isOnline = status.connected;
-      this.networkListener = await Network.addListener('networkStatusChange', (status) => {
-        this.isOnline = status.connected;
-      });
-    } catch (e) {
-      this._onWindowOnline = () => this.isOnline = true;
-      this._onWindowOffline = () => this.isOnline = false;
-      window.addEventListener('online', this._onWindowOnline);
-      window.addEventListener('offline', this._onWindowOffline);
-    }
+    this._onWindowOnline = () => this.isOnline = true;
+    this._onWindowOffline = () => this.isOnline = false;
+    window.addEventListener('online', this._onWindowOnline);
+    window.addEventListener('offline', this._onWindowOffline);
 
     // Si viene un dictamen existente desde el índice o el detalle
-    const inspeccionId = this.$route.query.inspeccion_id;
+    const inspeccionId = this.$route.params.id || this.$route.query.inspeccion_id;
     if (inspeccionId) {
       try {
         const res = await api.getInspeccion(inspeccionId);
@@ -1178,20 +980,19 @@ export default {
     }
 
     // ── Restaurar borrador si venimos del escáner individual ──
-    const draft = sessionStorage.getItem('inspeccion_draft');
-    if (draft) {
-      const draftData = JSON.parse(draft);
+    const draftData = this.inspeccionStore.inspeccionDraft;
+    if (draftData) {
       // Restore the full form state from the draft
       Object.assign(this.form, draftData);
       this.originalFolio = draftData.folio || '';
-      sessionStorage.removeItem('inspeccion_draft');
+      this.inspeccionStore.clearInspeccionDraft();
 
       // Check if we have a single-scan result
-      const targetIdx = sessionStorage.getItem('scan_target_index');
-      const singleArete = sessionStorage.getItem('scanned_single_arete');
+      const targetIdx = this.inspeccionStore.scanTargetIndex;
+      const singleArete = this.inspeccionStore.scannedSingleArete;
 
       if (targetIdx !== null && singleArete) {
-        const idx = parseInt(targetIdx);
+        const idx = targetIdx;
         if (this.form.animales && this.form.animales[idx]) {
           this.form.animales[idx].identificador = singleArete;
           // Try to look up arete data from the API
@@ -1199,9 +1000,9 @@ export default {
         }
       }
 
-      // Clean up session keys
-      sessionStorage.removeItem('scan_target_index');
-      sessionStorage.removeItem('scanned_single_arete');
+      // Clean up store keys
+      this.inspeccionStore.clearScanTargetIndex();
+      this.inspeccionStore.clearScannedSingleArete();
 
       // Re-select predio to restore computed state
       if (this.form.predio_id) {
@@ -1212,10 +1013,10 @@ export default {
     }
 
     // Comprobar si vienen animales del escáner batch en sesión
-    const saved = sessionStorage.getItem('scanned_animals');
-    if (saved && !inspeccionId && !draft) {
-      this.form.animales = JSON.parse(saved);
-      sessionStorage.removeItem('scanned_animals');
+    const savedAnimals = this.inspeccionStore.scannedAnimals;
+    if (savedAnimals && savedAnimals.length > 0 && !inspeccionId && !draftData) {
+      this.form.animales = savedAnimals;
+      this.inspeccionStore.clearScannedAnimals();
       this.activeSection = 4; // Ir directo a la sección de resultados
     }
 
@@ -1256,12 +1057,8 @@ export default {
     // No pre-generate folio to let it be visually optional in the form
   },
   beforeUnmount() {
-    if (this.networkListener) {
-      this.networkListener.remove();
-    }
-    if (this._onWindowOnline) window.removeEventListener('online', this._onWindowOnline);
-    if (this._onWindowOffline) window.removeEventListener('offline', this._onWindowOffline);
-    this.stopFormScanner();
+    window.removeEventListener('online', this._onWindowOnline);
+    window.removeEventListener('offline', this._onWindowOffline);
   },
   methods: {
     cargarDictamenData(data) {
@@ -1451,9 +1248,9 @@ export default {
         observaciones: '',
         en_base_datos: false
       });
-      // Abrir la cámara automáticamente para comenzar a escanear
       const newIndex = this.form.animales.length - 1;
-      this.startFormScanner(newIndex);
+      this.activeScanIndex = newIndex;
+      this.scannerActive = true;
     },
     addQuickAnimal() {
       if (!this.quickArete.trim()) return;
@@ -1494,7 +1291,8 @@ export default {
     scanSingleAnimal(animal) {
       const index = this.form.animales.indexOf(animal);
       if (index > -1) {
-        this.startFormScanner(index);
+        this.activeScanIndex = index;
+        this.scannerActive = true;
       }
     },
     onSearchInput() {
@@ -1516,74 +1314,13 @@ export default {
     getOriginalAnimalIndex(animal) {
       return this.form.animales.indexOf(animal);
     },
-    async checkAndRequestCameraPermission() {
-      try {
-        let status = await Camera.checkPermissions();
-        if (status.camera === 'prompt' || status.camera === 'prompt-with-rationale') {
-          status = await Camera.requestPermissions({ permissions: ['camera'] });
-        }
-        return status.camera === 'granted';
-      } catch (e) {
-        console.warn("Permisos nativos de cámara no soportados, usando fallback de navegador:", e);
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          stream.getTracks().forEach(track => track.stop());
-          return true;
-        } catch (err) {
-          console.error("Browser camera permission denied:", err);
-          return false;
-        }
-      }
-    },
-    async startFormScanner(index) {
-      const hasPermission = await this.checkAndRequestCameraPermission();
-      if (!hasPermission) {
-        alert("❌ Permiso de cámara no concedido. Por favor, habilita el permiso de cámara en la configuración de tu dispositivo o navegador para usar el escáner de aretes.");
-        return;
-      }
-
-      this.activeScanIndex = index;
-      this.scannerActive = true;
-      
-      this.$nextTick(async () => {
-        try {
-          this.html5QrCode = new Html5Qrcode("form-reader");
-          const config = { 
-            fps: 10, 
-            qrbox: { width: 260, height: 160 }
-          };
-          await this.html5QrCode.start(
-            { facingMode: "environment" }, 
-            config, 
-            this.onFormScanSuccess
-          );
-        } catch (err) {
-          console.error("Error starting camera scanner:", err);
-          alert("⚠️ No se pudo iniciar la cámara. Verifique los permisos de su dispositivo.");
-          this.scannerActive = false;
-        }
-      });
-    },
-    onFormScanSuccess(decodedText) {
+    onScannerScanned(decodedText) {
       if (this.activeScanIndex !== -1 && this.form.animales[this.activeScanIndex]) {
         this.form.animales[this.activeScanIndex].identificador = decodedText.trim().toUpperCase();
         this.onIdentificadorChange(this.form.animales[this.activeScanIndex]);
       }
-      this.stopFormScanner();
-    },
-    async stopFormScanner() {
       this.scannerActive = false;
       this.activeScanIndex = -1;
-      if (this.html5QrCode) {
-        if (this.html5QrCode.isScanning) {
-          try {
-            await this.html5QrCode.stop();
-          } catch (err) {
-            console.error("Error stopping scanner:", err);
-          }
-        }
-        this.html5QrCode = null;
-      }
     },
     isSA(val) {
       if (!val) return false;
@@ -1841,21 +1578,6 @@ export default {
       } catch (err) {
         alert('❌ Error al guardar el dictamen localmente: ' + err.message);
       }
-    },
-    alertWebOnly(seccion) {
-      alert(`La sección de ${seccion} es una función administrativa disponible en la web de escritorio.`);
-      this.sidebarActive = false;
-    },
-    async doLogout() {
-      try { 
-        await api.logout(); 
-      } catch (e) { 
-        // Silenciar errores en offline
-      }
-      localStorage.removeItem('sigdip_token');
-      localStorage.removeItem('sigdip_user');
-      sessionStorage.clear();
-      this.$router.push('/login');
     }
   }
 };
@@ -2189,56 +1911,6 @@ export default {
 
 .fs-7-5 {
   font-size: 0.78rem !important;
-}
-
-/* Action Buttons Cloned from Mockup */
-.btn-borrador-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: #f8fafc;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 18px;
-  padding: 12px 24px;
-  color: #0f172a;
-  font-weight: 700;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 100px;
-}
-
-.btn-borrador-card:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-}
-
-.btn-borrador-card i {
-  color: #334155;
-}
-
-.btn-finalizar-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 18px;
-  padding: 16px 24px;
-  font-weight: 700;
-  font-size: 1.05rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
-}
-
-.btn-finalizar-row:hover {
-  background: #1d4ed8;
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
 }
 
 
@@ -2645,93 +2317,6 @@ export default {
   cursor: pointer;
 }
 
-/* Sticky Action Bar Mobile */
-.mobile-sticky-actions {
-  position: fixed;
-  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
-  left: 0;
-  right: 0;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  padding: 12px 16px;
-  border-top: 1px solid #eef2f7;
-  z-index: 75;
-  display: flex;
-  gap: 12px;
-  box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.05);
-}
-
-.btn-mobile-borrador {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 14px;
-  padding: 8px 16px;
-  color: #334155;
-  font-weight: 700;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.btn-mobile-borrador:active {
-  background-color: #f1f5f9;
-}
-
-.btn-mobile-finalizar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 14px;
-  padding: 12px 20px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
-}
-
-.btn-mobile-finalizar.blocked {
-  background: #94a3b8 !important;
-  color: #f1f5f9 !important;
-  box-shadow: none !important;
-  cursor: not-allowed;
-}
-
-.btn-mobile-finalizar:active:not(.blocked) {
-  background: #1d4ed8;
-}
-
-/* Floating Action Button */
-.btn-fab-add {
-  position: fixed;
-  bottom: calc(160px + env(safe-area-inset-bottom, 0px));
-  right: 20px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background-color: #2563eb;
-  color: white;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
-  z-index: 76;
-  cursor: pointer;
-  transition: transform 0.2s ease, background-color 0.2s ease;
-}
-
-.btn-fab-add:active {
-  transform: scale(0.9);
-  background-color: #1d4ed8;
-}
-
 /* Contenedor de Indicadores */
 .indicators-row-container {
   display: flex;
@@ -2804,71 +2389,6 @@ export default {
   background-color: #2563eb;
   color: white;
   box-shadow: 0 4px 6px rgba(37, 99, 235, 0.15);
-}
-
-/* Scanner Modal Overlay */
-.scanner-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(15, 23, 42, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1050;
-  padding: 16px;
-  backdrop-filter: blur(4px);
-}
-
-.scanner-modal-content {
-  background: white;
-  width: 100%;
-  max-width: 450px;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
-}
-
-.scanner-modal-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid #f1f5f9;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #2563eb;
-  color: white;
-}
-
-.btn-close-scanner {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 1.25rem;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-}
-
-.scanner-modal-body {
-  padding: 20px;
-  text-align: center;
-  background-color: #f8fafc;
-}
-
-.scanner-preview-box {
-  width: 100%;
-  aspect-ratio: 4/3;
-  border-radius: 12px;
-  overflow: hidden;
-  background-color: black;
-  border: 2px solid #e2e8f0;
-}
-
-.scanner-instruction-text {
-  font-size: 0.82rem;
-  color: #64748b;
 }
 
 .btn-camera-prominent {

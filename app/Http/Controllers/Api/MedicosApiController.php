@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 
 class MedicosApiController extends Controller
 {
@@ -58,8 +57,60 @@ class MedicosApiController extends Controller
                 'name' => $medico->name,
                 'email' => $medico->email,
                 'created_at' => $medico->created_at->format('d/m/Y'),
-            ]
+            ],
         ], 201);
+    }
+
+    public function show(Request $request, $id)
+    {
+        $user = $request->user();
+        abort_unless($user->hasRole('Administrador'), 403, 'Solo administradores pueden gestionar médicos.');
+
+        $medico = User::role('Medico_Campo')->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $medico->id,
+                'name' => $medico->name,
+                'email' => $medico->email,
+                'created_at' => $medico->created_at->format('d/m/Y'),
+            ],
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = $request->user();
+        abort_unless($user->hasRole('Administrador'), 403, 'Solo administradores pueden modificar médicos.');
+
+        $medico = User::role('Medico_Campo')->findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,'.$medico->id,
+            'password' => 'nullable|string|min:8',
+        ]);
+
+        $medico->name = $validated['name'];
+        $medico->email = $validated['email'];
+
+        if (! empty($validated['password'])) {
+            $medico->password = Hash::make($validated['password']);
+        }
+
+        $medico->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Médico actualizado correctamente.',
+            'data' => [
+                'id' => $medico->id,
+                'name' => $medico->name,
+                'email' => $medico->email,
+                'created_at' => $medico->created_at->format('d/m/Y'),
+            ],
+        ]);
     }
 
     public function destroy(Request $request, $id)
@@ -72,7 +123,7 @@ class MedicosApiController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Médico eliminado del sistema con éxito.'
+            'message' => 'Médico eliminado del sistema con éxito.',
         ]);
     }
 }

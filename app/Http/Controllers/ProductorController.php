@@ -2,16 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Productor;
 use App\Models\Predio;
+use App\Models\Productor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ProductorController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $productores = Productor::withCount('predios')->latest()->paginate(10);
+        $query = Productor::withCount('predios')->latest();
+
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nombre', 'like', "%{$search}%")
+                    ->orWhere('apellido_paterno', 'like', "%{$search}%")
+                    ->orWhere('apellido_materno', 'like', "%{$search}%")
+                    ->orWhere('curp', 'like', "%{$search}%")
+                    ->orWhere('upp', 'like', "%{$search}%")
+                    ->orWhere('telefono', 'like', "%{$search}%");
+            });
+        }
+
+        $productores = $query->paginate(10)->withQueryString();
+
         return view('productores.index', compact('productores'));
     }
 
@@ -52,18 +66,18 @@ class ProductorController extends Controller
                 $productor = Productor::create([
                     'nombre' => $validated['nombre'],
                     'apellido_paterno' => $validated['apellido_paterno'],
-                    'apellido_materno' => $validated['apellido_materno'],
-                    'curp' => $validated['curp'],
-                    'upp' => $validated['upp'],
-                    'domicilio' => $validated['domicilio'],
-                    'municipio' => $validated['municipio'],
-                    'localidad' => $validated['localidad'],
-                    'estado' => $validated['estado'],
-                    'telefono' => $validated['telefono'],
-                    'email' => $validated['email'],
+                    'apellido_materno' => $validated['apellido_materno'] ?? null,
+                    'curp' => $validated['curp'] ?? null,
+                    'upp' => $validated['upp'] ?? null,
+                    'domicilio' => $validated['domicilio'] ?? null,
+                    'municipio' => $validated['municipio'] ?? null,
+                    'localidad' => $validated['localidad'] ?? null,
+                    'estado' => $validated['estado'] ?? 'Sinaloa',
+                    'telefono' => $validated['telefono'] ?? null,
+                    'email' => $validated['email'] ?? null,
                 ]);
 
-                $message = "Productor registrado con éxito.";
+                $message = 'Productor registrado con éxito.';
 
                 // 2. Crear el Predio si se solicitó
                 if ($request->has('registrar_predio') && $request->registrar_predio == '1') {
@@ -77,29 +91,29 @@ class ProductorController extends Controller
                         'domicilio' => $validated['predio_domicilio'],
                         'productor_id' => $productor->id,
                     ]);
-                    $message = "Productor y su Unidad de Producción (UPP) registrados con éxito.";
+                    $message = 'Productor y su Unidad de Producción (UPP) registrados con éxito.';
                 }
 
                 return redirect()->route('productores.index')->with('success', $message);
             });
         } catch (\Exception $e) {
-            return back()->withInput()->with('error', 'Error al procesar el registro: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Error al procesar el registro: '.$e->getMessage());
         }
     }
 
-    public function edit(Productor $productore)
+    public function edit(Productor $productor)
     {
-        return view('productores.edit', ['productor' => $productore]);
+        return view('productores.edit', ['productor' => $productor]);
     }
 
-    public function update(Request $request, Productor $productore)
+    public function update(Request $request, Productor $productor)
     {
         $validated = $request->validate([
             'nombre' => 'required|string|max:255',
             'apellido_paterno' => 'required|string|max:255',
             'apellido_materno' => 'nullable|string|max:255',
-            'curp' => 'nullable|string|size:18|unique:productores,curp,'.$productore->id,
-            'upp' => 'nullable|string|unique:productores,upp,'.$productore->id,
+            'curp' => 'nullable|string|size:18|unique:productores,curp,'.$productor->id,
+            'upp' => 'nullable|string|unique:productores,upp,'.$productor->id,
             'domicilio' => 'nullable|string',
             'municipio' => 'nullable|string',
             'localidad' => 'nullable|string',
@@ -108,10 +122,26 @@ class ProductorController extends Controller
             'email' => 'nullable|email',
         ]);
 
-        $productore->update($validated);
+        $productor->update($validated);
 
         return redirect()->route('productores.index')
             ->with('success', 'Datos del productor actualizados.');
+    }
+
+    public function show(Productor $productor)
+    {
+        $productor->load(['predios', 'medico']);
+
+        return view('productores.show', ['productor' => $productor]);
+    }
+
+    public function destroy(Productor $productor)
+    {
+        $productor->predios()->delete();
+        $productor->delete();
+
+        return redirect()->route('productores.index')
+            ->with('success', 'Productor y sus predios eliminados.');
     }
 
     public function storeAjax(Request $request)

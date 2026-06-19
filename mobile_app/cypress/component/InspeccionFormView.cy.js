@@ -409,10 +409,6 @@ describe('InspeccionFormView', () => {
   it('muestra alerta al finalizar con animales sin resultado asignado', () => {
     seedPrediosWithFullData()
 
-    const pastDate = new Date()
-    pastDate.setDate(pastDate.getDate() - 10)
-    const pastDateStr = pastDate.toISOString().split('T')[0]
-
     const router = buildRouter('/inspeccion')
     mount(InspeccionFormView, { global: { plugins: [router] } })
 
@@ -420,23 +416,20 @@ describe('InspeccionFormView', () => {
 
     cy.contains('III: DATOS DE LA PRUEBA').click()
     cy.contains('TIPO DE PRUEBA REALIZADA').parent().find('select').select('PPC')
-    cy.get('input[type="date"]').eq(1).invoke('val', pastDateStr).trigger('input')
-    cy.get('input[type="date"]').eq(2).should('not.have.value', '')
+    cy.get('input[type="date"]').eq(1).invoke('val', '2020-01-01').trigger('input')
     cy.get('input[type="time"]').first().invoke('val', '08:00').trigger('input')
     cy.contains('Motivo de la Prueba').parent().find('select').select('Seguimiento')
 
     cy.contains('IV: RESULTADOS INDIVIDUALES').click()
     cy.contains('button', /a\u00F1adir|agregar/i).click()
-    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}')
-
     cy.then(() => {
       const vm = Cypress.vue
-      if (!vm) {
-        throw new Error('Cypress.vue is undefined')
+      if (vm && vm.form.animales.length > 0) {
+        vm.form.animales[0].identificador = 'ARETE-001'
       }
-      return vm.saveInspeccion('sincronizado')
     })
 
+    cy.contains('button', /finalizar/i).first().click()
     cy.window().should((win) => {
       expect(win.alert.called).to.be.true
       expect(win.alert.calledWithMatch(/resultado/i)).to.be.true

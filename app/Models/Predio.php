@@ -45,4 +45,20 @@ class Predio extends Model
     {
         return $this->hasMany(Inspeccion::class);
     }
+
+    /**
+     * Visitas programadas para este predio.
+     */
+    public function visitas(): HasMany
+    {
+        return $this->hasMany(Visita::class);
+    }
+
+    /**
+     * Aretes del censo para este predio.
+     */
+    public function aretesCenso(): HasMany
+    {
+        return $this->hasMany(AreteCenso::class);
+    }
 }

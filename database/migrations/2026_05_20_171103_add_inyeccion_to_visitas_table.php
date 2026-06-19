@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -17,12 +17,13 @@ return new class extends Migration
         });
 
         // Actualizar visitas existentes que ya tienen inspección con fecha_inyeccion
-        DB::statement("
-            UPDATE visitas v
-            INNER JOIN inspecciones i ON i.visita_id = v.id
-            SET v.inyeccion = 1
-            WHERE i.fecha_inyeccion IS NOT NULL
-        ");
+        DB::table('visitas')
+            ->whereIn('id', function ($query) {
+                $query->select('visita_id')
+                    ->from('inspecciones')
+                    ->whereNotNull('fecha_inyeccion');
+            })
+            ->update(['inyeccion' => 1]);
     }
 
     /**

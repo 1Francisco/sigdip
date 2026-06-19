@@ -43,20 +43,25 @@ describe('Creacion de Dictamen (E2E)', () => {
     cy.visit('/#/inspeccion')
     cy.get('select').first().select('1', { force: true })
 
-    // Section III: establecer fechas pasadas para evitar confirm de inyección
-    cy.contains('III: DATOS DE LA PRUEBA').click()
-    cy.get('input[type="date"]').eq(1).invoke('val', '2026-06-10').trigger('input')
-    cy.get('input[type="time"]').first().invoke('val', '08:00').trigger('input')
-
-    // Section IV: agregar animal con resultado
+    // Section IV: agregar animales sin aretes vacíos
     cy.contains('IV: RESULTADOS INDIVIDUALES').click()
     cy.contains('Añadir Animal').click()
-    cy.get('input[placeholder*="Registrar arete manualmente"]').type('MX-E2E-001', { force: true })
+    cy.get('.table-responsive tbody tr').should('have.length.at.least', 1)
+    cy.get('.table-responsive tbody tr').eq(0).find('input').first().type('MX-E2E-001', { force: true })
+    cy.get('input[placeholder*="Registrar arete manualmente"]').type('MX-E2E-002', { force: true })
     cy.contains('button', '+').click({ force: true })
-    cy.get('.animal-mobile-card').should('have.length.at.least', 2)
+    cy.get('.table-responsive tbody tr').should('have.length.at.least', 2)
 
-    // Asignar resultado Negativo
-    cy.get('.animal-mobile-card').eq(1).find('select').select('Negativo', { force: true })
+    // Section III: establecer fechas pasadas para activar modo lectura
+    cy.contains('III: DATOS DE LA PRUEBA').click({ force: true })
+    cy.get('input[type="date"]').eq(1).invoke('val', '2026-06-10').trigger('input', { force: true })
+    cy.get('input[type="time"]').first().invoke('val', '08:00').trigger('input', { force: true })
+
+    // Section IV: en modo lectura, asignar resultados a ambos animales
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.get('.table-responsive tbody tr').should('have.length.at.least', 2)
+    cy.get('.table-responsive tbody tr').eq(0).find('select').select('Negativo', { force: true })
+    cy.get('.table-responsive tbody tr').eq(1).find('select').select('Negativo', { force: true })
 
     // Stub confirm para el warning de censo
     cy.window().then((win) => {
@@ -80,9 +85,9 @@ describe('Creacion de Dictamen (E2E)', () => {
     cy.location('hash', { timeout: 5000 }).should('include', '/inspeccion')
 
     // Verificar que los animales del scan están cargados en el formulario
-    cy.get('.animal-mobile-card').should('have.length.at.least', 2)
-    cy.contains('MX-SCAN-001').should('be.visible')
-    cy.contains('MX-SCAN-002').should('be.visible')
+    cy.get('.table-responsive tbody tr').should('have.length.at.least', 2)
+    cy.get('.table-responsive tbody tr').eq(0).find('input').should('have.value', 'MX-SCAN-001')
+    cy.get('.table-responsive tbody tr').eq(1).find('input').should('have.value', 'MX-SCAN-002')
 
     // Seleccionar predio y guardar borrador
     cy.get('select').first().select('1', { force: true })

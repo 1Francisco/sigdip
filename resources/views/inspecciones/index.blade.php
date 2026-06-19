@@ -39,6 +39,41 @@
             </a>
         </div>
     </div>
+    <div class="card-body bg-light border-bottom py-2 px-4">
+        <form method="GET" class="row g-2 align-items-center">
+            <div class="col-md-3 col-sm-6">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control border-start-0 rounded-end-pill" placeholder="Buscar por folio, predio, veterinario..." value="{{ request('search') }}">
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar"></i></span>
+                    <input type="date" name="fecha_desde" class="form-control border-start-0" placeholder="Desde" value="{{ request('fecha_desde') }}">
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar"></i></span>
+                    <input type="date" name="fecha_hasta" class="form-control border-start-0" placeholder="Hasta" value="{{ request('fecha_hasta') }}">
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-4">
+                <select name="estado" class="form-select form-select-sm rounded-pill">
+                    <option value="">Todos los estados</option>
+                    <option value="borrador" @selected(request('estado') === 'borrador')>Borrador</option>
+                    <option value="finalizado" @selected(request('estado') === 'finalizado')>Finalizado</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-sm btn-primary rounded-pill px-3" type="submit"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+                @if(request()->anyFilled(['search', 'fecha_desde', 'fecha_hasta', 'estado']))
+                    <a href="{{ route('inspecciones.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-x-lg"></i> Limpiar</a>
+                @endif
+            </div>
+        </form>
+    </div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 table-mobile-cards">
@@ -90,6 +125,15 @@
                                 <a href="{{ route('inspecciones.show', $inspeccion->id) }}" class="btn btn-sm btn-outline-primary" title="Detalles">
                                     <i class="bi bi-eye"></i>
                                 </a>
+                                @role('Administrador')
+                                <form action="{{ route('inspecciones.destroy', $inspeccion->id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar este dictamen? Esta acción no se puede deshacer.')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                @endrole
                             </div>
                         </td>
                     </tr>

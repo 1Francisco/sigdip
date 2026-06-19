@@ -2,21 +2,23 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
+use App\Models\Predio;
+use App\Models\Productor;
 use App\Models\User;
 use App\Models\Visita;
-use App\Models\Productor;
-use App\Models\Predio;
-use Spatie\Permission\Models\Role;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
 
 class VisitaCheckCodigoTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     private User $admin;
+
     private User $medico;
+
     private Predio $predio;
 
     protected function setUp(): void
@@ -36,7 +38,7 @@ class VisitaCheckCodigoTest extends TestCase
             'nombre' => 'Productor Test',
             'apellido_paterno' => 'Apellido',
             'upp' => 'TEST-001',
-            'curp' => 'TEST000101HPLXXX',
+            'curp' => 'TEST000101HPLXXX00',
         ]);
 
         $this->predio = Predio::create([

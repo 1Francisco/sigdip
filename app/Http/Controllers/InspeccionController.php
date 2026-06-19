@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Animal;
+use App\Models\AreteCenso;
+use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\Predio;
-use App\Models\DetalleInspeccion;
-use App\Models\Animal;
-use App\Models\Visita;
 use App\Models\Productor;
+use App\Models\Visita;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -15,18 +17,47 @@ use Illuminate\Support\Str;
 class InspeccionController extends Controller
 {
     const EDAD_MINIMA_PRUEBA_MESES = 6;
+
     /**
      * Lista las inspecciones recientes.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $query = Inspeccion::with(['predio', 'veterinario'])->orderBy('id', 'desc');
-        
-        if (!auth()->user()->hasRole('Administrador')) {
+        $query = Inspeccion::with(['predio.productor', 'veterinario'])->orderBy('id', 'desc');
+
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('folio', 'like', "%{$search}%")
+                    ->orWhereHas('predio', function ($pq) use ($search) {
+                        $pq->where('nombre_rancho', 'like', "%{$search}%")
+                            ->orWhereHas('productor', function ($prq) use ($search) {
+                                $prq->where('nombre', 'like', "%{$search}%")
+                                    ->orWhere('apellido_paterno', 'like', "%{$search}%");
+                            });
+                    })
+                    ->orWhereHas('veterinario', function ($vq) use ($search) {
+                        $vq->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha', '>=', $request->fecha_desde);
+        }
+
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha', '<=', $request->fecha_hasta);
+        }
+
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
+        if (! auth()->user()->hasRole('Administrador')) {
             $query->where('veterinario_id', auth()->id());
         }
-        
-        $inspecciones = $query->paginate(10);
+
+        $inspecciones = $query->paginate(10)->withQueryString();
 
         return view('inspecciones.index', compact('inspecciones'));
     }
@@ -37,13 +68,13 @@ class InspeccionController extends Controller
     public function create(Request $request)
     {
         $productoresModel = Productor::with('predios')->get();
-        
-        $productores = $productoresModel->map(function($prod) {
+
+        $productores = $productoresModel->map(function ($prod) {
             return [
                 'id' => $prod->id,
                 'nombre' => $prod->nombre,
                 'curp' => $prod->curp,
-                'predios' => $prod->predios->map(function($predio) {
+                'predios' => $prod->predios->map(function ($predio) {
                     return [
                         'id' => $predio->id,
                         'nombre_rancho' => $predio->nombre_rancho,
@@ -59,16 +90,16 @@ class InspeccionController extends Controller
         })->toArray();
 
         $visita_id = $request->visita_id;
-        
-        $visita = $visita_id ? \App\Models\Visita::with('predio.productor')->find($visita_id) : null;
-        
+
+        $visita = $visita_id ? Visita::with('predio.productor')->find($visita_id) : null;
+
         // Direct request parameters (useful when coming from a specific producer or predio link)
         $selected_productor_id = $request->productor_id ?? ($visita ? $visita->predio->productor_id : null);
         $selected_predio_id = $request->predio_id ?? ($visita ? $visita->predio_id : null);
-        
+
         $claveInterna = null;
         if ($selected_productor_id) {
-            $claveInterna = 'PRD-' . $selected_productor_id . '-' . now()->format('Ymd');
+            $claveInterna = 'PRD-'.$selected_productor_id.'-'.now()->format('Ymd');
             $existente = Inspeccion::where('clave_interna', $claveInterna)->first();
             if ($existente) {
                 if ($existente->estado === 'borrador') {
@@ -88,13 +119,13 @@ class InspeccionController extends Controller
     {
         // Validación de seguridad backend: no se permite finalizar antes de la fecha programada de inyección
         if ($request->visita_id) {
-            $visita = \App\Models\Visita::find($request->visita_id);
+            $visita = Visita::find($request->visita_id);
             if ($visita && $visita->fecha_programada) {
-                $hoy = \Carbon\Carbon::now()->startOfDay();
+                $hoy = Carbon::now()->startOfDay();
                 $fechaProg = $visita->fecha_programada->startOfDay();
                 if ($hoy->lt($fechaProg)) {
                     if ($request->estado === 'sincronizado' || $request->inyeccion_realizada == 1) {
-                        return back()->withInput()->with('error', 'No se puede finalizar la inyección antes de la fecha programada de la visita (' . $visita->fecha_programada->format('d/m/Y') . ').');
+                        return back()->withInput()->with('error', 'No se puede finalizar la inyección antes de la fecha programada de la visita ('.$visita->fecha_programada->format('d/m/Y').').');
                     }
                 }
             }
@@ -113,16 +144,16 @@ class InspeccionController extends Controller
 
         // Generar clave_interna si no viene en el request pero tenemos predio
         if (empty($request->clave_interna) && $request->predio_id) {
-            $predio = \App\Models\Predio::find($request->predio_id);
+            $predio = Predio::find($request->predio_id);
             if ($predio) {
                 $request->merge([
-                    'clave_interna' => 'PRD-' . $predio->productor_id . '-' . now()->format('Ymd')
+                    'clave_interna' => 'PRD-'.$predio->productor_id.'-'.now()->format('Ymd'),
                 ]);
             }
         }
 
         // Si hay clave_interna, verificar si ya existe un borrador para evitar duplicados
-        if ($request->clave_interna && !$existingDraft) {
+        if ($request->clave_interna && ! $existingDraft) {
             $existingByClave = Inspeccion::where('clave_interna', $request->clave_interna)
                 ->where('estado', 'borrador')
                 ->first();
@@ -154,28 +185,28 @@ class InspeccionController extends Controller
 
         if (empty($request->folio)) {
             $request->merge([
-                'folio' => 'D-' . now()->format('Ymd') . '-' . strtoupper(Str::random(6))
+                'folio' => 'D-'.now()->format('Ymd').'-'.strtoupper(Str::random(6)),
             ]);
         }
 
         if ($request->has('fecha_inyeccion') && $request->fecha_inyeccion) {
-            $fechaInyeccion = \Carbon\Carbon::parse($request->fecha_inyeccion);
+            $fechaInyeccion = Carbon::parse($request->fecha_inyeccion);
             $request->merge([
-                'fecha_lectura' => $fechaInyeccion->copy()->addDays(3)->format('Y-m-d')
+                'fecha_lectura' => $fechaInyeccion->copy()->addDays(3)->format('Y-m-d'),
             ]);
         }
 
         $rules = [
             'predio_id' => 'required|exists:predios,id',
             'fecha' => 'required|date',
-            'folio' => 'nullable|unique:inspecciones,folio' . ($existingDraft ? ',' . $existingDraft->id : ''),
+            'folio' => 'nullable|unique:inspecciones,folio'.($existingDraft ? ','.$existingDraft->id : ''),
             'tipo_prueba' => 'nullable|string',
             'motivo_prueba' => 'nullable|string',
             'funcion_zootecnica' => 'nullable|string',
             'vigencia_fecha' => 'nullable|date',
         ];
 
-        if (!$isDraft) {
+        if (! $isDraft) {
             $rules = array_merge($rules, [
                 'fecha_inyeccion' => 'required|date',
                 'hora_inyeccion' => 'required',
@@ -199,7 +230,7 @@ class InspeccionController extends Controller
                 'fecha' => $request->fecha,
                 'folio' => $request->folio,
                 'tipo_inspeccion' => 'Movilización',
-                'tipo_prueba' => $request->tipo_prueba,
+                'tipo_prueba' => $request->tipo_prueba ?? 'P.P.C.',
                 'fecha_inyeccion' => $request->fecha_inyeccion,
                 'hora_inyeccion' => $request->hora_inyeccion,
                 'fecha_lectura' => $request->fecha_lectura,
@@ -233,22 +264,24 @@ class InspeccionController extends Controller
 
             if ($request->has('animales') && is_array($request->animales)) {
                 foreach ($request->animales as $item) {
-                    if (!$item['identificador'] && $isDraft) continue;
+                    if (! $item['identificador'] && $isDraft) {
+                        continue;
+                    }
 
                     $animal = Animal::firstOrCreate(
                         ['numero_arete_siniiga' => $item['identificador']],
                         [
-                            'raza' => $item['raza'] ?? 'No especificada', 
-                            'sexo' => $item['sexo'] ?? 'Macho', 
+                            'raza' => $item['raza'] ?? 'No especificada',
+                            'sexo' => $item['sexo'] ?? 'Macho',
                             'predio_id' => $request->predio_id,
-                            'edad' => $item['edad_meses'] ?? 0
+                            'edad' => $item['edad_meses'] ?? 0,
                         ]
                     );
 
                     DetalleInspeccion::create([
                         'inspeccion_id' => $inspeccion->id,
                         'animal_id' => $animal->id,
-                        'tipo_arete' => !empty($item['tipo_arete']) ? $item['tipo_arete'] : ($item['tipo_arete_default'] ?? 'SINIIGA'),
+                        'tipo_arete' => ! empty($item['tipo_arete']) ? $item['tipo_arete'] : ($item['tipo_arete_default'] ?? 'SINIIGA'),
                         'edad_meses' => $item['edad_meses'] ?? null,
                         'raza' => $item['raza'] ?? null,
                         'sexo' => $item['sexo'] ?? null,
@@ -261,7 +294,6 @@ class InspeccionController extends Controller
 
             // Marcar visita como completada y registrar inyección (solo con "Finalizar y Sincronizar")
             if ($request->visita_id && $request->inyeccion_realizada) {
-                $visita = \App\Models\Visita::find($request->visita_id);
                 if ($visita) {
                     $visita->update([
                         'estado' => 'completada',
@@ -290,46 +322,46 @@ class InspeccionController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Error: ' . $e->getMessage(),
+                    'message' => 'Error: '.$e->getMessage(),
                 ], 500);
             }
 
-            return back()->withInput()->with('error', 'Error: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Error: '.$e->getMessage());
         }
     }
 
     public function edit(Inspeccion $inspeccion)
     {
         // Edit Lock Guard
-        if ($inspeccion->estado !== 'borrador' && !auth()->user()->hasRole('Administrador')) {
+        if ($inspeccion->estado !== 'borrador' && ! auth()->user()->hasRole('Administrador')) {
             abort(403, 'No tienes permiso para editar un dictamen finalizado.');
         }
 
         $productores = Productor::with('predios')->get();
         $inspeccion->load(['detalles.animal', 'visita.predio.productor', 'predio.productor']);
         $visita = $inspeccion->visita;
-        
+
         return view('inspecciones.edit', compact('inspeccion', 'productores', 'visita'));
     }
 
     public function update(Request $request, Inspeccion $inspeccion)
     {
         // Edit Lock Guard
-        if ($inspeccion->estado !== 'borrador' && !auth()->user()->hasRole('Administrador')) {
+        if ($inspeccion->estado !== 'borrador' && ! auth()->user()->hasRole('Administrador')) {
             abort(403, 'No tienes permiso para editar un dictamen finalizado.');
         }
 
         // Validación de seguridad backend: inyección y lectura
         $visita = $inspeccion->visita;
         if ($visita) {
-            $hoy = \Carbon\Carbon::now()->startOfDay();
-            if (!$visita->inyeccion) {
+            $hoy = Carbon::now()->startOfDay();
+            if (! $visita->inyeccion) {
                 // Fase de Inyección
                 if ($visita->fecha_programada) {
                     $fechaProg = $visita->fecha_programada->startOfDay();
                     if ($hoy->lt($fechaProg)) {
                         if ($request->estado === 'sincronizado' || $request->inyeccion_realizada == 1) {
-                            return back()->withInput()->with('error', 'No se puede finalizar la inyección antes de la fecha programada de la visita (' . $visita->fecha_programada->format('d/m/Y') . ').');
+                            return back()->withInput()->with('error', 'No se puede finalizar la inyección antes de la fecha programada de la visita ('.$visita->fecha_programada->format('d/m/Y').').');
                         }
                     }
                 }
@@ -339,7 +371,7 @@ class InspeccionController extends Controller
                     $fechaLectura = $inspeccion->fecha_lectura->startOfDay();
                     if ($hoy->lt($fechaLectura)) {
                         if ($request->estado === 'sincronizado') {
-                            return back()->withInput()->with('error', 'No se puede finalizar el dictamen antes de la fecha programada de la lectura (' . $inspeccion->fecha_lectura->format('d/m/Y') . ').');
+                            return back()->withInput()->with('error', 'No se puede finalizar el dictamen antes de la fecha programada de la lectura ('.$inspeccion->fecha_lectura->format('d/m/Y').').');
                         }
                     }
                 }
@@ -371,14 +403,14 @@ class InspeccionController extends Controller
 
         if (empty($request->folio)) {
             $request->merge([
-                'folio' => 'D-' . now()->format('Ymd') . '-' . strtoupper(Str::random(6))
+                'folio' => 'D-'.now()->format('Ymd').'-'.strtoupper(Str::random(6)),
             ]);
         }
 
         if ($request->has('fecha_inyeccion') && $request->fecha_inyeccion) {
-            $fechaInyeccion = \Carbon\Carbon::parse($request->fecha_inyeccion);
+            $fechaInyeccion = Carbon::parse($request->fecha_inyeccion);
             $request->merge([
-                'fecha_lectura' => $fechaInyeccion->copy()->addDays(3)->format('Y-m-d')
+                'fecha_lectura' => $fechaInyeccion->copy()->addDays(3)->format('Y-m-d'),
             ]);
         }
 
@@ -388,7 +420,7 @@ class InspeccionController extends Controller
             'folio' => 'nullable|unique:inspecciones,folio,'.$inspeccion->id,
         ];
 
-        if (!$isDraft) {
+        if (! $isDraft) {
             $rules = array_merge($rules, [
                 'fecha_inyeccion' => 'required|date',
                 'hora_inyeccion' => 'required',
@@ -422,19 +454,21 @@ class InspeccionController extends Controller
 
                 $inspeccion->detalles()->delete();
                 foreach ($request->animales as $item) {
-                    if (!$item['identificador'] && $isDraft) continue;
+                    if (! $item['identificador'] && $isDraft) {
+                        continue;
+                    }
 
                     $animal = Animal::firstOrCreate(
                         ['numero_arete_siniiga' => $item['identificador']],
                         ['predio_id' => $request->predio_id, 'raza' => $item['raza'] ?? 'N/A', 'edad' => $item['edad_meses'] ?? 0]
                     );
 
-                    $agregadoEnLectura = $isLectura && !in_array($item['identificador'], $existingAretes);
+                    $agregadoEnLectura = $isLectura && ! in_array($item['identificador'], $existingAretes);
 
                     DetalleInspeccion::create([
                         'inspeccion_id' => $inspeccion->id,
                         'animal_id' => $animal->id,
-                        'tipo_arete' => !empty($item['tipo_arete']) ? $item['tipo_arete'] : ($item['tipo_arete_default'] ?? 'SINIIGA'),
+                        'tipo_arete' => ! empty($item['tipo_arete']) ? $item['tipo_arete'] : ($item['tipo_arete_default'] ?? 'SINIIGA'),
                         'edad_meses' => $item['edad_meses'] ?? null,
                         'raza' => $item['raza'] ?? null,
                         'sexo' => $item['sexo'] ?? null,
@@ -448,7 +482,7 @@ class InspeccionController extends Controller
 
             // Marcar visita como completada y registrar inyección (solo con "Finalizar y Sincronizar")
             if ($inspeccion->visita_id && $request->inyeccion_realizada) {
-                $visita = \App\Models\Visita::find($inspeccion->visita_id);
+                $visita = Visita::find($inspeccion->visita_id);
                 if ($visita) {
                     $visita->update([
                         'estado' => 'completada',
@@ -475,11 +509,11 @@ class InspeccionController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Error: ' . $e->getMessage(),
+                    'message' => 'Error: '.$e->getMessage(),
                 ], 500);
             }
 
-            return back()->withInput()->with('error', 'Error: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Error: '.$e->getMessage());
         }
     }
 
@@ -489,7 +523,26 @@ class InspeccionController extends Controller
     public function show(Inspeccion $inspeccion)
     {
         $inspeccion->load(['predio.productor', 'detalles.animal', 'veterinario']);
+
         return view('inspecciones.show', compact('inspeccion'));
+    }
+
+    /**
+     * Elimina una inspección.
+     */
+    public function destroy(Request $request, Inspeccion $inspeccion)
+    {
+        if ($inspeccion->estado !== 'borrador' && ! auth()->user()->hasRole('Administrador')) {
+            abort(403, 'No tienes permiso para eliminar un dictamen finalizado.');
+        }
+
+        $inspeccion->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Dictamen eliminado.']);
+        }
+
+        return redirect()->route('inspecciones.index')->with('success', 'Dictamen eliminado correctamente.');
     }
 
     /**
@@ -499,8 +552,8 @@ class InspeccionController extends Controller
     {
         // Limpiar el número de arete de espacios
         $numero = trim($numero);
-        
-        $animal = \App\Models\AreteCenso::where('numero_arete', $numero)->first();
+
+        $animal = AreteCenso::where('numero_arete', $numero)->first();
 
         if ($animal) {
             return response()->json([
@@ -510,7 +563,7 @@ class InspeccionController extends Controller
                     'sexo' => $animal->sexo,
                     'edad_meses' => $animal->edad_meses,
                     'fecha_nacimiento' => $animal->fecha_nacimiento,
-                ]
+                ],
             ]);
         }
 

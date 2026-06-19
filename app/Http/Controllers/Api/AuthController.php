@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
 
 class AuthController extends Controller
 {
@@ -16,15 +16,15 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required'
+            'password' => 'required',
         ]);
 
         $user = User::where('email', $request->email)->first();
 
         // Validar que el usuario exista y la contraseña sea correcta
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'Credenciales incorrectas'
+                'message' => 'Credenciales incorrectas',
             ], 401);
         }
 
@@ -36,9 +36,9 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'roles' => $user->getRoleNames() // Enviamos los roles al celular para mostrar/ocultar menús
+                'roles' => $user->getRoleNames(), // Enviamos los roles al celular para mostrar/ocultar menús
             ],
-            'token' => $token
+            'token' => $token,
         ]);
     }
 
@@ -51,7 +51,7 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'message' => 'Sesión cerrada correctamente'
+            'message' => 'Sesión cerrada correctamente',
         ]);
     }
 }

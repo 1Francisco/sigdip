@@ -1,10 +1,10 @@
 <?php
- 
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Inspeccion;
 use App\Models\DetalleInspeccion;
+use App\Models\Inspeccion;
 use App\Models\Predio;
 use App\Models\User;
 use App\Models\Visita;
@@ -19,7 +19,7 @@ class DashboardApiController extends Controller
     public function getStats(Request $request)
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'No autorizado'], 401);
         }
 
@@ -28,11 +28,11 @@ class DashboardApiController extends Controller
         if ($isAdmin) {
             // --- ADMINISTRADOR ---
             $totalInspecciones = Inspeccion::count();
-            
-            $totalAnimales = DetalleInspeccion::whereIn('inspeccion_id', function($q) {
+
+            $totalAnimales = DetalleInspeccion::whereIn('inspeccion_id', function ($q) {
                 $q->select('id')->from('inspecciones');
             })->count();
-            
+
             $totalVisitasPendientes = Visita::where('estado', 'pendiente')->count();
 
             // Inspecciones por Localidad (Gráfico de Barras)
@@ -40,25 +40,30 @@ class DashboardApiController extends Controller
                 ->join('inspecciones', 'predios.id', '=', 'inspecciones.predio_id')
                 ->groupBy('localidad')
                 ->get();
-                
+
             // Rendimiento Veterinarios (Gráfico de Dona)
             $rendimientoVeterinarios = User::select('name', DB::raw('count(*) as total'))
                 ->join('inspecciones', 'users.id', '=', 'inspecciones.veterinario_id')
                 ->groupBy('name')
                 ->get();
-                
+
             // Próximas Visitas Globales
             $proximasVisitasGlobales = Visita::with(['predio.productor', 'veterinario'])
                 ->where('estado', 'pendiente')
                 ->orderBy('fecha_programada', 'asc')
                 ->take(6)
                 ->get();
-                
+
             // Dictámenes Incompletos Globales (Borradores)
             $borradoresGlobales = Inspeccion::with(['predio', 'veterinario'])
                 ->where('estado', 'borrador')
                 ->latest()
                 ->take(6)
+                ->get();
+
+            // Proporción de resultados de pruebas
+            $resultados = DetalleInspeccion::select('resultado_prueba', DB::raw('count(*) as total'))
+                ->groupBy('resultado_prueba')
                 ->get();
 
             return response()->json([
@@ -70,6 +75,7 @@ class DashboardApiController extends Controller
                 'rendimientoVeterinarios' => $rendimientoVeterinarios,
                 'proximasVisitasGlobales' => $proximasVisitasGlobales,
                 'borradoresGlobales' => $borradoresGlobales,
+                'resultados' => $resultados,
             ]);
 
         } else {
@@ -77,11 +83,11 @@ class DashboardApiController extends Controller
             $totalInspecciones = Inspeccion::where('veterinario_id', $user->id)
                 ->where('estado', '!=', 'borrador')
                 ->count();
-                
-            $totalAnimales = DetalleInspeccion::whereIn('inspeccion_id', function($q) use ($user) {
+
+            $totalAnimales = DetalleInspeccion::whereIn('inspeccion_id', function ($q) use ($user) {
                 $q->select('id')->from('inspecciones')
-                  ->where('veterinario_id', $user->id)
-                  ->where('estado', '!=', 'borrador');
+                    ->where('veterinario_id', $user->id)
+                    ->where('estado', '!=', 'borrador');
             })->count();
 
             // Visitas Pendientes del Médico
@@ -100,12 +106,21 @@ class DashboardApiController extends Controller
                 ->take(5)
                 ->get();
 
+            // Proporción de resultados de pruebas del médico
+            $resultados = DetalleInspeccion::select('resultado_prueba', DB::raw('count(*) as total'))
+                ->whereIn('inspeccion_id', function ($q) use ($user) {
+                    $q->select('id')->from('inspecciones')->where('veterinario_id', $user->id);
+                })
+                ->groupBy('resultado_prueba')
+                ->get();
+
             return response()->json([
                 'isAdmin' => false,
                 'totalInspecciones' => $totalInspecciones,
                 'totalAnimales' => $totalAnimales,
                 'visitasPendientes' => $visitasPendientes,
                 'dictamenesBorrador' => $dictamenesBorrador,
+                'resultados' => $resultados,
             ]);
         }
     }

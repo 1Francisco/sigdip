@@ -22,15 +22,50 @@ class InspeccionesApiController extends Controller
             $query->where('visita_id', $request->visita_id);
         }
 
-        if (!$user->hasRole('Administrador')) {
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha', '>=', $request->fecha_desde);
+        }
+
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha', '<=', $request->fecha_hasta);
+        }
+
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('folio', 'like', "%{$search}%")
+                    ->orWhereHas('predio', function ($pq) use ($search) {
+                        $pq->where('nombre_rancho', 'like', "%{$search}%")
+                            ->orWhereHas('productor', function ($ppq) use ($search) {
+                                $ppq->where('nombre', 'like', "%{$search}%")
+                                    ->orWhere('apellido_paterno', 'like', "%{$search}%");
+                            });
+                    });
+            });
+        }
+
+        if (! $user->hasRole('Administrador')) {
             $query->where('veterinario_id', $user->id);
         }
 
-        $inspecciones = $query->orderByDesc('id')->get()->map(fn (Inspeccion $inspeccion) => $this->toListArray($inspeccion));
+        $perPage = min((int) ($request->get('perPage', 100)), 500);
+
+        $inspecciones = $query->orderByDesc('id')->paginate($perPage);
+
+        $data = collect($inspecciones->items())->map(fn (Inspeccion $inspeccion) => $this->toListArray($inspeccion));
 
         return response()->json([
             'success' => true,
-            'data' => $inspecciones,
+            'data' => $data,
+            'pagination' => [
+                'current_page' => $inspecciones->currentPage(),
+                'last_page' => $inspecciones->lastPage(),
+                'per_page' => $inspecciones->perPage(),
+                'total' => $inspecciones->total(),
+            ],
         ]);
     }
 
@@ -59,11 +94,16 @@ class InspeccionesApiController extends Controller
         $this->authorizeInspection($request, $inspeccion);
 
         $pdf = Pdf::loadView('reports.inspeccion_pdf', compact('inspeccion'));
-        $filename = $this->buildPdfFilename($inspeccion);
+        $filename = $inspeccion->buildPdfFilename();
 
         return response($pdf->output(), 200)
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'inline; filename="' . $filename . '"');
+            ->header('Content-Disposition', 'inline; filename="'.$filename.'"');
+    }
+
+    public function ver(Request $request, $id)
+    {
+        return $this->pdf($request, $id);
     }
 
     public function update(Request $request, $id)
@@ -89,6 +129,18 @@ class InspeccionesApiController extends Controller
                 'veterinario',
                 'visita.predio.productor',
             ])),
+        ]);
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        $inspeccion = Inspeccion::findOrFail($id);
+        $this->authorizeInspection($request, $inspeccion);
+        $inspeccion->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Dictamen eliminado con éxito.',
         ]);
     }
 
@@ -207,20 +259,5 @@ class InspeccionesApiController extends Controller
             })->values(),
             'pdf_url' => url("/api/inspecciones/{$inspeccion->id}/pdf"),
         ];
-    }
-
-    private function buildPdfFilename(Inspeccion $inspeccion): string
-    {
-        $productor = $inspeccion->predio?->productor;
-        $nombre = trim(($productor?->apellido_paterno ?? 'DICTAMEN') . ' ' . ($productor?->nombre ?? ''));
-        $nombre = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $nombre);
-        $nombre = preg_replace('/[^A-Za-z0-9 _-]/', '', $nombre);
-        $nombre = preg_replace('/\s+/', '_', trim($nombre));
-        $nombre = strtoupper($nombre ?: 'DICTAMEN');
-        $fecha = $inspeccion->fecha_inyeccion
-            ? \Carbon\Carbon::parse($inspeccion->fecha_inyeccion)->format('d-m-Y')
-            : now()->format('d-m-Y');
-
-        return "DICTAMEN_{$nombre}_{$fecha}.pdf";
     }
 }

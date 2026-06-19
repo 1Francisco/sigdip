@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Inspeccion;
 use App\Models\DetalleInspeccion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +25,7 @@ class InspeccionController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -49,14 +48,15 @@ class InspeccionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sincronización exitosa'
+                'message' => 'Sincronización exitosa',
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al sincronizar: ' . $e->getMessage()
+                'message' => 'Error al sincronizar: '.$e->getMessage(),
             ], 500);
         }
     }

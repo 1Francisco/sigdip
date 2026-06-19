@@ -37,6 +37,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/productores/:id',
+    name: 'ProductorDetail',
+    component: () => import('../views/ProductorDetailView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/scan',
     name: 'Scan',
     component: () => import('../views/ScanView.vue'),
@@ -67,6 +73,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/visitas/:id',
+    name: 'VisitaDetail',
+    component: () => import('../views/VisitaDetailView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/predios',
     name: 'Predios',
     component: () => import('../views/PrediosView.vue'),
@@ -76,6 +88,18 @@ const routes = [
     path: '/predios/nuevo',
     name: 'NuevoPredio',
     component: () => import('../views/PredioCreateView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/predios/editar/:id',
+    name: 'EditarPredio',
+    component: () => import('../views/PredioCreateView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/predios/:id',
+    name: 'PredioDetail',
+    component: () => import('../views/PredioDetailView.vue'),
     meta: { requiresAuth: true }
   },
   {
@@ -97,6 +121,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/inspeccion/editar/:id',
+    name: 'EditarInspeccion',
+    component: () => import('../views/InspeccionFormView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/medicos',
     name: 'Medicos',
     component: () => import('../views/MedicosView.vue'),
@@ -109,10 +139,68 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/medicos/editar/:id',
+    name: 'EditarMedico',
+    component: () => import('../views/MedicoEditView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/animales',
+    name: 'Animales',
+    component: () => import('../views/AnimalesListView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/animales/nuevo',
+    name: 'NuevoAnimal',
+    component: () => import('../views/AnimalFormView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/animales/editar/:id',
+    name: 'EditarAnimal',
+    component: () => import('../views/AnimalFormView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/animales/:id',
+    name: 'AnimalDetail',
+    component: () => import('../views/AnimalDetailView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/aretes-censo',
+    name: 'AretesCenso',
+    component: () => import('../views/AretesCensoListView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/aretes-censo/nuevo',
+    name: 'NuevoAreteCenso',
+    component: () => import('../views/AreteCensoFormView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/aretes-censo/editar/:id',
+    name: 'EditarAreteCenso',
+    component: () => import('../views/AreteCensoFormView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/aretes-censo/:id',
+    name: 'AreteCensoDetail',
+    component: () => import('../views/AreteCensoDetailView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/descargas',
     name: 'Descargas',
     component: () => import('../views/DescargasView.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/dashboard'
   }
 ];
 

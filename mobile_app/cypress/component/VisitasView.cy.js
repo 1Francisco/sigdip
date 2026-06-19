@@ -162,7 +162,7 @@ describe('VisitasView', () => {
       cy.wait('@getVisitasPaged', { timeout: 10000 })
       cy.contains('Pág. 1 de 2', { timeout: 5000 }).should('be.visible')
 
-      cy.get('.next-btn').click()
+      cy.get('.next-btn').should('not.be.disabled').click()
       cy.contains('Pág. 2 de 2', { timeout: 5000 }).should('be.visible')
     })
 

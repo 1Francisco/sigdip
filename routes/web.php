@@ -1,22 +1,23 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AnimalController;
+use App\Http\Controllers\AreteCensoController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\ImportExcelController;
 use App\Http\Controllers\InspeccionController;
-use App\Http\Controllers\ProductorController;
 use App\Http\Controllers\PredioController;
-use App\Http\Controllers\VisitaController;
-
+use App\Http\Controllers\ProductorController;
+use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\UserController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 */
 
+use App\Http\Controllers\VisitaController;
 use App\Http\Controllers\WebAuthController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\ImportExcelController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -29,7 +30,7 @@ Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 
 // Rutas Protegidas por Login
 Route::middleware(['auth'])->group(function () {
-    
+
     // Admin Dashboard
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
@@ -45,10 +46,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/inspecciones/{inspeccion}/editar', [InspeccionController::class, 'edit'])->name('inspecciones.edit');
     Route::patch('/inspecciones/{inspeccion}', [InspeccionController::class, 'update'])->name('inspecciones.update');
     Route::get('/inspecciones/{inspeccion}', [InspeccionController::class, 'show'])->name('inspecciones.show');
+    Route::delete('/inspecciones/{inspeccion}', [InspeccionController::class, 'destroy'])->name('inspecciones.destroy');
 
     // Productores y Predios
     Route::post('/productores/ajax', [ProductorController::class, 'storeAjax'])->name('productores.store.ajax');
-    Route::resource('productores', ProductorController::class);
+    Route::resource('productores', ProductorController::class)->parameters(['productores' => 'productor']);
     Route::post('/predios/{predio}/coordenadas', [PredioController::class, 'updateCoordenadas'])->name('predios.updateCoordenadas');
     Route::resource('predios', PredioController::class);
 
@@ -60,7 +62,13 @@ Route::middleware(['auth'])->group(function () {
     // Reportes PDF (Disponibles para Médicos para sus propios dictámenes)
     Route::get('/reportes/inspeccion/{id}/ver', [ReporteController::class, 'streamPdf'])->name('reportes.stream');
     Route::get('/reportes/inspeccion/{id}/pdf', [ReporteController::class, 'exportPdf'])->name('reportes.pdf');
-    
+
+    // Animales y Aretes del Censo (Exclusivo Administrador)
+    Route::middleware('role:Administrador')->group(function () {
+        Route::resource('animales', AnimalController::class);
+        Route::resource('aretes-censo', AreteCensoController::class);
+    });
+
     // Importación de Excel (Exclusivo Administrador)
     Route::middleware('role:Administrador')->group(function () {
         Route::get('/importar-excel', [ImportExcelController::class, 'index'])->name('import.excel.index');
@@ -78,6 +86,7 @@ Route::middleware(['auth'])->group(function () {
         if (file_exists($path)) {
             return response()->download($path, 'sigdip.apk');
         }
+
         return back()->with('error', 'El archivo APK de la aplicación móvil no está disponible en este momento. Contacte al administrador del CEFPPENAY.');
     })->name('descargar.apk');
 });
