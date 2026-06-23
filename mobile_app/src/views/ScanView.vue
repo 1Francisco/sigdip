@@ -149,17 +149,29 @@ export default {
       if (this.inspeccionStore.scannedAnimals.length) this.scannedAnimals = [...this.inspeccionStore.scannedAnimals];
     }
     
-    // Check if camera permission is already granted, don't request yet
+    this.permissionDenied = false;
     try {
       const status = await Camera.checkPermissions();
       if (status.camera === 'granted') {
         this.startCamera();
         return;
+      } else if (status.camera === 'prompt' || status.camera === 'prompt-with-rationale') {
+        const reqStatus = await Camera.requestPermissions({ permissions: ['camera'] });
+        if (reqStatus.camera === 'granted') {
+          this.startCamera();
+          return;
+        }
+      }
+      if (status.camera === 'denied') {
+        this.permissionDenied = true;
+        return;
       }
     } catch (e) {
-      console.warn("Camera checkPermissions not available:", e);
+      console.warn("Camera checkPermissions/requestPermissions not available:", e);
     }
-    this.permissionDenied = true;
+    
+    // Web fallback: try starting camera directly
+    this.startCamera();
   },
   beforeUnmount() {
     this.stopCamera();
@@ -248,6 +260,7 @@ export default {
       }
     },
     async startCamera() {
+      this.permissionDenied = false;
       this.$nextTick(async () => {
         try {
           this.html5QrCode = new Html5Qrcode("scanner-reader");
@@ -262,6 +275,13 @@ export default {
           );
         } catch (err) {
           console.error("Error starting camera in ScanView:", err);
+          this.permissionDenied = true;
+          if (this.html5QrCode) {
+            try {
+              await this.html5QrCode.clear();
+            } catch (e) {}
+            this.html5QrCode = null;
+          }
         }
       });
     },

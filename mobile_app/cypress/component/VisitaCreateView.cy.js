@@ -31,17 +31,17 @@ function buildVisitaRouter() {
 }
 
 function mockCatalogApis() {
-  cy.intercept('GET', '**/api/predios', {
+  cy.intercept('GET', '**/api/predios*', {
     statusCode: 200,
     body: { data: fakePredios },
   }).as('getPredios')
 
-  cy.intercept('GET', '**/api/productores', {
+  cy.intercept('GET', '**/api/productores*', {
     statusCode: 200,
     body: { data: fakeProductores },
   }).as('getProductores')
 
-  cy.intercept('GET', '**/api/medicos', {
+  cy.intercept('GET', '**/api/medicos*', {
     statusCode: 200,
     body: { data: medicos },
   }).as('getMedicos')
@@ -142,7 +142,7 @@ describe('VisitaCreateView', () => {
       cy.get('select').first().select('1')
       cy.get('select').eq(1).select('1')
       cy.get('select').eq(2).select('2')
-      cy.get('input[type="date"]').first().invoke('val', '2026-06-20').trigger('input')
+      cy.get('input[type="date"]').first().invoke('val', '2030-06-20').trigger('input')
 
       cy.get('form').submit()
       cy.wait('@createVisita', { timeout: 10000 })

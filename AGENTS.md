@@ -5,12 +5,13 @@ Sistema Integral de Gestión de Dictámenes de Inspección Pecuaria.
 Backend Laravel 10 (PHP 8.1+) + app móvil Vue 3 / Capacitor 8 en `mobile_app/`.
 
 ## Testing
-- **Run**: `./vendor/bin/phpunit` (no alias en composer.json). Actual: **121 tests, 225 assertions**.
+- **Run**: `./vendor/bin/phpunit` (no alias en composer.json).
 - **DB**: SQLite in-memory ya configurado en `phpunit.xml` (`DB_CONNECTION=sqlite`).
 - **Trait**: usar `RefreshDatabase` — `DatabaseTransactions` falla con SQLite anidado.
 - **Roles en tests**: crearlos manualmente en `setUp()` con `Role::firstOrCreate(['name' => '...'])`; no existen por defecto.
 - **API auth**: `Sanctum::actingAs($user)`.
 - **Cypress** (app móvil): `npm run cy:open` / `npm run cy:run` dentro de `mobile_app/`.
+- **CI**: `lint.yml` (Pint) y `tests.yml` (PHPUnit) en push/PR a `main`; `mobile-build.yml` solo si cambia `mobile_app/`.
 
 ## Migraciones
 - `renameColumn` necesita `doctrine/dbal` (ya en `composer.json`).
@@ -22,6 +23,7 @@ Backend Laravel 10 (PHP 8.1+) + app móvil Vue 3 / Capacitor 8 en `mobile_app/`.
 - Roles Spatie: `Administrador`, `Medico_Campo` — usados vía middleware `role:` y en lógica de controladores.
 - Modelos clave: `Visita`, `Inspeccion`, `Productor`, `Predio`, `Animal`, `DetalleInspeccion`.
 - Exportaciones: PDF (DOMPDF) y Excel (Laravel Excel / PhpSpreadsheet).
+- Importación Excel con vista previa: `ImportExcelController`.
 
 ## Dev commands
 - `./vendor/bin/pint` — linting PHP.
@@ -37,15 +39,17 @@ Backend Laravel 10 (PHP 8.1+) + app móvil Vue 3 / Capacitor 8 en `mobile_app/`.
 Herramientas auxiliares movidas a `scratch/` (ignorado por git) — `read_ini.php`, `search_data.php`, `locate_curp.php`, etc. Fuera del flujo Laravel.
 
 ## Web CRUD
-- CRUD completo para: `Productores`, `Predios`, `Visitas`, `Usuarios`, `Inspecciones` (sin destroy hasta F9), `Animales` (F9), `Aretes del Censo` (F9).
+- CRUD completo para: `Productores`, `Predios`, `Visitas`, `Usuarios`, `Inspecciones`, `Animales`, `Aretes del Censo`.
 - `AnimalController` y `AreteCensoController` solo accesibles por `Administrador` vía middleware `role:`.
 
 ## App Móvil
 - Rutas de edición explícitas: `/predios/editar/:id` (PredioCreateView), `/inspeccion/editar/:id` (InspeccionFormView), `/medicos/editar/:id` (MedicoEditView), `/visitas/editar/:id` (VisitaCreateView).
 - `api.js` expone: `getMedico(id)`, `updateMedico(id, data)`, `getPredios()`, `getInspeccion(id)`, etc.
-- **Layout unificado**: `AppLayout.vue` usado por las 12 vistas principales (sidebar, header, bottom-nav ya no duplicados).
+- **Offline-first**: `localforage` (IndexedDB) para catálogos, login sin conexión, auto-sync vía `backgroundSync.js`.
+- **Layout unificado**: `AppLayout.vue` usado por las 27 vistas (sidebar, header, bottom-nav ya no duplicados).
+- **Router**: hash history (`createWebHashHistory`), auth guard en `beforeEach`.
 - **Estado global**: Pinia store (`stores/inspeccion.js`) reemplaza `sessionStorage` para datos de scanner/borradores.
-- **Toast**: Componente `Toast.vue` para notificaciones (disponible, pendiente integración total).
+- **Toast**: Componente `Toast.vue` para notificaciones.
 
 ## Deploy
 Railway + Nixpacks: `php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT`. Healthcheck en `/login`.

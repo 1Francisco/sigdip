@@ -38,8 +38,8 @@ function seedCachedAdminStats() {
       { localidad: 'Ciudad del Carmen', total: 28 },
     ],
     rendimientoVeterinarios: [
-      { nombre: 'Dr. Juan Perez', total: 80 },
-      { nombre: 'Dra. Ana Garcia', total: 70 },
+      { nombre: 'Dr. Juan Perez', name: 'Dr. Juan Perez', total: 80 },
+      { nombre: 'Dra. Ana Garcia', name: 'Dra. Ana Garcia', total: 70 },
     ],
     proximasVisitasGlobales: [
       { codigo: 'V-TEST', fecha_programada: '2026-06-15', predio: { nombre_rancho: 'Rancho Test', localidad: 'Test', productor: { nombre: 'Productor' } }, veterinario: { nombre: 'Dr. Juan Perez', name: 'Dr. Juan Perez' } },
@@ -86,8 +86,9 @@ describe('DashboardView', () => {
       router.push('/dashboard')
       mount(DashboardView, { global: { plugins: [router] } })
 
-      cy.get('.pure-bar-chart', { timeout: 5000 }).should('be.visible')
-      cy.get('.chart-bar-wrapper').should('have.length.at.least', 1)
+      cy.contains('Inspecciones por Localidad').should('be.visible')
+      cy.get('.chart-card-wrapper').should('be.visible')
+      cy.get('canvas').should('be.visible')
     })
 
     it('renderiza grafico de doughnut de rendimiento veterinarios', () => {
@@ -96,8 +97,9 @@ describe('DashboardView', () => {
       router.push('/dashboard')
       mount(DashboardView, { global: { plugins: [router] } })
 
-      cy.get('.pure-doughnut-chart', { timeout: 5000 }).should('be.visible')
-      cy.get('.legend-item').should('have.length.at.least', 1)
+      cy.contains('Rendimiento Veterinarios').should('be.visible')
+      cy.get('.chart-card-wrapper').should('be.visible')
+      cy.get('canvas').should('be.visible')
     })
 
     it('renderiza seccion de proximos despliegues a campo', () => {

@@ -1,5 +1,7 @@
 import { mount } from 'cypress/vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { createPinia } from 'pinia'
+import { useInspeccionStore } from '../../src/stores/inspeccion.js'
 import ScanView from '../../src/views/ScanView.vue'
 import userAdmin from '../fixtures/user-admin.json'
 
@@ -43,7 +45,7 @@ describe('ScanView', () => {
   it('renderiza header', () => {
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, createPinia()] } })
 
     cy.contains('Escáner SINIIGA', { timeout: 5000 }).should('be.visible')
   })
@@ -51,7 +53,7 @@ describe('ScanView', () => {
   it('renderiza input manual', () => {
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('.form-input', { timeout: 5000 }).should('be.visible')
   })
@@ -59,7 +61,7 @@ describe('ScanView', () => {
   it('permite ingreso manual de arete en modo batch', () => {
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('.form-input', { timeout: 5000 }).type('ARETE-001')
     cy.contains('Agregar Animal').click()
@@ -71,7 +73,7 @@ describe('ScanView', () => {
   it('muestra multiple aretes agregados manualmente', () => {
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('.form-input', { timeout: 5000 }).type('ARETE-001')
     cy.contains('Agregar Animal').click()
@@ -86,7 +88,7 @@ describe('ScanView', () => {
   it('previene aretes duplicados', () => {
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('.form-input', { timeout: 5000 }).type('ARETE-001')
     cy.contains('Agregar Animal').click()
@@ -100,7 +102,7 @@ describe('ScanView', () => {
   it('elimina arete de la lista', () => {
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('.form-input', { timeout: 5000 }).type('ARETE-001')
     cy.contains('Agregar Animal').click()
@@ -111,27 +113,30 @@ describe('ScanView', () => {
   })
 
   it('modo single: guarda arete en sessionStorage y navega a inspeccion', () => {
-    cy.window().then((win) => {
-      win.sessionStorage.setItem('scan_target_index', '0')
-    })
+    const pinia = createPinia()
+    const store = useInspeccionStore(pinia)
+    store.scanTargetIndex = 0
 
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, pinia] } })
 
     cy.get('.form-input', { timeout: 5000 }).type('ARETE-SINGLE')
     cy.contains('Confirmar Arete').click()
 
-    cy.window().then((win) => {
-      expect(win.sessionStorage.getItem('scanned_single_arete')).to.eq('ARETE-SINGLE')
+    cy.then(() => {
+      expect(store.scannedSingleArete).to.eq('ARETE-SINGLE')
     })
     cy.location('hash').should('eq', '#/inspeccion')
   })
 
   it('modo batch: guarda en sessionStorage y navega a inspeccion', () => {
+    const pinia = createPinia()
+    const store = useInspeccionStore(pinia)
+
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, pinia] } })
 
     cy.get('.form-input', { timeout: 5000 }).type('ARETE-001')
     cy.contains('Agregar Animal').click()
@@ -141,26 +146,25 @@ describe('ScanView', () => {
     cy.contains('Continuar al Dictamen').click()
     cy.location('hash').should('eq', '#/inspeccion')
 
-    cy.window().then((win) => {
-      const saved = JSON.parse(win.sessionStorage.getItem('scanned_animals'))
-      expect(saved).to.have.length(2)
+    cy.then(() => {
+      expect(store.scannedAnimals).to.have.length(2)
     })
   })
 
   it('modo single: goBack limpia sessionStorage y navega', () => {
-    cy.window().then((win) => {
-      win.sessionStorage.setItem('scan_target_index', '0')
-      win.sessionStorage.setItem('scanned_single_arete', 'SOME-ARETE')
-    })
+    const pinia = createPinia()
+    const store = useInspeccionStore(pinia)
+    store.scanTargetIndex = 0
+    store.scannedSingleArete = 'SOME-ARETE'
 
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, pinia] } })
 
     cy.get('header button').last().click({ force: true })
-    cy.window().then((win) => {
-      expect(win.sessionStorage.getItem('scan_target_index')).to.be.null
-      expect(win.sessionStorage.getItem('scanned_single_arete')).to.be.null
+    cy.then(() => {
+      expect(store.scanTargetIndex).to.be.null
+      expect(store.scannedSingleArete).to.be.null
     })
     cy.location('hash').should('eq', '#/inspeccion')
   })
@@ -168,7 +172,7 @@ describe('ScanView', () => {
   it('modo batch: goBack navega a dashboard', () => {
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('header button').last().click({ force: true })
     cy.location('hash').should('eq', '#/dashboard')
@@ -177,7 +181,7 @@ describe('ScanView', () => {
   it('checkAndRequestCameraPermission rechaza sin camara', () => {
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, createPinia()] } })
 
     cy.contains('Escáner SINIIGA', { timeout: 5000 }).should('be.visible')
   })
@@ -185,7 +189,7 @@ describe('ScanView', () => {
   it('modo batch: permite ingresar multiples aretes y navegar', () => {
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('.form-input', { timeout: 5000 }).type('ARETE-BATCH-1{enter}')
     cy.get('.form-input').type('ARETE-BATCH-2{enter}')
@@ -199,7 +203,7 @@ describe('ScanView', () => {
   it('modo batch: permite cambiar resultado de arete escaneado', () => {
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('.form-input', { timeout: 5000 }).type('ARETE-001')
     cy.contains('Agregar Animal').click()
@@ -215,28 +219,28 @@ describe('ScanView', () => {
   })
 
   it('modo single preserva inspeccion_draft en sessionStorage', () => {
-    cy.window().then((win) => {
-      win.sessionStorage.setItem('scan_target_index', '0')
-      win.sessionStorage.setItem('inspeccion_draft', JSON.stringify({
-        folio: 'TEMP-1234567890-1234',
-        predio_id: 1,
-        animales: [{ identificador: '', resultado: 'Pendiente', edad_meses: null }],
-      }))
-    })
+    const pinia = createPinia()
+    const store = useInspeccionStore(pinia)
+    store.scanTargetIndex = 0
+    const draft = {
+      folio: 'TEMP-1234567890-1234',
+      predio_id: 1,
+      animales: [{ identificador: '', resultado: 'Pendiente', edad_meses: null }],
+    }
+    store.inspeccionDraft = draft
 
     const router = buildRouter()
     router.push('/scan')
-    mount(ScanView, { global: { plugins: [router] } })
+    mount(ScanView, { global: { plugins: [router, pinia] } })
 
     cy.get('.form-input', { timeout: 5000 }).type('ARETE-SINGLE')
     cy.contains('Confirmar Arete').click()
 
-    cy.window().then((win) => {
-      expect(win.sessionStorage.getItem('scanned_single_arete')).to.eq('ARETE-SINGLE')
-      // inspeccion_draft debe preservarse para que el formulario lo restaure
-      const draft = JSON.parse(win.sessionStorage.getItem('inspeccion_draft'))
-      expect(draft).to.not.be.null
-      expect(draft.folio).to.eq('TEMP-1234567890-1234')
+    cy.then(() => {
+      expect(store.scannedSingleArete).to.eq('ARETE-SINGLE')
+      // inspeccionDraft debe preservarse para que el formulario lo restaure
+      expect(store.inspeccionDraft).to.not.be.null
+      expect(store.inspeccionDraft.folio).to.eq('TEMP-1234567890-1234')
     })
     cy.location('hash').should('eq', '#/inspeccion')
   })

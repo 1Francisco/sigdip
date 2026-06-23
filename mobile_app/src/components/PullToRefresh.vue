@@ -104,10 +104,12 @@ export default {
   font-size: 1.2rem;
   transition: top 0.3s ease;
   z-index: 5;
+  pointer-events: none;
 }
 
 .ptr-indicator.visible {
   top: 0;
+  pointer-events: auto;
 }
 
 .ptr-arrow {

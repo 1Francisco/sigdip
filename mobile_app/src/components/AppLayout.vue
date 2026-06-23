@@ -147,18 +147,23 @@ export default {
     this.initNetworkListener();
   },
   beforeUnmount() {
-    if (this.networkListener) {
+    if (this.networkListener && typeof this.networkListener.remove === 'function') {
       this.networkListener.remove();
+    }
+    if (this._onWindowOnline) {
+      window.removeEventListener('online', this._onWindowOnline);
+    }
+    if (this._onWindowOffline) {
+      window.removeEventListener('offline', this._onWindowOffline);
     }
   },
   methods: {
-    initNetworkListener() {
+    async initNetworkListener() {
       try {
-        Network.getStatus().then((status) => {
+        const status = await Network.getStatus();
+        this.isOnline = status.connected;
+        this.networkListener = await Network.addListener('networkStatusChange', (status) => {
           this.isOnline = status.connected;
-          this.networkListener = Network.addListener('networkStatusChange', (status) => {
-            this.isOnline = status.connected;
-          });
         });
       } catch (e) {
         this._onWindowOnline = () => this.isOnline = true;

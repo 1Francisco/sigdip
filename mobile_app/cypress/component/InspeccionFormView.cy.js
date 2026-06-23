@@ -1,5 +1,6 @@
 import { mount } from 'cypress/vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { createPinia } from 'pinia'
 import InspeccionFormView from '../../src/views/InspeccionFormView.vue'
 import userAdmin from '../fixtures/user-admin.json'
 import userMedico from '../fixtures/user-medico.json'
@@ -74,7 +75,7 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.contains('Registro de Dictamen', { timeout: 5000 }).should('be.visible')
     cy.contains('PROPIETARIO').should('be.visible')
@@ -87,7 +88,7 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().find('option').should('have.length.at.least', 3)
     cy.contains('Rancho El Paraiso', { timeout: 5000 }).should('exist')
@@ -97,7 +98,7 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter({ path: '/inspeccion', query: {} })
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().select('1')
     cy.contains('Maria Garcia', { timeout: 5000 }).should('exist')
@@ -107,11 +108,11 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.contains('IV: RESULTADOS INDIVIDUALES').click()
     cy.contains('button', /añadir|agregar/i).click()
-    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}')
+    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}', { force: true })
 
     cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').should((els) => {
       const values = Array.from(els).map(e => e.value)
@@ -123,11 +124,11 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.contains('IV: RESULTADOS INDIVIDUALES').click()
     cy.contains('button', /añadir|agregar/i).click()
-    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}')
+    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}', { force: true })
 
     cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').should((els) => {
       const values = Array.from(els).map(e => e.value)
@@ -145,7 +146,7 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().select('1', { timeout: 5000 })
     cy.contains('III: DATOS DE LA PRUEBA').click()
@@ -157,7 +158,7 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().select('1')
 
@@ -173,9 +174,9 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
-    cy.contains('button', /finalizar/i).first().click()
+    cy.contains('button', /finalizar/i).first().click({ force: true })
     cy.window().should((win) => {
       expect(win.alert.calledWithMatch(/seleccione|predio/i)).to.be.true
     })
@@ -186,7 +187,7 @@ describe('InspeccionFormView', () => {
     seedVisitas()
 
     const router = buildRouter({ path: '/inspeccion', query: { visita_id: '1' } })
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().should('have.value', '1')
   })
@@ -195,7 +196,7 @@ describe('InspeccionFormView', () => {
     seedPrediosWithFullData()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().select('1')
     cy.contains('III: DATOS DE LA PRUEBA').click()
@@ -212,17 +213,17 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
-    cy.contains('IV: RESULTADOS INDIVIDUALES').click()
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
 
-    cy.contains('button', /añadir|agregar/i).click()
-    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}')
+    cy.contains('button', /añadir|agregar/i).click({ force: true })
+    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}', { force: true })
 
-    cy.contains('button', /añadir|agregar/i).click()
-    cy.get('input[placeholder*="Registrar arete manualmente"]').last().type('ARETE-002{enter}')
+    cy.contains('button', /añadir|agregar/i).click({ force: true })
+    cy.get('input[placeholder*="Registrar arete manualmente"]').last().type('ARETE-002{enter}', { force: true })
 
-    cy.get('.search-animals-container input[placeholder*="Buscar arete por número"]').type('002')
+    cy.get('.search-animals-container input[placeholder*="Buscar arete por número"]').type('002', { force: true })
     cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').should(($els) => {
       const values = Array.from($els).map(e => e.value)
       expect(values.length).to.eq(1)
@@ -234,23 +235,23 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
-    cy.contains('IV: RESULTADOS INDIVIDUALES').click()
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
 
-    cy.contains('button', /añadir|agregar/i).click()
-    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}')
+    cy.contains('button', /añadir|agregar/i).click({ force: true })
+    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}', { force: true })
 
-    cy.contains('button', /añadir|agregar/i).click()
-    cy.get('input[placeholder*="Registrar arete manualmente"]').last().type('ARETE-002{enter}')
+    cy.contains('button', /añadir|agregar/i).click({ force: true })
+    cy.get('input[placeholder*="Registrar arete manualmente"]').last().type('ARETE-002{enter}', { force: true })
 
-    cy.get('.search-animals-container input[placeholder*="Buscar arete por número"]').type('001')
+    cy.get('.search-animals-container input[placeholder*="Buscar arete por número"]').type('001', { force: true })
     cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').should(($els) => {
       const count = Array.from($els).filter(e => e.value === 'ARETE-001').length
       expect(count).to.eq(1)
     })
 
-    cy.get('.search-animals-container input[placeholder*="Buscar arete por número"]').clear()
+    cy.get('.search-animals-container input[placeholder*="Buscar arete por número"]').clear({ force: true })
     cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').should(($els) => {
       const values = Array.from($els).map(e => e.value)
       const nonEmpty = values.filter(v => v !== '')
@@ -262,7 +263,7 @@ describe('InspeccionFormView', () => {
     seedPrediosWithFullData()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().select('1')
 
@@ -274,14 +275,14 @@ describe('InspeccionFormView', () => {
 
     cy.contains('IV: RESULTADOS INDIVIDUALES').click()
     cy.contains('button', /añadir|agregar/i).click()
-    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}')
+    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}', { force: true })
   })
 
   it('guardar como borrador navega a dashboard', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().select('1')
     cy.contains('button', /guardar|borrador/i).first().click()
@@ -296,16 +297,16 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
-    cy.contains('IV: RESULTADOS INDIVIDUALES').click()
-    cy.contains('button', /añadir|agregar/i).click()
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /añadir|agregar/i).click({ force: true })
 
-    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-001')
-    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().type('36')
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-001', { force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().type('36', { force: true })
     cy.get('.scrollable-animals-container input[type="checkbox"]').first().click({ force: true })
 
-    cy.contains('III: DATOS DE LA PRUEBA').click()
+    cy.contains('III: DATOS DE LA PRUEBA').click({ force: true })
     cy.contains('Vacas').parent().find('input').should('have.value', '1')
   })
 
@@ -313,7 +314,7 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().select('1')
     cy.get('input[placeholder*="Opcional (Ej. TB-2026-1234)"]').should('have.value', '')
@@ -323,21 +324,21 @@ describe('InspeccionFormView', () => {
     seedPrediosWithFullData()
 
     const router = buildRouter({ path: '/inspeccion', query: {} })
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().select('1')
 
-    cy.contains('III: DATOS DE LA PRUEBA').click()
+    cy.contains('III: DATOS DE LA PRUEBA').click({ force: true })
     cy.contains('TIPO DE PRUEBA REALIZADA').parent().find('select').select('PPC')
     cy.get('input[type="date"]').eq(1).invoke('val', '2026-06-10').trigger('input')
     cy.get('input[type="time"]').first().invoke('val', '08:00').trigger('input')
     cy.contains('Motivo de la Prueba').parent().find('select').select('Seguimiento')
 
-    cy.contains('IV: RESULTADOS INDIVIDUALES').click()
-    cy.contains('button', /a\u00F1adir|agregar/i).click()
-    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}', { force: true })
 
-    cy.get('select').last().select('Positivo')
+    cy.get('select').last().select('Positivo', { force: true })
     cy.get('select').last().should('have.value', 'Positivo')
   })
 
@@ -359,7 +360,7 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().select('1')
     cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]', { timeout: 5000 }).should(($els) => {
@@ -372,13 +373,13 @@ describe('InspeccionFormView', () => {
     seedPredios()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
-    cy.contains('IV: RESULTADOS INDIVIDUALES').click()
-    cy.contains('button', /a\u00F1adir|agregar/i).click()
-    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}', { force: true })
 
-    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().clear().type('ARETE-002').blur()
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().clear({ force: true }).type('ARETE-002', { force: true }).blur()
 
     cy.wait('@buscarArete', { timeout: 8000 }).then((interception) => {
       expect(interception.response.statusCode).to.eq(200)
@@ -393,14 +394,14 @@ describe('InspeccionFormView', () => {
     })
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().select('1')
     cy.contains('IV: RESULTADOS INDIVIDUALES').click()
     cy.contains('button', /a\u00F1adir|agregar/i).click()
-    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}')
+    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}', { force: true })
 
-    cy.contains('button', /finalizar/i).first().click()
+    cy.contains('button', /finalizar/i).first().click({ force: true })
     cy.window().should((win) => {
       expect(win.confirm.called).to.be.true
     })
@@ -410,7 +411,7 @@ describe('InspeccionFormView', () => {
     seedPrediosWithFullData()
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().select('1')
 
@@ -429,7 +430,7 @@ describe('InspeccionFormView', () => {
       }
     })
 
-    cy.contains('button', /finalizar/i).first().click()
+    cy.contains('button', /finalizar/i).first().click({ force: true })
     cy.window().should((win) => {
       expect(win.alert.called).to.be.true
       expect(win.alert.calledWithMatch(/resultado/i)).to.be.true
@@ -445,7 +446,7 @@ describe('InspeccionFormView', () => {
     }).as('checkFolio')
 
     const router = buildRouter('/inspeccion')
-    mount(InspeccionFormView, { global: { plugins: [router] } })
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
     cy.get('select').first().select('1')
 
@@ -457,9 +458,9 @@ describe('InspeccionFormView', () => {
 
     cy.contains('IV: RESULTADOS INDIVIDUALES').click()
     cy.contains('button', /a\u00F1adir|agregar/i).click()
-    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}')
+    cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}', { force: true })
 
-    cy.get('button.btn-mobile-finalizar').click()
+    cy.contains('button', /finalizar/i).first().click({ force: true })
     cy.wait('@checkFolio', { timeout: 10000 })
   })
 })

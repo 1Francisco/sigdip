@@ -1086,7 +1086,7 @@ export default {
 
     // Si viene ID de visita
     const visitaId = this.$route.query.visita_id;
-    if (visitaId && !inspeccionId && !draft) {
+    if (visitaId && !inspeccionId && !draftData) {
       this.form.visita_id = parseInt(visitaId);
       
       const visita = this.visitas.find(v => String(v.id) === String(visitaId));
@@ -1238,7 +1238,7 @@ export default {
       if (!this.$route.query.inspeccion_id && this.form.clave_interna) {
         const listas = await db.getInspeccionesPendientes();
         const borradorExistente = listas.find(i => 
-          i.clave_interna === this.form.clave_interna && 
+          String(i.predio_id) === String(this.form.predio_id) && 
           i.estado === 'borrador'
         );
 

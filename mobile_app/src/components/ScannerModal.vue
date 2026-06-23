@@ -51,34 +51,53 @@ export default {
   methods: {
     async start() {
       this.permissionDenied = false;
-      // Check if camera permission is already granted, don't request yet
       try {
         const status = await Camera.checkPermissions();
         if (status.camera === 'granted') {
           this.initCamera();
           return;
+        } else if (status.camera === 'prompt' || status.camera === 'prompt-with-rationale') {
+          const reqStatus = await Camera.requestPermissions({ permissions: ['camera'] });
+          if (reqStatus.camera === 'granted') {
+            this.initCamera();
+            return;
+          }
+        }
+        if (status.camera === 'denied') {
+          this.permissionDenied = true;
+          return;
         }
       } catch (e) {
-        console.warn("Camera checkPermissions not available:", e);
+        console.warn("Camera checkPermissions/requestPermissions not available:", e);
       }
-      this.permissionDenied = true;
+      // Web fallback: try starting camera directly
+      this.initCamera();
     },
     async initCamera() {
-      try {
-        this.html5QrCode = new Html5Qrcode("form-reader");
-        const config = {
-          fps: 10,
-          qrbox: { width: 260, height: 160 }
-        };
-        await this.html5QrCode.start(
-          { facingMode: "environment" },
-          config,
-          this.onScanSuccess
-        );
-      } catch (err) {
-        console.error("Error starting camera scanner:", err);
-        this.$emit('close');
-      }
+      this.permissionDenied = false;
+      this.$nextTick(async () => {
+        try {
+          this.html5QrCode = new Html5Qrcode("form-reader");
+          const config = {
+            fps: 10,
+            qrbox: { width: 260, height: 160 }
+          };
+          await this.html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            this.onScanSuccess
+          );
+        } catch (err) {
+          console.error("Error starting camera scanner:", err);
+          this.permissionDenied = true;
+          if (this.html5QrCode) {
+            try {
+              await this.html5QrCode.clear();
+            } catch (e) {}
+            this.html5QrCode = null;
+          }
+        }
+      });
     },
     async requestCameraPermission() {
       this.retrying = true;
@@ -89,6 +108,7 @@ export default {
         }
         if (status.camera === 'granted') {
           this.retrying = false;
+          this.permissionDenied = false;
           return true;
         }
         this.retrying = false;
@@ -101,6 +121,7 @@ export default {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         stream.getTracks().forEach(track => track.stop());
         this.retrying = false;
+        this.permissionDenied = false;
         return true;
       } catch (err) {
         console.error("Camera permission denied:", err);

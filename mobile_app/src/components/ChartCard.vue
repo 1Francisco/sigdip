@@ -28,9 +28,11 @@ export default {
     iconClass: { type: String, default: 'bi bi-bar-chart-fill' },
     options: { type: Object, default: () => ({}) }
   },
+  created() {
+    this.chartInstance = null;
+  },
   data() {
     return {
-      chartInstance: null,
       error: null
     };
   },
@@ -56,6 +58,14 @@ export default {
     },
     createChart() {
       if (!this.$canvas || this.labels.length === 0) return;
+      if (this.chartInstance) {
+        try {
+          this.chartInstance.destroy();
+        } catch (e) {
+          console.warn('Error destroying existing chart instance:', e);
+        }
+        this.chartInstance = null;
+      }
       try {
         const defaultOptions = {
           responsive: true,
@@ -83,6 +93,7 @@ export default {
       }
     },
     updateChart() {
+      if (!this.$canvas) return;
       if (this.chartInstance) {
         this.chartInstance.data.labels = this.labels;
         this.chartInstance.data.datasets = this.datasets;

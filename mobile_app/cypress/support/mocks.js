@@ -75,12 +75,16 @@ export function mockCapacitorModules(cy) {
 
     win.HTMLCanvasElement.prototype.getContext = function () {
       return {
+        canvas: this,
         fillRect: () => {},
         clearRect: () => {},
         getImageData: () => ({ data: [] }),
         putImageData: () => {},
         createImageData: () => [],
         setTransform: () => {},
+        resetTransform: () => {},
+        setLineDash: () => {},
+        getLineDash: () => [],
         drawImage: () => {},
         save: () => {},
         fillText: () => {},

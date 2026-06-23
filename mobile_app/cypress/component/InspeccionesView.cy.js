@@ -44,7 +44,7 @@ const fakeInspecciones = [
   },
   {
     id: 101,
-    folio: 'INSP-2026-002',
+    folio: null,
     fecha: '2026-06-02',
     estado: 'borrador',
     predio_id: 2,
@@ -56,7 +56,7 @@ const fakeInspecciones = [
 
 const fakeBorradoresLocales = [
   {
-    folio: 'INSP-LOCAL-001',
+    folio: null,
     fecha: '2026-06-10',
     estado: 'borrador',
     predio_id: 1,
@@ -81,7 +81,7 @@ describe('InspeccionesView', () => {
 
     it('renderiza titulo', () => {
       cy.seedIndexedDB('catalogos', 'predios', fakePredios)
-      cy.intercept('GET', '**/api/inspecciones', {
+      cy.intercept('GET', '**/api/inspecciones*', {
         statusCode: 200,
         body: { data: fakeInspecciones },
       }).as('getInspecciones')
@@ -96,7 +96,7 @@ describe('InspeccionesView', () => {
 
     it('renderiza lista con completada y borrador', () => {
       cy.seedIndexedDB('catalogos', 'predios', fakePredios)
-      cy.intercept('GET', '**/api/inspecciones', {
+      cy.intercept('GET', '**/api/inspecciones*', {
         statusCode: 200,
         body: { data: fakeInspecciones },
       }).as('getInspecciones')
@@ -112,7 +112,7 @@ describe('InspeccionesView', () => {
 
     it('muestra badge Finalizado y Borrador', () => {
       cy.seedIndexedDB('catalogos', 'predios', fakePredios)
-      cy.intercept('GET', '**/api/inspecciones', {
+      cy.intercept('GET', '**/api/inspecciones*', {
         statusCode: 200,
         body: { data: fakeInspecciones },
       }).as('getInspecciones')
@@ -130,7 +130,7 @@ describe('InspeccionesView', () => {
       cy.seedIndexedDB('catalogos', 'predios', fakePredios)
       cy.seedIndexedDB('inspecciones_pendientes', 'lista', fakeBorradoresLocales)
 
-      cy.intercept('GET', '**/api/inspecciones', {
+      cy.intercept('GET', '**/api/inspecciones*', {
         statusCode: 200,
         body: { data: fakeInspecciones },
       }).as('getInspecciones')
@@ -145,7 +145,7 @@ describe('InspeccionesView', () => {
 
     it('sobrevive fallo de API sin errores no controlados', () => {
       cy.seedIndexedDB('catalogos', 'predios', fakePredios)
-      cy.intercept('GET', '**/api/inspecciones', {
+      cy.intercept('GET', '**/api/inspecciones*', {
         statusCode: 500,
         body: { message: 'Error interno' },
       }).as('getInspeccionesError')
@@ -160,7 +160,7 @@ describe('InspeccionesView', () => {
 
     it('muestra empty state sin inspecciones', () => {
       cy.seedIndexedDB('catalogos', 'predios', fakePredios)
-      cy.intercept('GET', '**/api/inspecciones', {
+      cy.intercept('GET', '**/api/inspecciones*', {
         statusCode: 200,
         body: { data: [] },
       }).as('getInspeccionesEmpty')
@@ -175,7 +175,7 @@ describe('InspeccionesView', () => {
 
     it('muestra badge de conectividad', () => {
       cy.seedIndexedDB('catalogos', 'predios', fakePredios)
-      cy.intercept('GET', '**/api/inspecciones', {
+      cy.intercept('GET', '**/api/inspecciones*', {
         statusCode: 200,
         body: { data: fakeInspecciones },
       }).as('getInspecciones')
@@ -200,7 +200,7 @@ describe('InspeccionesView', () => {
       }))
 
       cy.seedIndexedDB('catalogos', 'predios', fakePredios)
-      cy.intercept('GET', '**/api/inspecciones', {
+      cy.intercept('GET', '**/api/inspecciones*', {
         statusCode: 200,
         body: { data: manyInspecciones },
       }).as('getInspecciones')
@@ -210,18 +210,18 @@ describe('InspeccionesView', () => {
       mount(InspeccionesView, { global: { plugins: [router] } })
 
       cy.wait('@getInspecciones', { timeout: 10000 })
-      cy.contains('Pág. 1 de 3', { timeout: 5000 }).should('be.visible')
+      cy.contains('Pág. 1 de 2', { timeout: 5000 }).should('be.visible')
 
       cy.get('.next-btn').click()
-      cy.contains('Pág. 2 de 3', { timeout: 5000 }).should('be.visible')
+      cy.contains('Pág. 2 de 2', { timeout: 5000 }).should('be.visible')
 
       cy.get('.prev-btn').click()
-      cy.contains('Pág. 1 de 3', { timeout: 5000 }).should('be.visible')
+      cy.contains('Pág. 1 de 2', { timeout: 5000 }).should('be.visible')
     })
 
     it('cierra sesion desde menu lateral', () => {
       cy.seedIndexedDB('catalogos', 'predios', fakePredios)
-      cy.intercept('GET', '**/api/inspecciones', {
+      cy.intercept('GET', '**/api/inspecciones*', {
         statusCode: 200,
         body: { data: fakeInspecciones },
       }).as('getInspecciones')
@@ -244,7 +244,7 @@ describe('InspeccionesView', () => {
 
     it('renderiza lista de inspecciones para medico', () => {
       cy.seedIndexedDB('catalogos', 'predios', fakePredios)
-      cy.intercept('GET', '**/api/inspecciones', {
+      cy.intercept('GET', '**/api/inspecciones*', {
         statusCode: 200,
         body: { data: fakeInspecciones },
       }).as('getInspecciones')

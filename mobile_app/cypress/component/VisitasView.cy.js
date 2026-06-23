@@ -69,15 +69,20 @@ describe('VisitasView', () => {
     cy.intercept('HEAD', '**/api/user', { statusCode: 200, body: {} }).as('getUser')
     cy.intercept('POST', '**/api/logout', { statusCode: 200, body: { message: 'ok' } }).as('logout')
 
-    cy.intercept('GET', '**/api/predios', {
+    cy.intercept('GET', '**/api/predios*', {
       statusCode: 200,
       body: { data: fakePredios },
     }).as('getPredios')
 
-    cy.intercept('GET', '**/api/visitas', {
+    cy.intercept('GET', '**/api/visitas*', {
       statusCode: 200,
       body: { data: fakeVisitas },
     }).as('getVisitas')
+
+    cy.intercept('GET', '**/api/medicos*', {
+      statusCode: 200,
+      body: { data: [] },
+    }).as('getMedicos')
   })
 
   describe('como Administrador', () => {
@@ -150,7 +155,7 @@ describe('VisitasView', () => {
         estado: 'pendiente',
       }))
 
-      cy.intercept('GET', '**/api/visitas', {
+      cy.intercept('GET', '**/api/visitas*', {
         statusCode: 200,
         body: { data: manyVisitas },
       }).as('getVisitasPaged')
@@ -167,7 +172,7 @@ describe('VisitasView', () => {
     })
 
     it('cierra sesion desde menu lateral', () => {
-      cy.intercept('GET', '**/api/visitas', {
+      cy.intercept('GET', '**/api/visitas*', {
         statusCode: 200,
         body: { data: fakeVisitas },
       }).as('getVisitas')
