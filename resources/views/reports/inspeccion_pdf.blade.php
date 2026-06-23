@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Dictamen SENASICA - {{ empty($inspeccion->folio) || \Illuminate\Support\Str::startsWith($inspeccion->folio, 'TEMP-') ? 'Borrador sin Folio' : $inspeccion->folio }}</title>
+    <title>Dictamen SENASICA - {{ empty($inspeccion->folio) || $inspeccion->folio === $inspeccion->clave_interna ? ($inspeccion->clave_interna ?: 'Borrador sin Folio') : $inspeccion->folio }}</title>
     <style>
         @page { 
             margin: 0.3cm 0.5cm 4.8cm 0.5cm; 
@@ -259,7 +259,7 @@
                     <td style="width: 30%; text-align: right; vertical-align: bottom;">
                         <span style="font-weight: bold; font-size: 10px; margin-right: 5px;">FOLIO</span>
                         <div style="border: 1px solid #000; border-radius: 6px; padding: 2px 10px; display: inline-block; vertical-align: middle;">
-                            <span style="font-weight: bold; font-size: 15px; color: #d32f2f; letter-spacing:1px;">{{ empty($inspeccion->folio) || \Illuminate\Support\Str::startsWith($inspeccion->folio, 'TEMP-') ? '' : $inspeccion->folio }}</span>
+                            <span style="font-weight: bold; font-size: 15px; color: #d32f2f; letter-spacing:1px;">{{ empty($inspeccion->folio) || $inspeccion->folio === $inspeccion->clave_interna || \Illuminate\Support\Str::startsWith($inspeccion->folio, 'TEMP-') ? '' : $inspeccion->folio }}</span>
                         </div>
                     </td>
                     <td style="width: 15%; padding-left: 5px; vertical-align: bottom;">
@@ -545,7 +545,7 @@
                     </td>
                     <td style="width: 25%; text-align: right; vertical-align: middle; padding: 2px 0;">
                         <span style="font-weight: bold; font-size: 8px; margin-right: 5px;">FOLIO:</span>
-                        <span style="font-weight: bold; font-size: 11px; color: #d32f2f; letter-spacing:0.5px;">{{ empty($inspeccion->folio) || \Illuminate\Support\Str::startsWith($inspeccion->folio, 'TEMP-') ? '' : $inspeccion->folio }}</span>
+                        <span style="font-weight: bold; font-size: 11px; color: #d32f2f; letter-spacing:0.5px;">{{ empty($inspeccion->folio) || $inspeccion->folio === $inspeccion->clave_interna || \Illuminate\Support\Str::startsWith($inspeccion->folio, 'TEMP-') ? '' : $inspeccion->folio }}</span>
                     </td>
                 </tr>
             </table>

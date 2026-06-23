@@ -735,7 +735,7 @@ body {
   overflow-y: auto !important;
   max-height: 100dvh !important;
   max-height: 100vh !important;
-  padding-bottom: calc(30px + env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }

@@ -61,8 +61,7 @@ export default {
   methods: {
     onTouchStart(e) {
       if (this.refreshing) return;
-      const scrollTop = this.$el?.scrollTop || 0;
-      if (scrollTop > 0) return;
+      if (window.scrollY > 0) return;
       this.startY = e.touches[0].clientY;
       this.currentY = this.startY;
       this.pulling = true;
@@ -70,6 +69,10 @@ export default {
     onTouchMove(e) {
       if (!this.pulling || this.refreshing) return;
       this.currentY = e.touches[0].clientY;
+      const diff = this.currentY - this.startY;
+      if (diff <= 0) {
+        this.pulling = false;
+      }
     },
     onTouchEnd() {
       if (!this.pulling || this.refreshing) return;
@@ -86,8 +89,6 @@ export default {
 <style scoped>
 .ptr-container {
   position: relative;
-  overflow: hidden;
-  touch-action: pan-x;
 }
 
 .ptr-indicator {

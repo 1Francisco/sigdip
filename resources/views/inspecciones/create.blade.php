@@ -187,8 +187,8 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-semibold">Folio Dictamen</label>
-                                    @php $suggestedFolio = 'D-' . date('Ymd') . '-' . \Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(6)); @endphp
-                                    <input type="text" name="folio" class="form-control fw-bold text-primary" placeholder="Se generará automáticamente si se deja en blanco" value="{{ old('folio', $suggestedFolio) }}">
+                                    @php $suggestedFolio = $claveInterna ?? ('D-' . date('Ymd') . '-' . \Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(6))); @endphp
+                                    <input type="text" name="folio" class="form-control fw-bold text-primary" placeholder="Dejar en blanco para usar folio interno" value="{{ old('folio', '') }}">
                                     @if(isset($claveInterna) && $claveInterna)
                                         <input type="hidden" name="clave_interna" value="{{ $claveInterna }}">
                                     @endif

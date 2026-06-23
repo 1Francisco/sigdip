@@ -99,7 +99,8 @@ class InspeccionController extends Controller
 
         $claveInterna = null;
         if ($selected_productor_id) {
-            $claveInterna = 'PRD-'.$selected_productor_id.'-'.now()->format('Ymd');
+            $productor = Productor::find($selected_productor_id);
+            $claveInterna = generarClaveInterna($productor);
             $existente = Inspeccion::where('clave_interna', $claveInterna)->first();
             if ($existente) {
                 if ($existente->estado === 'borrador') {
@@ -144,10 +145,10 @@ class InspeccionController extends Controller
 
         // Generar clave_interna si no viene en el request pero tenemos predio
         if (empty($request->clave_interna) && $request->predio_id) {
-            $predio = Predio::find($request->predio_id);
+            $predio = Predio::with('productor')->find($request->predio_id);
             if ($predio) {
                 $request->merge([
-                    'clave_interna' => 'PRD-'.$predio->productor_id.'-'.now()->format('Ymd'),
+                    'clave_interna' => generarClaveInterna($predio->productor),
                 ]);
             }
         }
@@ -185,7 +186,7 @@ class InspeccionController extends Controller
 
         if (empty($request->folio)) {
             $request->merge([
-                'folio' => 'D-'.now()->format('Ymd').'-'.strtoupper(Str::random(6)),
+                'folio' => $request->clave_interna ?: ('D-'.now()->format('Ymd').'-'.strtoupper(Str::random(6))),
             ]);
         }
 
@@ -403,7 +404,7 @@ class InspeccionController extends Controller
 
         if (empty($request->folio)) {
             $request->merge([
-                'folio' => 'D-'.now()->format('Ymd').'-'.strtoupper(Str::random(6)),
+                'folio' => $request->clave_interna ?: ('D-'.now()->format('Ymd').'-'.strtoupper(Str::random(6))),
             ]);
         }
 

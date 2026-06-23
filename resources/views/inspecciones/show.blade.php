@@ -2,7 +2,7 @@
 
 @section('title', 'Vista Previa del Dictamen')
 @section('header_title', 'Vista Previa Oficial')
-@section('header_subtitle', empty($inspeccion->folio) || \Illuminate\Support\Str::startsWith($inspeccion->folio, 'TEMP-') ? 'Sin Folio' : 'Folio: ' . $inspeccion->folio)
+@section('header_subtitle', empty($inspeccion->folio) || $inspeccion->folio === $inspeccion->clave_interna ? ($inspeccion->clave_interna ?: 'Sin Folio') : 'Folio: ' . $inspeccion->folio)
 @section('back_url', route('inspecciones.index'))
 
 @section('content')

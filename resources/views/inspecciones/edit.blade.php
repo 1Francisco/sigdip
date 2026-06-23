@@ -2,7 +2,7 @@
 
 @section('title', 'Continuar Dictamen')
 @section('header_title', 'Finalizar Dictamen')
-@section('header_subtitle', empty($inspeccion->folio) || \Illuminate\Support\Str::startsWith($inspeccion->folio, 'TEMP-') ? 'Sin Folio' : 'Folio: ' . $inspeccion->folio)
+@section('header_subtitle', empty($inspeccion->folio) || $inspeccion->folio === $inspeccion->clave_interna ? ($inspeccion->clave_interna ?: 'Sin Folio') : 'Folio: ' . $inspeccion->folio)
 @section('back_url', route('inspecciones.index'))
 
 @section('styles')
@@ -215,7 +215,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-semibold">Folio Dictamen</label>
-                                    @php $currentFolio = (empty($inspeccion->folio) || \Illuminate\Support\Str::startsWith($inspeccion->folio, 'TEMP-')) ? ('D-' . date('Ymd') . '-' . \Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(6))) : $inspeccion->folio; @endphp
+                                    @php $currentFolio = (empty($inspeccion->folio) || $inspeccion->folio === $inspeccion->clave_interna) ? $inspeccion->clave_interna : $inspeccion->folio; @endphp
                                     <input type="text" name="folio" class="form-control fw-bold text-primary" placeholder="Se generará automáticamente si se deja en blanco" value="{{ old('folio', $currentFolio) }}">
                                 </div>
                             </div>
@@ -503,7 +503,7 @@
                                                     </span>
                                                 @endif
                                                 <div class="input-group input-group-sm">
-                                                    <input type="text" name="animales[{{ $index }}][identificador]" class="form-control arete-input" id="arete_{{ $index }}" value="{{ $detalle->animal->numero_arete_siniiga }}" required onchange="buscarDatosAnimal(this)">
+                                                    <input type="text" name="animales[{{ $index }}][identificador]" class="form-control arete-input" id="arete_{{ $index }}" value="{{ $detalle->animal->numero_arete_siniiga }}" required onchange="buscarDatosAnimal(this)" {{ (!$detalle->agregado_en_lectura && $esDiaDeLectura) ? 'readonly' : '' }} style="{{ !$detalle->agregado_en_lectura && $esDiaDeLectura ? 'background: #f1f5f9;' : '' }}">
                                                     <button class="btn btn-primary" type="button" onclick="startScanner({{ $index }})">
                                                         <i class="bi bi-camera"></i>
                                                     </button>
@@ -529,24 +529,27 @@
                                                  <input type="checkbox" name="animales[{{ $index }}][fierro]" value="Si" class="form-check-input" {{ $detalle->fierro == 'Si' ? 'checked' : '' }}>
                                              </td>
                                              <td data-label="Resultado" class="resultado-cell">
-                                                  @if($detalle->resultado_prueba === 'No Aplica')
-                                                      <span class="badge bg-secondary rounded-pill px-3 resultado-text">No Aplica</span>
-                                                      <input type="hidden" name="animales[{{ $index }}][resultado]" class="resultado-hidden" value="No Aplica" {{ $esDiaDeLectura ? 'disabled' : '' }}>
-                                                  @else
-                                                      <select name="animales[{{ $index }}][resultado]" class="form-select form-select-sm fw-bold resultado-select" required {{ !$esDiaDeLectura ? 'disabled' : '' }}>
-                                                          @if(empty($detalle->resultado_prueba) || $detalle->resultado_prueba == 'Pendiente')
-                                                              <option value="" disabled selected>-- Seleccione --</option>
-                                                          @endif
-                                                          <option value="Negativo" class="text-success" {{ $detalle->resultado_prueba == 'Negativo' ? 'selected' : '' }}>Negativo</option>
-                                                          <option value="Positivo" class="text-danger" {{ $detalle->resultado_prueba == 'Positivo' ? 'selected' : '' }}>Positivo</option>
-                                                          <option value="Sospechoso" class="text-warning" {{ $detalle->resultado_prueba == 'Sospechoso' ? 'selected' : '' }}>Sospechoso</option>
-                                                      </select>
-                                                      <input type="hidden" name="animales[{{ $index }}][resultado]" class="resultado-hidden" value="{{ $detalle->resultado_prueba ?? 'Pendiente' }}" {{ $esDiaDeLectura ? 'disabled' : '' }}>
-                                                  @endif
+                                                   @if($detalle->resultado_prueba === 'No Aplica')
+                                                       <span class="badge bg-secondary rounded-pill px-3 resultado-text">No Aplica</span>
+                                                       <input type="hidden" name="animales[{{ $index }}][resultado]" class="resultado-hidden" value="No Aplica" {{ $esDiaDeLectura ? 'disabled' : '' }}>
+                                                   @else
+                                                       <select name="animales[{{ $index }}][resultado]" class="form-select form-select-sm fw-bold resultado-select" required {{ !$esDiaDeLectura ? 'disabled' : '' }}>
+                                                           @if(empty($detalle->resultado_prueba) || $detalle->resultado_prueba == 'Pendiente')
+                                                               <option value="" disabled selected>-- Seleccione --</option>
+                                                           @endif
+                                                           @if($esDiaDeLectura)
+                                                               <option value="No Aplica" class="text-secondary">No Aplica</option>
+                                                           @endif
+                                                           <option value="Negativo" class="text-success" {{ $detalle->resultado_prueba == 'Negativo' ? 'selected' : '' }}>Negativo</option>
+                                                           <option value="Positivo" class="text-danger" {{ $detalle->resultado_prueba == 'Positivo' ? 'selected' : '' }}>Positivo</option>
+                                                           <option value="Sospechoso" class="text-warning" {{ $detalle->resultado_prueba == 'Sospechoso' ? 'selected' : '' }}>Sospechoso</option>
+                                                       </select>
+                                                       <input type="hidden" name="animales[{{ $index }}][resultado]" class="resultado-hidden" value="{{ $detalle->resultado_prueba ?? 'Pendiente' }}" {{ $esDiaDeLectura ? 'disabled' : '' }}>
+                                                   @endif
                                               </td>
                                             <td data-label="Obs"><input type="text" name="animales[{{ $index }}][observaciones]" class="form-control form-control-sm" value="{{ $detalle->observaciones_animal }}"></td>
                                             <td class="text-center" data-label="Quitar">
-                                                <button type="button" class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove(); actualizarCenso(); validateSections();">
+                                                <button type="button" class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove(); actualizarCenso(); actualizarSinInyeccion(); validateSections();">
                                                     <i class="bi bi-trash fs-5"></i>
                                                 </button>
                                             </td>
@@ -609,11 +612,34 @@
                     </div>
                 </div>
 
+                <!-- Animales sin inyección (sección informativa) -->
+                <div id="sinInyeccionSection" class="mt-3 {{ $esDiaDeLectura && $inspeccion->detalles->where('resultado_prueba', 'No Aplica')->count() > 0 ? '' : 'd-none' }}">
+                    <div class="border rounded p-3 bg-light">
+                        <div class="d-flex align-items-center gap-2 text-muted small mb-2">
+                            <i class="bi bi-info-circle"></i>
+                            <strong id="sinInyeccionCount">{{ $inspeccion->detalles->where('resultado_prueba', 'No Aplica')->count() }}</strong>
+                            <span id="sinInyeccionText">{{ $inspeccion->detalles->where('resultado_prueba', 'No Aplica')->count() == 1 ? 'animal no recibi\u00f3 inyecci\u00f3n' : 'animales no recibieron inyecci\u00f3n' }}</span>
+                            (menores de 6 meses)
+                        </div>
+                        <div id="sinInyeccionList" class="d-flex flex-wrap gap-2">
+                            @foreach($inspeccion->detalles->where('resultado_prueba', 'No Aplica') as $det)
+                                <span class="badge bg-secondary text-white small px-2 py-1">
+                                    <i class="bi bi-slash-circle me-1"></i>
+                                    #{{ $loop->iteration }}
+                                    {{ $det->animal->numero_arete_siniiga ?? 'SIN ARETE' }}
+                                    ({{ $det->edad_meses ?? '?' }} meses)
+                                </span>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <div class="d-flex justify-content-end gap-3 mb-5 d-none d-lg-flex">
                 <input type="hidden" name="estado" id="form_estado" value="sincronizado">
                 <input type="hidden" name="inyeccion_realizada" id="inyeccion_realizada" value="1">
+                <input type="hidden" name="clave_interna" value="{{ $inspeccion->clave_interna ?? '' }}">
                 <a href="{{ route('inspecciones.index') }}" class="btn btn-light px-4 rounded-pill">Cancelar</a>
                 <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" onclick="saveAsDraft()">
                     <i class="bi bi-save me-1"></i> Guardar Borrador
@@ -864,9 +890,25 @@
             if (hiddenEl) {
                 hiddenEl.disabled = esDiaDeLectura;
             }
+            
+            // Toggle readonly en campo SINIIGA: solo editable si es agregado en lectura
+            const areteInput = row.querySelector('.arete-input');
+            if (areteInput) {
+                const isAgregado = row.classList.contains('table-warning-agregado');
+                if (esDiaDeLectura && !isAgregado) {
+                    areteInput.readOnly = true;
+                    areteInput.style.background = '#f1f5f9';
+                } else {
+                    areteInput.readOnly = false;
+                    areteInput.style.background = '';
+                }
+            }
         });
         
-        // 3. Botón de Finalizar Condicional
+        // 3. Actualizar sección de animales sin inyección
+        actualizarSinInyeccion();
+
+        // 4. Botón de Finalizar Condicional
         const bloquearBoton = (!inyeccionConfirmada && !esDiaDeInyeccion) || (inyeccionConfirmada && !esDiaDeLectura);
         
         // Desktop Buttons
@@ -934,6 +976,43 @@
         }
     }
 
+    function actualizarSinInyeccion() {
+        const section = document.getElementById('sinInyeccionSection');
+        if (!section) return;
+        const countEl = document.getElementById('sinInyeccionCount');
+        const textEl = document.getElementById('sinInyeccionText');
+        const listEl = document.getElementById('sinInyeccionList');
+        if (!countEl || !textEl || !listEl) return;
+
+        const rows = document.querySelectorAll('#tablaAnimales tbody tr');
+        let sinInyeccion = [];
+        rows.forEach(row => {
+            const hiddenEl = row.querySelector('.resultado-hidden');
+            if (hiddenEl && hiddenEl.value === 'No Aplica') {
+                const areteInput = row.querySelector('.arete-input');
+                const edadInput = row.querySelector('input[name*="[edad_meses]"]');
+                const idx = Array.from(row.parentNode.children).indexOf(row);
+                sinInyeccion.push({
+                    index: idx + 1,
+                    arete: areteInput ? areteInput.value : 'SIN ARETE',
+                    edad: edadInput ? edadInput.value || '?' : '?'
+                });
+            }
+        });
+
+        if (sinInyeccion.length > 0 && window.esDiaDeLectura) {
+            section.classList.remove('d-none');
+            countEl.textContent = sinInyeccion.length;
+            textEl.textContent = sinInyeccion.length === 1 ? 'animal no recibi\u00f3 inyecci\u00f3n' : 'animales no recibieron inyecci\u00f3n';
+            const badges = sinInyeccion.map(a =>
+                `<span class="badge bg-secondary text-white small px-2 py-1"><i class="bi bi-slash-circle me-1"></i>#${a.index} ${a.arete} (${a.edad} meses)</span>`
+            ).join('');
+            listEl.innerHTML = badges;
+        } else {
+            section.classList.add('d-none');
+        }
+    }
+
     function actualizarCenso() {
         let sementales = 0;
         let vacas = 0;
@@ -943,6 +1022,10 @@
 
         const rows = document.querySelectorAll('#tablaAnimales tbody tr');
         rows.forEach(row => {
+            // En lectura, excluir animales sin inyección del censo
+            const resHidden = row.querySelector('.resultado-hidden');
+            if (resHidden && resHidden.value === 'No Aplica' && window.esDiaDeLectura) return;
+
             const areteInput = row.querySelector('.arete-input');
             if (!areteInput || !areteInput.value.trim()) return;
 
@@ -1258,6 +1341,7 @@
                 <td data-label="Resultado" class="resultado-cell">
                     <select name="animales[${animalCount}][resultado]" class="form-select form-select-sm fw-bold resultado-select" ${isLecturaRequired} ${isLecturaDisabled}>
                         <option value="" disabled selected>-- Seleccione --</option>
+                        ${isLecturaMode ? '<option value="No Aplica" class="text-secondary">No Aplica</option>' : ''}
                         <option value="Negativo" class="text-success">Negativo</option>
                         <option value="Positivo" class="text-danger">Positivo</option>
                         <option value="Sospechoso" class="text-warning">Sospechoso</option>
@@ -1275,6 +1359,7 @@
         tbody.insertAdjacentHTML('beforeend', row);
         animalCount++;
         actualizarCenso();
+        actualizarSinInyeccion();
         validateSections();
         checkLecturaDate();
 
@@ -1683,6 +1768,7 @@
                         }
                     }
                     actualizarCenso();
+                    actualizarSinInyeccion();
                 }
             });
             tabla.addEventListener('change', function(e) {
@@ -1700,11 +1786,13 @@
                         }
                     }
                     actualizarCenso();
+                    actualizarSinInyeccion();
                 }
             });
         }
         
         actualizarCenso();
+        actualizarSinInyeccion();
 
         const form = document.getElementById('formInspeccion');
         if (form) {

@@ -7,7 +7,7 @@
         </button>
         <div>
           <h1>Vista del Dictamen</h1>
-          <div class="subtitle">{{ inspeccion?.folio || 'Sin folio' }}</div>
+          <div class="subtitle">{{ inspeccion?.folio || inspeccion?.clave_interna || 'Sin folio' }}</div>
         </div>
       </div>
       <button class="btn-close-form" @click="$router.push('/inspecciones')">
@@ -133,7 +133,7 @@ export default {
       }
     },
     folioLabel(folio) {
-      if (!folio || String(folio).startsWith('TEMP-')) return 'Sin Folio (Borrador)';
+      if (!folio || folio === this.inspeccion?.clave_interna) return this.inspeccion?.clave_interna || 'Sin Folio (Borrador)';
       return folio;
     },
     formatDate(dateStr) {

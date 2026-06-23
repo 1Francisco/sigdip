@@ -176,6 +176,7 @@ class InspeccionesApiController extends Controller
                 'name' => $inspeccion->veterinario->name,
             ] : null,
             'visita_id' => $inspeccion->visita_id,
+            'clave_interna' => $inspeccion->clave_interna,
         ];
     }
 
@@ -188,6 +189,7 @@ class InspeccionesApiController extends Controller
             'estado' => $inspeccion->estado,
             'predio_id' => $inspeccion->predio_id,
             'visita_id' => $inspeccion->visita_id,
+            'clave_interna' => $inspeccion->clave_interna,
             'tipo_prueba' => $inspeccion->tipo_prueba,
             'motivo_prueba' => $inspeccion->motivo_prueba,
             'funcion_zootecnica' => $inspeccion->funcion_zootecnica,

@@ -421,19 +421,23 @@
                       <th style="width: 40px;"></th>
                     </tr>
                   </thead>
-                  <tbody>
-                    <tr v-for="(animal, localIdx) in filteredAnimales" :key="animal" :class="{ 'positivo-row': animal.resultado === 'Positivo' }">
+                    <tbody>
+                    <tr v-for="(animal, localIdx) in animalesLectura" :key="animal" :class="{ 'positivo-row': animal.resultado === 'Positivo', 'lectura-row-agregado': animal.agregado_en_lectura }">
                       <td>
                         <div class="input-group">
-                          <input type="text" v-model="animal.identificador" class="form-control form-control-sm text-uppercase" placeholder="SINIIGA o SA" required :readonly="true" style="background: #f1f5f9;" @change="onIdentificadorChange(animal)" />
+                          <input type="text" v-model="animal.identificador" class="form-control form-control-sm text-uppercase" placeholder="SINIIGA o SA" required :readonly="!animal.agregado_en_lectura" :style="{ background: animal.agregado_en_lectura ? '#fff' : '#f1f5f9' }" @change="onIdentificadorChange(animal)" />
                           <button class="btn btn-primary py-0 px-2" type="button" @click="scanSingleAnimal(animal)" title="Escanear" disabled>
                             <i class="bi bi-camera"></i>
                           </button>
+                          <span v-if="animal.agregado_en_lectura" class="badge bg-warning text-dark ms-1 align-self-center" style="font-size: 0.6rem; white-space: nowrap;" title="Este animal fue agregado el día de la lectura, no estaba presente en la inyección.">
+                            <i class="bi bi-plus-circle me-1"></i>Nuevo en lectura
+                          </span>
                         </div>
                       </td>
                       <td>
                         <select v-model="animal.resultado" class="form-select form-control-sm fw-bold" :class="getResultadoClass(animal.resultado)">
                           <option value="Pendiente" class="text-secondary">Pendiente</option>
+                          <option value="No Aplica" class="text-secondary">No Aplica</option>
                           <option value="Negativo" class="text-success">Negativo</option>
                           <option value="Positivo" class="text-danger">Positivo</option>
                           <option value="Sospechoso" class="text-warning">Sospechoso</option>
@@ -450,6 +454,24 @@
                     </tr>
                   </tbody>
                 </table>
+
+                <!-- Desktop: animales sin inyección -->
+                <div v-if="puedoEditarResultados() && animalesSinInyeccion.length > 0" class="mt-2 border rounded p-2 bg-light">
+                  <div class="d-flex align-items-center gap-2 text-muted small mb-1">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>{{ animalesSinInyeccion.length }}</strong>
+                    {{ animalesSinInyeccion.length === 1 ? 'animal no recibi\u00f3 inyecci\u00f3n' : 'animales no recibieron inyecci\u00f3n' }}
+                    (menores de 6 meses)
+                  </div>
+                  <div class="d-flex flex-wrap gap-2">
+                    <span v-for="animal in animalesSinInyeccion" :key="animal" class="badge bg-secondary text-white small px-2 py-1">
+                      <i class="bi bi-slash-circle me-1"></i>
+                      #{{ getOriginalAnimalIndex(animal) + 1 }}
+                      {{ animal.identificador || 'SIN ARETE' }}
+                      ({{ animal.edad_meses || '?' }} meses)
+                    </span>
+                  </div>
+                </div>
 
                 <!-- Modo Inyección: Formulario Completo -->
                 <table v-else class="table table-bordered align-middle mb-0">
@@ -484,7 +506,7 @@
                         <span v-else></span>
                       </td>
                       <td>
-                        <input type="number" v-model.number="animal.edad_meses" class="form-control form-control-sm" placeholder="Meses" min="0" />
+                        <input type="number" v-model.number="animal.edad_meses" class="form-control form-control-sm" placeholder="Meses" min="0" @input="onEdadChange(animal)" />
                       </td>
                       <td>
                         <input type="text" v-model="animal.raza" class="form-control form-control-sm" placeholder="Raza" />
@@ -499,7 +521,10 @@
                         <input type="checkbox" v-model="animal.fierro" class="form-check-input" true-value="Si" false-value="No" />
                       </td>
                       <td>
-                        <span class="badge bg-light text-secondary fw-normal px-2 py-1" style="font-size: 0.75rem;">
+                        <span v-if="animal.resultado === 'No Aplica'" class="badge bg-secondary text-white fw-normal px-2 py-1" style="font-size: 0.75rem;">
+                          <i class="bi bi-slash-circle me-1"></i> No Aplica
+                        </span>
+                        <span v-else class="badge bg-light text-secondary fw-normal px-2 py-1" style="font-size: 0.75rem;">
                           <i class="bi bi-hourglass-split me-1"></i> Pendiente
                         </span>
                       </td>
@@ -520,32 +545,37 @@
               <div v-if="puedoEditarResultados() && form.animales.length > 0" class="d-block d-lg-none scrollable-animals-container-mobile">
                 <!-- Encabezado fijo de la tabla -->
                 <div class="lectura-table-header">
-                  <i class="bi bi-clipboard-check-fill me-1"></i> LECTURA DE RESULTADOS · {{ form.animales.length }} animales
+                  <i class="bi bi-clipboard-check-fill me-1"></i> LECTURA DE RESULTADOS · {{ animalesLectura.length }} animales
+                  <i v-if="animalesSinInyeccion.length > 0" class="bi bi-info-circle text-warning ms-2 small"></i><span v-if="animalesSinInyeccion.length > 0" class="text-warning small ms-1">{{ animalesSinInyeccion.length }} sin inyecci&oacute;n</span>
                 </div>
 
                 <!-- Filas de animales -->
                 <div 
-                  v-for="(animal, localIdx) in filteredAnimales" 
+                  v-for="(animal, localIdx) in animalesLectura" 
                   :key="animal" 
                   class="lectura-table-row"
-                  :class="{ 
+                   :class="{ 
                     'lectura-row-positivo': animal.resultado === 'Positivo',
                     'lectura-row-sospechoso': animal.resultado === 'Sospechoso',
                     'lectura-row-negativo': animal.resultado === 'Negativo',
+                    'lectura-row-agregado': animal.agregado_en_lectura,
                     'lectura-row-zebra': localIdx % 2 === 1
                   }"
                 >
                   <!-- Línea 1: Número + Arete + Cámara -->
                   <div class="lectura-line1">
                     <span class="lectura-num-badge">{{ getOriginalAnimalIndex(animal) + 1 }}</span>
+                    <span v-if="animal.agregado_en_lectura" class="badge bg-warning text-dark ms-1" style="font-size: 0.6rem; white-space: nowrap;" title="Este animal fue agregado el día de la lectura, no estaba presente en la inyección.">
+                      <i class="bi bi-plus-circle me-1"></i>Nuevo en lectura
+                    </span>
                     <input 
                       type="text" 
                       v-model="animal.identificador" 
                       class="form-control form-control-sm text-uppercase lectura-input-arete flex-grow-1" 
                       placeholder="SINIIGA o SA" 
                       required 
-                      :readonly="true"
-                      style="background: #f1f5f9;"
+                      :readonly="!animal.agregado_en_lectura"
+                      :style="{ background: animal.agregado_en_lectura ? '#fff' : '#f1f5f9' }"
                       @change="onIdentificadorChange(animal)" 
                     />
                     <button class="btn btn-primary btn-sm lectura-btn-scan" type="button" @click="scanSingleAnimal(animal)" title="Escanear" disabled>
@@ -557,6 +587,7 @@
                   <div class="lectura-line2">
                     <select v-model="animal.resultado" class="form-select form-select-sm fw-bold lectura-select-result" :class="getResultadoClass(animal.resultado)">
                       <option value="Pendiente">Pendiente</option>
+                      <option value="No Aplica">No Aplica</option>
                       <option value="Negativo">Negativo</option>
                       <option value="Positivo">Positivo</option>
                       <option value="Sospechoso">Sospechoso</option>
@@ -574,6 +605,27 @@
                   <span><i class="bi bi-plus-circle-fill text-danger me-1"></i>Pos: {{ form.animales.filter(a => a.resultado === 'Positivo').length }}</span>
                   <span><i class="bi bi-question-circle-fill text-warning me-1"></i>Sosp: {{ form.animales.filter(a => a.resultado === 'Sospechoso').length }}</span>
                   <span><i class="bi bi-dash-circle text-secondary me-1"></i>Pend: {{ form.animales.filter(a => !a.resultado || a.resultado === 'Pendiente').length }}</span>
+                </div>
+
+                <!-- Animales sin inyección (colapsable móvil) -->
+                <div v-if="animalesSinInyeccion.length > 0" class="mt-2">
+                  <div class="card border-warning">
+                    <div class="card-header bg-warning-subtle py-2 d-flex justify-content-between align-items-center" @click="showSinInyeccion = !showSinInyeccion" style="cursor: pointer;">
+                      <span class="fw-bold text-dark small">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        {{ animalesSinInyeccion.length }} {{ animalesSinInyeccion.length === 1 ? 'animal sin inyecci\u00f3n' : 'animales sin inyecci\u00f3n' }}
+                      </span>
+                      <i class="bi" :class="showSinInyeccion ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                    </div>
+                    <div v-if="showSinInyeccion" class="card-body p-2">
+                      <div v-for="animal in animalesSinInyeccion" :key="animal" class="d-flex align-items-center gap-2 py-1 border-bottom border-light">
+                        <span class="badge bg-secondary">{{ getOriginalAnimalIndex(animal) + 1 }}</span>
+                        <span class="text-uppercase small fw-bold">{{ animal.identificador || 'SIN ARETE' }}</span>
+                        <span class="text-muted small">({{ animal.edad_meses || '?' }} meses)</span>
+                        <span class="text-muted small ms-auto"><i class="bi bi-info-circle me-1"></i>No recibi\u00f3 inyecci\u00f3n</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -626,7 +678,7 @@
                     <!-- Edad (Meses) & Raza (Side by Side) -->
                     <div class="col-6">
                       <label class="form-label-custom">EDAD (M)</label>
-                      <input type="number" v-model.number="animal.edad_meses" class="form-control form-control-custom" placeholder="Meses" min="0" />
+                      <input type="number" v-model.number="animal.edad_meses" class="form-control form-control-custom" placeholder="Meses" min="0" @input="onEdadChange(animal)" />
                     </div>
                     <div class="col-6">
                       <label class="form-label-custom">RAZA</label>
@@ -734,6 +786,7 @@ export default {
       _searchTimer: null,
       animalSearchQuery: '',
       visibleAnimalsLimit: 30,
+      showSinInyeccion: false,
       activeSection: 1, // Control de acordeón abierto
       isAdmin: false,
       userName: '',
@@ -743,6 +796,7 @@ export default {
       activeScanIndex: -1,
       form: {
         folio: '',
+        clave_interna: '',
         predio_id: '',
         fecha: new Date().toISOString().split('T')[0],
         fecha_inyeccion: new Date().toISOString().split('T')[0],
@@ -790,6 +844,12 @@ export default {
         .filter(i => i._idUpper.includes(q))
         .slice(0, this.visibleAnimalsLimit)
         .map(i => i.animal);
+    },
+    animalesLectura() {
+      return this.filteredAnimales.filter(a => a.resultado !== 'No Aplica');
+    },
+    animalesSinInyeccion() {
+      return this.form.animales.filter(a => a.resultado === 'No Aplica');
     },
     hasMoreAnimals() {
       const q = this.animalSearchQuery.trim().toUpperCase();
@@ -863,15 +923,15 @@ export default {
     },
     userFolio: {
       get() {
-        if (!this.form.folio || this.form.folio.startsWith('TEMP-')) {
+        if (!this.form.folio || this.form.folio === this.form.clave_interna) {
           return '';
         }
         return this.form.folio;
       },
       set(val) {
         if (!val || !val.trim()) {
-          // Si el usuario borra el folio, restaurar el original temporal si existía
-          if (this.originalFolio && this.originalFolio.startsWith('TEMP-')) {
+          // Si el usuario borra el folio, restaurar la clave interna si era el valor original
+          if (this.originalFolio && this.originalFolio === this.form.clave_interna) {
             this.form.folio = this.originalFolio;
           } else {
             this.form.folio = '';
@@ -893,6 +953,10 @@ export default {
         let becerros = 0;
 
         (newAnimals || []).forEach(animal => {
+          // En lectura, excluir del censo los animales sin inyección
+          if (this.puedoEditarResultados() && animal.resultado === 'No Aplica') {
+            return;
+          }
           const edadRaw = animal.edad_meses;
           if (edadRaw === null || edadRaw === undefined || edadRaw === '') {
             return;
@@ -1032,9 +1096,9 @@ export default {
           await this.onPredioSelect();
         }
 
-        // Si no se cargó un borrador local en onPredioSelect (por ejemplo, form.folio sigue vacío o TEMP),
+        // Si no se cargó un borrador local en onPredioSelect (por ejemplo, form.folio sigue siendo la clave_interna),
         // y la visita tiene inspección en el servidor, intentar cargarla
-        if ((!this.form.folio || this.form.folio.startsWith('TEMP-')) && visita.inspeccion?.id) {
+        if ((!this.form.folio || this.form.folio === this.form.clave_interna) && visita.inspeccion?.id) {
           try {
             const res = await api.getInspeccion(visita.inspeccion.id);
             const data = res.data || {};
@@ -1064,6 +1128,7 @@ export default {
     cargarDictamenData(data) {
       this.form.folio = data.folio || this.form.folio;
       this.originalFolio = data.folio || '';
+      this.form.clave_interna = data.clave_interna || this.form.clave_interna;
       this.form.predio_id = data.predio_id || '';
       this.form.fecha = data.fecha || this.form.fecha;
       this.form.fecha_inyeccion = data.fecha_inyeccion || this.form.fecha_inyeccion;
@@ -1108,7 +1173,8 @@ export default {
           fierro: detalle.fierro || 'Si',
           resultado: detalle.resultado_prueba || 'Pendiente',
           observaciones: detalle.observaciones_animal || '',
-          en_base_datos: (detalle.tipo_arete && detalle.tipo_arete !== 'SINIIGA') ? false : true
+          en_base_datos: (detalle.tipo_arete && detalle.tipo_arete !== 'SINIIGA') ? false : true,
+          agregado_en_lectura: detalle.agregado_en_lectura || false
         }));
       } else if (Array.isArray(data.animales)) {
         this.form.animales = data.animales.map(a => ({
@@ -1120,7 +1186,8 @@ export default {
           fierro: a.fierro || 'Si',
           resultado: a.resultado || 'Pendiente',
           observaciones: a.observaciones || '',
-          en_base_datos: a.en_base_datos !== undefined ? a.en_base_datos : false
+          en_base_datos: a.en_base_datos !== undefined ? a.en_base_datos : false,
+          agregado_en_lectura: a.agregado_en_lectura || false
         }));
       }
     },
@@ -1141,29 +1208,51 @@ export default {
         // Cargar coordenadas si el predio ya las tiene
         if (pred.latitud) this.form.latitud = pred.latitud;
         if (pred.longitud) this.form.longitud = pred.longitud;
+
+        // Generar clave_interna = INICIALES-RANDOM-DDMMYYYY
+        if (pred.productor_id || (pred.productor && pred.productor.id)) {
+          const prodId = pred.productor_id || pred.productor.id;
+          const productor = pred.productor || this.productores.find(p => p.id === prodId);
+          let iniciales = '';
+          if (productor) {
+            const nombre = (productor.nombre || '').trim();
+            const apeP = (productor.apellido_paterno || '').trim();
+            const apeM = (productor.apellido_materno || '').trim();
+            // Primera letra de cada palabra del nombre
+            nombre.split(/\s+/).forEach(p => {
+              if (p) iniciales += p.charAt(0).toUpperCase();
+            });
+            if (apeP) iniciales += apeP.charAt(0).toUpperCase();
+            if (apeM) iniciales += apeM.charAt(0).toUpperCase();
+          }
+          const rand = Math.random().toString(36).substring(2, 7).toUpperCase();
+          const ahora = new Date();
+          const dd = String(ahora.getDate()).padStart(2, '0');
+          const mm = String(ahora.getMonth() + 1).padStart(2, '0');
+          const yyyy = ahora.getFullYear();
+          this.form.clave_interna = `${iniciales}-${rand}-${dd}${mm}${yyyy}`;
+        }
       }
 
-      // Buscar si hay un borrador guardado para este predio y cargarlo automáticamente
-      if (!this.$route.query.inspeccion_id) {
+      // Buscar si hay un borrador guardado para este predio por clave_interna
+      if (!this.$route.query.inspeccion_id && this.form.clave_interna) {
         const listas = await db.getInspeccionesPendientes();
-        const visitaId = this.form.visita_id ? parseInt(this.form.visita_id) : null;
         const borradorExistente = listas.find(i => 
-          i.predio_id === this.form.predio_id && 
-          i.estado === 'borrador' && 
-          (visitaId ? parseInt(i.visita_id) === visitaId : !i.visita_id)
+          i.clave_interna === this.form.clave_interna && 
+          i.estado === 'borrador'
         );
 
         if (borradorExistente && borradorExistente.folio !== this.form.folio) {
           this.cargarDictamenData(borradorExistente);
+          this.form.clave_interna = borradorExistente.clave_interna || this.form.clave_interna;
           if (Array.isArray(borradorExistente.animales) && borradorExistente.animales.length > 0) {
             this.activeSection = 4;
           }
-          alert('💾 Se detectó un borrador existente para este predio. Se ha cargado automáticamente para evitar duplicados.');
+          alert('💾 Se detectó un borrador existente para este productor hoy. Se ha cargado automáticamente para evitar duplicados.');
         } else {
-          // Asignar clave única temporal por detrás
-          if (!this.form.folio || this.form.folio.startsWith('TEMP-') || this.form.folio === '') {
-            const rand = Math.floor(1000 + Math.random() * 9000);
-            this.form.folio = `TEMP-${Date.now()}-${rand}`;
+          // Usar clave_interna como folio inicial (oculto del usuario)
+          if (!this.form.folio || this.form.folio === this.form.clave_interna || this.form.folio === '') {
+            this.form.folio = this.form.clave_interna;
             this.originalFolio = this.form.folio;
           }
         }
@@ -1246,7 +1335,8 @@ export default {
         fierro: 'Si',
         resultado: 'Pendiente',
         observaciones: '',
-        en_base_datos: false
+        en_base_datos: false,
+        agregado_en_lectura: this.puedoEditarResultados()
       });
       const newIndex = this.form.animales.length - 1;
       this.activeScanIndex = newIndex;
@@ -1271,7 +1361,8 @@ export default {
         fierro: 'Si',
         resultado: 'Pendiente',
         observaciones: '',
-        en_base_datos: false
+        en_base_datos: false,
+        agregado_en_lectura: this.puedoEditarResultados()
       });
 
       this.quickArete = '';
@@ -1280,6 +1371,14 @@ export default {
       const index = this.form.animales.indexOf(animal);
       if (index > -1) {
         this.form.animales.splice(index, 1);
+      }
+    },
+    onEdadChange(animal) {
+      const edad = parseInt(animal.edad_meses) || 0;
+      if (edad > 0 && edad < 6) {
+        animal.resultado = 'No Aplica';
+      } else if (animal.resultado === 'No Aplica') {
+        animal.resultado = 'Pendiente';
       }
     },
     getResultadoClass(res) {
@@ -1420,6 +1519,13 @@ export default {
           return;
         }
 
+        const animalesActivos = this.puedoEditarResultados() ? this.form.animales.filter(a => a.resultado !== 'No Aplica') : this.form.animales;
+        if (animalesActivos.length === 0 && saveEstado === 'sincronizado') {
+          alert('⚠️ No hay animales que hayan recibido inyecci\u00f3n para finalizar el dictamen. Registre al menos un animal con inyecci\u00f3n o guarde como borrador.');
+          this.activeSection = 4;
+          return;
+        }
+
         const hasEmptyAretes = this.form.animales.some(a => !a.identificador || !a.identificador.trim());
         if (hasEmptyAretes) {
           alert('⚠️ Hay animales en la lista con número de arete vacío. Rellene los campos o elimine las filas vacías.');
@@ -1427,9 +1533,9 @@ export default {
           return;
         }
 
-        const hasPendientes = this.form.animales.some(a => !a.resultado || a.resultado === 'Pendiente');
+        const hasPendientes = this.form.animales.filter(a => a.resultado !== 'No Aplica').some(a => !a.resultado || a.resultado === 'Pendiente');
         if (hasPendientes && this.puedoEditarResultados()) {
-          alert('⚠️ Todos los animales deben tener un resultado asignado (Negativo, Positivo o Sospechoso) para poder finalizar el dictamen.');
+          alert('⚠️ Todos los animales (excepto los menores de 6 meses sin inyecci\u00f3n) deben tener un resultado asignado (Negativo, Positivo o Sospechoso) para poder finalizar el dictamen.');
           this.activeSection = 4;
           return;
         }
@@ -1470,13 +1576,14 @@ export default {
       }
 
       // Validar conteo de animales: suma de categorías vs lista individual
-      if (this.form.animales.length > 0) {
+      const animalesParaConteo = this.puedoEditarResultados() ? this.form.animales.filter(a => a.resultado !== 'No Aplica') : this.form.animales;
+      if (animalesParaConteo.length > 0) {
         const sumaConteo = (this.form.sementales || 0) + (this.form.vacas || 0) + (this.form.vaquillas || 0) + (this.form.becerras || 0) + (this.form.becerros || 0);
-        if (sumaConteo !== this.form.animales.length) {
-          const dif = this.form.animales.length - sumaConteo;
+        if (sumaConteo !== animalesParaConteo.length) {
+          const dif = animalesParaConteo.length - sumaConteo;
           const advertencia =
             `⚠️ Diferencia en el conteo de animales:\n\n` +
-            `➡️ Animales en lista individual: ${this.form.animales.length}\n` +
+            `➡️ Animales en lista individual: ${animalesParaConteo.length}\n` +
             `➡️ Suma de categorías (Sementales+Vacas+Vaquillas+Becerras+Becerros): ${sumaConteo}\n` +
             `➡️ Diferencia: ${dif > 0 ? `${dif} animales sin categoría asignada` : `${Math.abs(dif)} de más en categorías`}\n\n` +
             `Los animales sin edad registrada no se contabilizan en las categorías.` +
@@ -1491,9 +1598,7 @@ export default {
 
       // Generar folio automático si quedó vacío al guardar
       if (!this.form.folio || !this.form.folio.trim()) {
-        const timestamp = Date.now();
-        const rand = Math.floor(1000 + Math.random() * 9000);
-        this.form.folio = `TEMP-${timestamp}-${rand}`;
+        this.form.folio = this.form.clave_interna || `TEMP-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
       }
 
       let conflictFound = false;
@@ -2489,6 +2594,11 @@ export default {
 }
 .lectura-row-negativo {
   border-left: 4px solid #10b981;
+}
+
+.lectura-row-agregado {
+  background: #fff9c4 !important;
+  border-left: 4px solid #fdd835;
 }
 
 /* Línea 1: # + Arete + Cámara */

@@ -66,7 +66,7 @@
                   <tr v-for="inspeccion in paginatedInspecciones" :key="inspeccion.id" class="border-bottom">
                     <td class="ps-4">
                       <span v-if="isBorrador(inspeccion)" class="text-muted fst-italic fw-bold fs-6">
-                        Sin Folio (Borrador)
+                        {{ inspeccion.clave_interna || inspeccion.folio || 'Sin Folio (Borrador)' }}
                       </span>
                       <a v-else @click.prevent="viewInspeccion(inspeccion)" class="text-decoration-none text-primary fw-bold fs-6" style="cursor: pointer;">
                         {{ inspeccion.folio }}
@@ -133,7 +133,7 @@
                   <!-- Folio Field -->
                   <div class="card-field">
                     <span class="field-label">FOLIO</span>
-                    <span class="field-value producer-name-bold text-secondary fst-italic" v-if="isBorrador(inspeccion)">Sin Folio (Borrador)</span>
+                    <span class="field-value producer-name-bold text-secondary fst-italic" v-if="isBorrador(inspeccion)">{{ inspeccion.clave_interna || inspeccion.folio || 'Sin Folio (Borrador)' }}</span>
                     <span class="field-value producer-name-bold text-primary" v-else @click="viewInspeccion(inspeccion)">{{ inspeccion.folio }}</span>
                   </div>
 
@@ -329,6 +329,7 @@ export default {
           localMerged.unshift({
             id: `local-${draft.folio}`,
             folio: draft.folio,
+            clave_interna: draft.clave_interna,
             fecha: draft.fecha,
             estado: 'borrador',
             predio: {
@@ -360,6 +361,7 @@ export default {
                 merged.unshift({
                   id: `local-${draft.folio}`,
                   folio: draft.folio,
+                  clave_interna: draft.clave_interna,
                   fecha: draft.fecha,
                   estado: 'borrador',
                   predio: {

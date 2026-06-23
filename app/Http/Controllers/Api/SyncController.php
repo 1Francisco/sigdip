@@ -129,31 +129,98 @@ class SyncController extends Controller
 
                 $isDraft = ($data['estado'] ?? 'sincronizado') === 'borrador';
 
-                // Crear o actualizar la inspección
-                $inspeccion = Inspeccion::updateOrCreate(
-                    ['folio' => $data['folio']], // Buscar por folio único
-                    [
-                        'predio_id' => $data['predio_id'],
-                        'veterinario_id' => $veterinarioId,
-                        'visita_id' => $data['visita_id'] ?? null,
-                        'fecha' => $data['fecha'] ?? now(),
-                        'tipo_inspeccion' => 'Movilización',
-                        'tipo_prueba' => $data['tipo_prueba'] ?? 'P.P.C.',
-                        'fecha_inyeccion' => $data['fecha_inyeccion'] ?? null,
-                        'hora_inyeccion' => $data['hora_inyeccion'] ?? null,
-                        'fecha_lectura' => $data['fecha_lectura'] ?? null,
-                        'hora_lectura' => $data['hora_lectura'] ?? null,
-                        'motivo_prueba' => $data['motivo_prueba'] ?? null,
-                        'funcion_zootecnica' => $data['funcion_zootecnica'] ?? null,
-                        'vigencia_fecha' => $data['vigencia_fecha'] ?? null,
-                        'sementales' => $data['sementales'] ?? 0,
-                        'vacas' => $data['vacas'] ?? 0,
-                        'vaquillas' => $data['vaquillas'] ?? 0,
-                        'becerras' => $data['becerras'] ?? 0,
-                        'becerros' => $data['becerros'] ?? 0,
-                        'estado' => $data['estado'] ?? 'sincronizado',
-                    ]
-                );
+                // Generar clave_interna si no viene en los datos
+                if (empty($data['clave_interna'])) {
+                    $predio = \App\Models\Predio::with('productor')->find($data['predio_id']);
+                    if ($predio && $predio->productor) {
+                        $data['clave_interna'] = generarClaveInterna($predio->productor);
+                    }
+                }
+
+                // Si hay clave_interna, buscar borrador existente para evitar duplicados
+                if (! empty($data['clave_interna'])) {
+                    $existingByClave = Inspeccion::where('clave_interna', $data['clave_interna'])
+                        ->where('estado', 'borrador')
+                        ->first();
+                    if ($existingByClave && $existingByClave->folio !== $data['folio']) {
+                        // Actualizar el existente en lugar de crear uno nuevo
+                        $existingByClave->update([
+                            'folio' => $data['folio'],
+                            'predio_id' => $data['predio_id'],
+                            'veterinario_id' => $veterinarioId,
+                            'visita_id' => $data['visita_id'] ?? null,
+                            'fecha' => $data['fecha'] ?? now(),
+                            'tipo_inspeccion' => 'Movilización',
+                            'tipo_prueba' => $data['tipo_prueba'] ?? 'P.P.C.',
+                            'fecha_inyeccion' => $data['fecha_inyeccion'] ?? null,
+                            'hora_inyeccion' => $data['hora_inyeccion'] ?? null,
+                            'fecha_lectura' => $data['fecha_lectura'] ?? null,
+                            'hora_lectura' => $data['hora_lectura'] ?? null,
+                            'motivo_prueba' => $data['motivo_prueba'] ?? null,
+                            'funcion_zootecnica' => $data['funcion_zootecnica'] ?? null,
+                            'vigencia_fecha' => $data['vigencia_fecha'] ?? null,
+                            'sementales' => $data['sementales'] ?? 0,
+                            'vacas' => $data['vacas'] ?? 0,
+                            'vaquillas' => $data['vaquillas'] ?? 0,
+                            'becerras' => $data['becerras'] ?? 0,
+                            'becerros' => $data['becerros'] ?? 0,
+                            'estado' => $data['estado'] ?? 'sincronizado',
+                            'clave_interna' => $data['clave_interna'],
+                        ]);
+                        $inspeccion = $existingByClave;
+                    } else {
+                        $inspeccion = Inspeccion::updateOrCreate(
+                            ['folio' => $data['folio']],
+                            [
+                                'predio_id' => $data['predio_id'],
+                                'veterinario_id' => $veterinarioId,
+                                'visita_id' => $data['visita_id'] ?? null,
+                                'fecha' => $data['fecha'] ?? now(),
+                                'tipo_inspeccion' => 'Movilización',
+                                'tipo_prueba' => $data['tipo_prueba'] ?? 'P.P.C.',
+                                'fecha_inyeccion' => $data['fecha_inyeccion'] ?? null,
+                                'hora_inyeccion' => $data['hora_inyeccion'] ?? null,
+                                'fecha_lectura' => $data['fecha_lectura'] ?? null,
+                                'hora_lectura' => $data['hora_lectura'] ?? null,
+                                'motivo_prueba' => $data['motivo_prueba'] ?? null,
+                                'funcion_zootecnica' => $data['funcion_zootecnica'] ?? null,
+                                'vigencia_fecha' => $data['vigencia_fecha'] ?? null,
+                                'sementales' => $data['sementales'] ?? 0,
+                                'vacas' => $data['vacas'] ?? 0,
+                                'vaquillas' => $data['vaquillas'] ?? 0,
+                                'becerras' => $data['becerras'] ?? 0,
+                                'becerros' => $data['becerros'] ?? 0,
+                                'estado' => $data['estado'] ?? 'sincronizado',
+                                'clave_interna' => $data['clave_interna'] ?? null,
+                            ]
+                        );
+                    }
+                } else {
+                    $inspeccion = Inspeccion::updateOrCreate(
+                        ['folio' => $data['folio']],
+                        [
+                            'predio_id' => $data['predio_id'],
+                            'veterinario_id' => $veterinarioId,
+                            'visita_id' => $data['visita_id'] ?? null,
+                            'fecha' => $data['fecha'] ?? now(),
+                            'tipo_inspeccion' => 'Movilización',
+                            'tipo_prueba' => $data['tipo_prueba'] ?? 'P.P.C.',
+                            'fecha_inyeccion' => $data['fecha_inyeccion'] ?? null,
+                            'hora_inyeccion' => $data['hora_inyeccion'] ?? null,
+                            'fecha_lectura' => $data['fecha_lectura'] ?? null,
+                            'hora_lectura' => $data['hora_lectura'] ?? null,
+                            'motivo_prueba' => $data['motivo_prueba'] ?? null,
+                            'funcion_zootecnica' => $data['funcion_zootecnica'] ?? null,
+                            'vigencia_fecha' => $data['vigencia_fecha'] ?? null,
+                            'sementales' => $data['sementales'] ?? 0,
+                            'vacas' => $data['vacas'] ?? 0,
+                            'vaquillas' => $data['vaquillas'] ?? 0,
+                            'becerras' => $data['becerras'] ?? 0,
+                            'becerros' => $data['becerros'] ?? 0,
+                            'estado' => $data['estado'] ?? 'sincronizado',
+                        ]
+                    );
+                }
 
                 // Procesar Animales si existen
                 if (isset($data['animales']) && is_array($data['animales'])) {

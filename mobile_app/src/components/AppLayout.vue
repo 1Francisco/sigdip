@@ -21,12 +21,6 @@
           <a class="nav-link" :class="{ active: isActive('/predios') }" @click.prevent="navigate('/predios')">
             <i class="bi bi-house-door"></i> Predios
           </a>
-          <a class="nav-link" :class="{ active: isActive('/animales') }" @click.prevent="navigate('/animales')">
-            <i class="bi bi-gender-male"></i> Animales
-          </a>
-          <a class="nav-link" :class="{ active: isActive('/aretes-censo') }" @click.prevent="navigate('/aretes-censo')">
-            <i class="bi bi-upc-scan"></i> Aretes del Censo
-          </a>
           <a class="nav-link" :class="{ active: isActive('/inspecciones') || isActive('/inspeccion') }" @click.prevent="navigate('/inspecciones')">
             <i class="bi bi-clipboard-check"></i> Inspecciones
           </a>
@@ -35,9 +29,6 @@
           </a>
           <a class="nav-link" :class="{ active: isActive('/medicos') }" @click.prevent="navigate('/medicos')">
             <i class="bi bi-person-badge"></i> Médicos
-          </a>
-          <a class="nav-link" @click.prevent="alertWebOnly('Importar Excel')">
-            <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
           </a>
           <hr class="mx-3 text-slate-200">
           <a class="nav-link" :class="{ active: isActive('/descargas') }" @click.prevent="navigate('/descargas')">

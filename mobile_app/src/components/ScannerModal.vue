@@ -6,8 +6,23 @@
         <button type="button" class="btn-close-scanner" @click="handleClose">✕</button>
       </div>
       <div class="scanner-modal-body">
-        <div id="form-reader" class="scanner-preview-box"></div>
-        <p class="scanner-instruction-text mt-2 mb-0">Apunta la cámara al código de barras del arete.</p>
+        <div v-if="permissionDenied" class="text-center py-4">
+          <div style="font-size: 3rem; margin-bottom: 8px;">📷</div>
+          <h5 class="fw-bold text-danger mb-2">Permiso de cámara denegado</h5>
+          <p class="text-muted small mb-3 px-3">Para escanear aretes, la app necesita acceso a la cámara. Presiona "Reintentar" para solicitarlo de nuevo.</p>
+          <button class="btn btn-primary w-100 mb-2" :disabled="retrying" @click="retryPermission">
+            <span v-if="retrying" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <i v-else class="bi bi-camera me-2"></i>
+            {{ retrying ? 'Solicitando...' : 'Reintentar' }}
+          </button>
+          <button class="btn btn-outline-secondary w-100" @click="handleClose">
+            <i class="bi bi-x-lg me-2"></i> Cancelar
+          </button>
+        </div>
+        <template v-else>
+          <div id="form-reader" class="scanner-preview-box"></div>
+          <p class="scanner-instruction-text mt-2 mb-0">Apunta la cámara al código de barras del arete.</p>
+        </template>
       </div>
     </div>
   </div>
@@ -22,7 +37,9 @@ export default {
   emits: ['scanned', 'close'],
   data() {
     return {
-      html5QrCode: null
+      html5QrCode: null,
+      permissionDenied: false,
+      retrying: false
     };
   },
   mounted() {
@@ -32,33 +49,21 @@ export default {
     this.stop();
   },
   methods: {
-    async checkAndRequestCameraPermission() {
-      try {
-        let status = await Camera.checkPermissions();
-        if (status.camera === 'prompt' || status.camera === 'prompt-with-rationale') {
-          status = await Camera.requestPermissions({ permissions: ['camera'] });
-        }
-        return status.camera === 'granted';
-      } catch (e) {
-        console.warn("Permisos nativos de cámara no soportados, usando fallback de navegador:", e);
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          stream.getTracks().forEach(track => track.stop());
-          return true;
-        } catch (err) {
-          console.error("Browser camera permission denied:", err);
-          return false;
-        }
-      }
-    },
     async start() {
-      const hasPermission = await this.checkAndRequestCameraPermission();
-      if (!hasPermission) {
-        alert("❌ Permiso de cámara no concedido. Por favor, habilita el permiso de cámara en la configuración de tu dispositivo o navegador para usar el escáner de aretes.");
-        this.$emit('close');
-        return;
+      this.permissionDenied = false;
+      // Check if camera permission is already granted, don't request yet
+      try {
+        const status = await Camera.checkPermissions();
+        if (status.camera === 'granted') {
+          this.initCamera();
+          return;
+        }
+      } catch (e) {
+        console.warn("Camera checkPermissions not available:", e);
       }
-
+      this.permissionDenied = true;
+    },
+    async initCamera() {
       try {
         this.html5QrCode = new Html5Qrcode("form-reader");
         const config = {
@@ -72,9 +77,42 @@ export default {
         );
       } catch (err) {
         console.error("Error starting camera scanner:", err);
-        alert("⚠️ No se pudo iniciar la cámara. Verifique los permisos de su dispositivo.");
         this.$emit('close');
       }
+    },
+    async requestCameraPermission() {
+      this.retrying = true;
+      try {
+        let status = await Camera.checkPermissions();
+        if (status.camera !== 'granted') {
+          status = await Camera.requestPermissions({ permissions: ['camera'] });
+        }
+        if (status.camera === 'granted') {
+          this.retrying = false;
+          return true;
+        }
+        this.retrying = false;
+        this.permissionDenied = true;
+        return false;
+      } catch (e) {
+        console.warn("Plugin no disponible, usando getUserMedia:", e);
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(track => track.stop());
+        this.retrying = false;
+        return true;
+      } catch (err) {
+        console.error("Camera permission denied:", err);
+        this.retrying = false;
+        this.permissionDenied = true;
+        return false;
+      }
+    },
+    async retryPermission() {
+      const ok = await this.requestCameraPermission();
+      if (!ok) return;
+      this.initCamera();
     },
     async stop() {
       if (this.html5QrCode) {

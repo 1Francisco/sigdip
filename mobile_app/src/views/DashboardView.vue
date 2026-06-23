@@ -115,7 +115,7 @@
                     <div class="fw-bold text-dark text-start">{{ borrador.predio?.nombre_rancho || borrador.predio?.nombre }}</div>
                     <div class="d-flex justify-content-between align-items-center mt-1">
                       <small class="text-secondary">
-                        <span v-if="!borrador.folio || borrador.folio.startsWith('TEMP-')" class="text-muted fst-italic">Sin Folio (Borrador)</span>
+                        <span v-if="!borrador.folio || borrador.folio === borrador.clave_interna" class="text-muted fst-italic">{{ borrador.clave_interna || 'Sin Folio (Borrador)' }}</span>
                         <span v-else class="font-mono">Folio: {{ borrador.folio }}</span>
                       </small>
                       <small class="text-muted fst-italic">{{ borrador.veterinario?.name }}</small>

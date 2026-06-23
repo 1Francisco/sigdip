@@ -10,8 +10,23 @@
     </header>
 
     <main class="app-content">
+      <!-- Mensaje de permiso denegado con botón reintentar -->
+      <div v-if="permissionDenied" class="card p-4 text-center mb-3" style="border: 2px dashed #dc3545;">
+        <div style="font-size: 3rem; margin-bottom: 8px;">📷</div>
+        <h5 class="fw-bold text-danger mb-2">Permiso de cámara denegado</h5>
+        <p class="text-muted small mb-3">Para usar el escáner, la app necesita acceso a la cámara. Presiona "Reintentar" para solicitarlo de nuevo.</p>
+        <button class="btn btn-primary btn-lg w-100 mb-2" :disabled="retrying" @click="requestCameraPermission">
+          <span v-if="retrying" class="spinner-border spinner-border-sm me-2" role="status"></span>
+          <i v-else class="bi bi-camera me-2"></i>
+          {{ retrying ? 'Solicitando...' : 'Reintentar' }}
+        </button>
+        <button class="btn btn-outline-secondary w-100" @click="goBack">
+          <i class="bi bi-arrow-left me-2"></i> Volver
+        </button>
+      </div>
+
       <!-- Vista de la cámara (HTML5 QrCode Stream) -->
-      <div class="scanner-viewport">
+      <div v-show="!permissionDenied" class="scanner-viewport">
         <div id="scanner-reader" style="width: 100%; height: 100%; background: black;"></div>
       </div>
 
@@ -118,7 +133,9 @@ export default {
       scannedAnimals: [],
       isSingleMode: false,
       singleIndex: -1,
-      html5QrCode: null
+      html5QrCode: null,
+      permissionDenied: false,
+      retrying: false
     };
   },
   async mounted() {
@@ -132,14 +149,17 @@ export default {
       if (this.inspeccionStore.scannedAnimals.length) this.scannedAnimals = [...this.inspeccionStore.scannedAnimals];
     }
     
-    // Check and request camera permission first
-    const hasPermission = await this.checkAndRequestCameraPermission();
-    if (hasPermission) {
-      this.startCamera();
-    } else {
-      alert("❌ Permiso de cámara no concedido. Por favor, habilita el permiso de cámara en la configuración de tu dispositivo o navegador para usar el escáner.");
-      this.goBack();
+    // Check if camera permission is already granted, don't request yet
+    try {
+      const status = await Camera.checkPermissions();
+      if (status.camera === 'granted') {
+        this.startCamera();
+        return;
+      }
+    } catch (e) {
+      console.warn("Camera checkPermissions not available:", e);
     }
+    this.permissionDenied = true;
   },
   beforeUnmount() {
     this.stopCamera();
@@ -196,23 +216,35 @@ export default {
         this.$router.push('/dashboard');
       }
     },
-    async checkAndRequestCameraPermission() {
+    async requestCameraPermission() {
+      this.retrying = true;
       try {
         let status = await Camera.checkPermissions();
-        if (status.camera === 'prompt' || status.camera === 'prompt-with-rationale') {
+        if (status.camera !== 'granted') {
           status = await Camera.requestPermissions({ permissions: ['camera'] });
         }
-        return status.camera === 'granted';
-      } catch (e) {
-        console.warn("Permisos nativos de cámara no soportados, usando fallback de navegador:", e);
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          stream.getTracks().forEach(track => track.stop());
-          return true;
-        } catch (err) {
-          console.error("Browser camera permission denied:", err);
-          return false;
+        if (status.camera === 'granted') {
+          this.retrying = false;
+          this.permissionDenied = false;
+          this.startCamera();
+          return;
         }
+        this.retrying = false;
+        this.permissionDenied = true;
+        return;
+      } catch (e) {
+        console.warn("Plugin no disponible, usando getUserMedia:", e);
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(track => track.stop());
+        this.retrying = false;
+        this.permissionDenied = false;
+        this.startCamera();
+      } catch (err) {
+        console.error("Camera permission denied:", err);
+        this.retrying = false;
+        this.permissionDenied = true;
       }
     },
     async startCamera() {
