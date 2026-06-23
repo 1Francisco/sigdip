@@ -69,7 +69,7 @@
                         {{ inspeccion.clave_interna || inspeccion.folio || 'Sin Folio (Borrador)' }}
                       </span>
                       <a v-else @click.prevent="viewInspeccion(inspeccion)" class="text-decoration-none text-primary fw-bold fs-6" style="cursor: pointer;">
-                        {{ inspeccion.folio }}
+                        {{ inspeccion.clave_interna || inspeccion.folio }}
                       </a>
                     </td>
                     <td class="text-dark">{{ formatDate(inspeccion.fecha) }}</td>
@@ -134,7 +134,7 @@
                   <div class="card-field">
                     <span class="field-label">FOLIO</span>
                     <span class="field-value producer-name-bold text-secondary fst-italic" v-if="isBorrador(inspeccion)">{{ inspeccion.clave_interna || inspeccion.folio || 'Sin Folio (Borrador)' }}</span>
-                    <span class="field-value producer-name-bold text-primary" v-else @click="viewInspeccion(inspeccion)">{{ inspeccion.folio }}</span>
+                    <span class="field-value producer-name-bold text-primary" v-else @click="viewInspeccion(inspeccion)">{{ inspeccion.clave_interna || inspeccion.folio }}</span>
                   </div>
 
                   <!-- Fecha Field -->
@@ -447,7 +447,7 @@ export default {
       this.successMsg = '';
       try {
         const blob = await api.getInspectionPdf(inspeccion.id);
-        const fileName = `dictamen_${inspeccion.folio || inspeccion.id}_${new Date().getDate()}-${new Date().getMonth() + 1}-${new Date().getFullYear()}.pdf`;
+        const fileName = `dictamen_${inspeccion.clave_interna || inspeccion.id}_${new Date().getDate()}-${new Date().getMonth() + 1}-${new Date().getFullYear()}.pdf`;
 
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
           const reader = new FileReader();

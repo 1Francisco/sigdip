@@ -119,6 +119,10 @@ export default {
     await visitaStore.setItem('lista', lista);
   },
 
+  async saveVisitasPendientes(visitas) {
+    await visitaStore.setItem('lista', clean(visitas));
+  },
+
   async getVisitasPendientes() {
     return (await visitaStore.getItem('lista')) || [];
   },

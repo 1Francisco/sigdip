@@ -7,7 +7,7 @@
         </button>
         <div>
           <h1>Vista del Dictamen</h1>
-          <div class="subtitle">{{ inspeccion?.folio || inspeccion?.clave_interna || 'Sin folio' }}</div>
+          <div class="subtitle">{{ inspeccion?.clave_interna || 'Sin folio' }}</div>
         </div>
       </div>
       <button class="btn-close-form" @click="$router.push('/inspecciones')">
@@ -23,7 +23,7 @@
         <div class="card shadow-sm border-0 p-4 rounded-4 mb-4">
           <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
             <div class="text-start">
-              <div class="fw-bold fs-4 text-dark">{{ folioLabel(inspeccion.folio) }}</div>
+              <div class="fw-bold fs-4 text-dark">{{ inspeccion?.clave_interna || 'Sin Folio (Borrador)' }}</div>
               <div class="text-secondary small">
                 {{ inspeccion.predio?.nombre_rancho }} · {{ inspeccion.predio?.localidad }}
               </div>
@@ -153,7 +153,7 @@ export default {
       this.errorMsg = '';
       try {
         const blob = await api.getInspectionPdf(this.inspeccion.id);
-        const fileName = `dictamen_${this.inspeccion.folio || this.inspeccion.id}_${new Date().getDate()}-${new Date().getMonth() + 1}-${new Date().getFullYear()}.pdf`;
+        const fileName = `dictamen_${this.inspeccion.clave_interna || this.inspeccion.id}_${new Date().getDate()}-${new Date().getMonth() + 1}-${new Date().getFullYear()}.pdf`;
 
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
           const reader = new FileReader();

@@ -14,10 +14,13 @@
         :disabled="finalizarBloqueado"
         @click="$emit('save', 'sincronizado')"
       >
-        <template v-if="finalizarBloqueado">
+        <template v-if="finalizarBloqueado && !inyeccionConfirmada">
           <i class="bi bi-lock-fill"></i> Finalizar Inyección (Bloqueado)
         </template>
-        <template v-else-if="!enFaseLectura">
+        <template v-else-if="finalizarBloqueado && inyeccionConfirmada">
+          <i class="bi bi-lock-fill"></i> Finalizar Lectura (Bloqueado)
+        </template>
+        <template v-else-if="!inyeccionConfirmada">
           <i class="bi bi-check-circle-fill"></i> Finalizar Inyección
         </template>
         <template v-else>
@@ -40,10 +43,13 @@
         :disabled="finalizarBloqueado"
         @click="$emit('save', 'sincronizado')"
       >
-        <template v-if="finalizarBloqueado">
+        <template v-if="finalizarBloqueado && !inyeccionConfirmada">
           <i class="bi bi-lock-fill"></i> Finalizar Inyección (Bloqueado)
         </template>
-        <template v-else-if="!enFaseLectura">
+        <template v-else-if="finalizarBloqueado && inyeccionConfirmada">
+          <i class="bi bi-lock-fill"></i> Finalizar Lectura (Bloqueado)
+        </template>
+        <template v-else-if="!inyeccionConfirmada">
           <i class="bi bi-check-circle-fill"></i> Finalizar Inyección
         </template>
         <template v-else>
@@ -64,7 +70,8 @@ export default {
   name: 'InspeccionActions',
   props: {
     finalizarBloqueado: { type: Boolean, default: false },
-    enFaseLectura: { type: Boolean, default: false }
+    enFaseLectura: { type: Boolean, default: false },
+    inyeccionConfirmada: { type: Boolean, default: false }
   },
   emits: ['save', 'add-animal']
 };

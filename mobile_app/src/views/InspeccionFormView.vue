@@ -565,9 +565,7 @@
                   <!-- Línea 1: Número + Arete + Cámara -->
                   <div class="lectura-line1">
                     <span class="lectura-num-badge">{{ getOriginalAnimalIndex(animal) + 1 }}</span>
-                    <span v-if="animal.agregado_en_lectura" class="badge bg-warning text-dark ms-1" style="font-size: 0.6rem; white-space: nowrap;" title="Este animal fue agregado el día de la lectura, no estaba presente en la inyección.">
-                      <i class="bi bi-plus-circle me-1"></i>Nuevo en lectura
-                    </span>
+                    <span v-if="animal.agregado_en_lectura" class="badge bg-warning text-dark flex-shrink-0" style="font-size: 0.65rem; padding: 2px 6px; line-height: 1;" title="Agregado el día de la lectura">+</span>
                     <input 
                       type="text" 
                       v-model="animal.identificador" 
@@ -609,20 +607,28 @@
 
                 <!-- Animales sin inyección (colapsable móvil) -->
                 <div v-if="animalesSinInyeccion.length > 0" class="mt-2">
-                  <div class="card border-warning">
-                    <div class="card-header bg-warning-subtle py-2 d-flex justify-content-between align-items-center" @click="showSinInyeccion = !showSinInyeccion" style="cursor: pointer;">
-                      <span class="fw-bold text-dark small">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                        {{ animalesSinInyeccion.length }} {{ animalesSinInyeccion.length === 1 ? 'animal sin inyecci\u00f3n' : 'animales sin inyecci\u00f3n' }}
-                      </span>
-                      <i class="bi" :class="showSinInyeccion ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-                    </div>
-                    <div v-if="showSinInyeccion" class="card-body p-2">
-                      <div v-for="animal in animalesSinInyeccion" :key="animal" class="d-flex align-items-center gap-2 py-1 border-bottom border-light">
-                        <span class="badge bg-secondary">{{ getOriginalAnimalIndex(animal) + 1 }}</span>
-                        <span class="text-uppercase small fw-bold">{{ animal.identificador || 'SIN ARETE' }}</span>
-                        <span class="text-muted small">({{ animal.edad_meses || '?' }} meses)</span>
-                        <span class="text-muted small ms-auto"><i class="bi bi-info-circle me-1"></i>No recibi\u00f3 inyecci\u00f3n</span>
+                  <div class="lectura-table-header" style="background: #92400e; cursor: pointer; justify-content: space-between;" @click="showSinInyeccion = !showSinInyeccion">
+                    <span><i class="bi bi-exclamation-triangle-fill me-1"></i>SIN INYECCIÓN · {{ animalesSinInyeccion.length }} {{ animalesSinInyeccion.length === 1 ? 'animal' : 'animales' }}</span>
+                    <i class="bi" :class="showSinInyeccion ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                  </div>
+                  <div v-if="showSinInyeccion">
+                    <div v-for="(animal, localIdx) in animalesSinInyeccion" :key="animal" class="lectura-table-row" :class="{ 'lectura-row-zebra': localIdx % 2 === 1 }">
+                      <div class="lectura-line1">
+                        <span class="lectura-num-badge">{{ getOriginalAnimalIndex(animal) + 1 }}</span>
+                        <input type="text" v-model="animal.identificador" class="form-control form-control-sm text-uppercase lectura-input-arete flex-grow-1" placeholder="SINIIGA o SA" required :readonly="!animal.agregado_en_lectura" :style="{ background: animal.agregado_en_lectura ? '#fff' : '#f1f5f9' }" @change="onIdentificadorChange(animal)" />
+                      </div>
+                      <div class="lectura-line2">
+                        <select v-model="animal.resultado" class="form-select form-select-sm fw-bold lectura-select-result" :class="getResultadoClass(animal.resultado)">
+                          <option value="No Aplica">No Aplica</option>
+                          <option value="Pendiente">Pendiente</option>
+                          <option value="Negativo">Negativo</option>
+                          <option value="Positivo">Positivo</option>
+                          <option value="Sospechoso">Sospechoso</option>
+                        </select>
+                        <input type="text" v-model="animal.observaciones" class="form-control form-control-sm lectura-input-obs flex-grow-1" placeholder="Observaciones..." />
+                        <button type="button" class="btn btn-outline-danger btn-sm lectura-btn-delete" @click="removeAnimal(animal)" title="Eliminar">
+                          <i class="bi bi-trash"></i>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -745,10 +751,13 @@
 
         <InspeccionActions
           :finalizar-bloqueado="esBotonFinalizarBloqueado"
-          :en-fase-lectura="puedoEditarResultados()"
+          :en-fase-lectura="inyeccionConfirmada"
+          :inyeccion-confirmada="inyeccionConfirmada"
           @save="saveInspeccion"
           @add-animal="addEmptyAnimal"
         />
+
+        <div class="d-lg-none" style="height: 80px;"></div>
       </div>
   </AppLayout>
 
@@ -896,6 +905,12 @@ export default {
     sinDefinirResultadoCount() {
       return this.form.animales.filter(a => !a.resultado || a.resultado === 'Pendiente').length;
     },
+    inyeccionConfirmada() {
+      if (!this.form.visita_id) return true;
+      const visita = this.visitas.find(v => String(v.id) === String(this.form.visita_id));
+      if (!visita) return true;
+      return visita.inyeccion === true;
+    },
     isSection1Complete() {
       return !!(this.form.predio_id && this.form.fecha);
     },
@@ -919,7 +934,13 @@ export default {
       const fechaProg = new Date(visita.fecha_programada);
       fechaProg.setHours(0, 0, 0, 0);
       
-      return hoy.getTime() < fechaProg.getTime();
+      const inyeccionConf = visita.inyeccion === true;
+      
+      if (!inyeccionConf) {
+        return hoy.getTime() < fechaProg.getTime();
+      }
+      
+      return !this.puedoEditarResultados();
     },
     userFolio: {
       get() {
@@ -1500,7 +1521,7 @@ export default {
       
       // Si el usuario presiona "Finalizar" (sincronizado) pero aún no es la fecha de lectura:
       // se le advierte y se guarda como borrador con la inyección completada.
-      if (saveEstado === 'sincronizado' && !this.puedoEditarResultados()) {
+      if (saveEstado === 'sincronizado' && !this.inyeccionConfirmada) {
         const confirmar = confirm("Fase de Inyección: El dictamen se guardará como BORRADOR local y la visita se marcará con inyección realizada.\n\nPodrá ingresar los resultados en la fase de lectura (72 horas después).\n\n¿Desea continuar?");
         if (!confirmar) return;
         saveEstado = 'borrador';
@@ -1660,6 +1681,16 @@ export default {
             localVisitas[vIdx].inyeccion = true;
             localVisitas[vIdx].estado = 'completada';
             await db.saveVisitas(localVisitas);
+            this.visitas = localVisitas;
+          }
+
+          // También actualizar en visitas pendientes (offline)
+          let visitasPendientes = await db.getVisitasPendientes();
+          const vpIdx = visitasPendientes.findIndex(v => String(v.id || v.codigo) === String(this.form.visita_id));
+          if (vpIdx >= 0) {
+            visitasPendientes[vpIdx].inyeccion = true;
+            visitasPendientes[vpIdx].estado = 'completada';
+            await db.saveVisitasPendientes(visitasPendientes);
           }
         }
 
@@ -2576,7 +2607,7 @@ export default {
 .lectura-table-row {
   border-bottom: 1.5px solid #e2e8f0;
   background: #ffffff;
-  padding: 10px 12px;
+  padding: 10px 8px;
   transition: background-color 0.15s ease;
 }
 
@@ -2605,7 +2636,7 @@ export default {
 .lectura-line1 {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   margin-bottom: 6px;
 }
 
@@ -2614,7 +2645,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-left: 34px; /* alineado con el input de arriba */
+  padding-left: 0;
 }
 
 .lectura-num-badge {
@@ -2649,11 +2680,11 @@ export default {
 
 .lectura-btn-scan {
   border-radius: 6px !important;
-  padding: 0 !important;         /* Quitamos el padding para usar un ancho fijo */
+  padding: 0 !important;
   font-size: 0.75rem !important;
   line-height: 1 !important;
-  height: 28px;                  /* Alto del botón */
-  width: 28px;                   /* Ancho exacto del botón (mismo que el alto) */
+  height: 28px;
+  width: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2661,14 +2692,15 @@ export default {
 }
 
 .lectura-select-result {
-  font-size: 0.72rem !important;      /* Letra un poco más pequeña */
-  padding: 0 20px 0 6px !important;   /* Menos relleno, manteniendo espacio derecho para la flecha */
-  height: 30px !important;            /* Un poco más alto que los botones de 28px */
-  width: 100px !important;        /* Reducimos el ancho mínimo (antes era 120px) */
-  border-radius: 6px !important;      /* Radio a juego con los otros botones */
-  border: 1.5px solid #cbd5e1 !important;
+  font-size: 0.72rem !important;
+  padding: 0 20px 0 6px !important;
+  height: 30px !important;
+  min-width: 85px;
+  max-width: 110px;
   width: auto;
-  flex-shrink: 0;
+  border-radius: 6px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  flex: 0 0 auto;
 }
 
 .lectura-input-obs {
@@ -2678,7 +2710,8 @@ export default {
   border: 1px solid #e2e8f0 !important;
   background: #f8fafc !important;
   color: #64748b;
-  width: 50px;
+  min-width: 80px;
+  flex: 1 1 auto;
 }
 .lectura-input-obs:focus {
   background: #fff !important;
