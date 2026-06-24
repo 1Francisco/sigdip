@@ -44,7 +44,12 @@ class VisitaController extends Controller
 
     public function create()
     {
-        $productores = Productor::with('predios')->get();
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Administrador')) {
+            $productores = Productor::with('predios')->where('medico_id', $user->id)->get();
+        } else {
+            $productores = Productor::with('predios')->get();
+        }
         $veterinarios = User::role('Medico_Campo')->get();
 
         return view('visitas.create', compact('productores', 'veterinarios'));
@@ -59,9 +64,13 @@ class VisitaController extends Controller
             'observaciones' => 'nullable|string',
         ]);
 
-        // Security: Non-admins can only assign visits to themselves
-        if (! auth()->user()->hasRole('Administrador')) {
-            $validated['veterinario_id'] = auth()->id();
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Administrador')) {
+            $validated['veterinario_id'] = $user->id;
+            $predio = \App\Models\Predio::with('productor')->find($request->predio_id);
+            if (!$predio || !$predio->productor || $predio->productor->medico_id !== $user->id) {
+                return back()->withInput()->with('error', 'El predio seleccionado no pertenece a tus productores asignados.');
+            }
         }
 
         Visita::create($validated);
@@ -72,6 +81,11 @@ class VisitaController extends Controller
 
     public function updateEstado(Request $request, Visita $visita)
     {
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Administrador') && $visita->veterinario_id !== $user->id) {
+            abort(403, 'No tienes permiso para modificar esta visita.');
+        }
+
         $request->validate(['estado' => 'required|in:pendiente,completada,cancelada']);
         $visita->update(['estado' => $request->estado]);
 
@@ -80,8 +94,17 @@ class VisitaController extends Controller
 
     public function edit(Visita $visita)
     {
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Administrador') && $visita->veterinario_id !== $user->id) {
+            abort(403, 'No tienes permiso para editar esta visita.');
+        }
+
         $visita->load('predio.productor');
-        $productores = Productor::with('predios')->get();
+        if ($user && !$user->hasRole('Administrador')) {
+            $productores = Productor::with('predios')->where('medico_id', $user->id)->get();
+        } else {
+            $productores = Productor::with('predios')->get();
+        }
         $veterinarios = User::role('Medico_Campo')->get();
 
         return view('visitas.edit', compact('visita', 'productores', 'veterinarios'));
@@ -89,6 +112,17 @@ class VisitaController extends Controller
 
     public function update(Request $request, Visita $visita)
     {
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Administrador')) {
+            if ($visita->veterinario_id !== $user->id) {
+                abort(403, 'No tienes permiso para modificar esta visita.');
+            }
+            $predio = \App\Models\Predio::with('productor')->find($request->predio_id);
+            if (!$predio || !$predio->productor || $predio->productor->medico_id !== $user->id) {
+                return back()->withInput()->with('error', 'El predio seleccionado no pertenece a tus productores asignados.');
+            }
+        }
+
         $validated = $request->validate([
             'predio_id' => 'required|exists:predios,id',
             'veterinario_id' => 'required|exists:users,id',
@@ -107,6 +141,11 @@ class VisitaController extends Controller
 
     public function show(Visita $visita)
     {
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Administrador') && $visita->veterinario_id !== $user->id) {
+            abort(403, 'No tienes permiso para acceder a esta visita.');
+        }
+
         $visita->load(['predio.productor', 'veterinario', 'inspeccion']);
 
         return view('visitas.show', compact('visita'));
@@ -114,6 +153,11 @@ class VisitaController extends Controller
 
     public function destroy(Visita $visita)
     {
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Administrador') && $visita->veterinario_id !== $user->id) {
+            abort(403, 'No tienes permiso para eliminar esta visita.');
+        }
+
         $visita->delete();
 
         return redirect()->route('visitas.index')
@@ -122,6 +166,11 @@ class VisitaController extends Controller
 
     public function reprogramar(Request $request, Visita $visita)
     {
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Administrador') && $visita->veterinario_id !== $user->id) {
+            abort(403, 'No tienes permiso para reprogramar esta visita.');
+        }
+
         $request->validate([
             'fecha_programada' => 'required|date',
         ]);

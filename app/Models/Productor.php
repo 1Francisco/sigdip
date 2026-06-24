@@ -74,4 +74,18 @@ class Productor extends Model
             $this->apellido_materno,
         ], fn ($part) => filled($part))));
     }
+
+    /**
+     * Obtener la edad mínima de prueba en meses según la clave de cuarentena.
+     */
+    public function getEdadMinimaPruebaAttribute(): int
+    {
+        if ($this->clave_cuarentena) {
+            $clave = strtoupper($this->clave_cuarentena);
+            if (strlen($clave) >= 2 && $clave[1] === 'D') {
+                return 2;
+            }
+        }
+        return 6;
+    }
 }

@@ -36,6 +36,9 @@
                         <th class="ps-4">Nombre</th>
                         <th>CURP</th>
                         <th>UPP</th>
+                        @if(auth()->user()->hasRole('Administrador'))
+                        <th>Médico Asignado</th>
+                        @endif
                         <th>Teléfono</th>
                         <th>Predios</th>
                         <th>Acciones</th>
@@ -50,6 +53,15 @@
                         </td>
                         <td data-label="CURP"><code>{{ $p->curp }}</code></td>
                         <td data-label="UPP">{{ $p->upp }}</td>
+                        @if(auth()->user()->hasRole('Administrador'))
+                        <td data-label="Médico Asignado">
+                            @if($p->medico)
+                                <span class="badge bg-info-soft text-info rounded-pill px-2">{{ $p->medico->name }}</span>
+                            @else
+                                <span class="text-muted small">Sin Asignar</span>
+                            @endif
+                        </td>
+                        @endif
                         <td data-label="Teléfono">{{ $p->telefono ?? 'N/A' }}</td>
                         <td data-label="Predios">
                             <a href="{{ route('predios.index', ['productor_id' => $p->id]) }}" class="text-decoration-none">

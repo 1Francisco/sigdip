@@ -21,6 +21,7 @@ class DetalleInspeccion extends Model
         'sexo',
         'fierro',
         'resultado_prueba',
+        'motivo_no_aplica',
         'observaciones_animal',
         'agregado_en_lectura',
     ];

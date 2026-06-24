@@ -89,6 +89,7 @@
                     Resultado: <span class="fw-semibold">{{ detalle.resultado_prueba }}</span>
                   </div>
                   <div class="text-secondary small" v-if="detalle.observaciones_animal">Obs: {{ detalle.observaciones_animal }}</div>
+                  <div class="text-secondary small" v-if="detalle.motivo_no_aplica"><i class="bi bi-info-circle me-1"></i>{{ detalle.motivo_no_aplica }}</div>
                 </div>
                 <span class="badge rounded-pill" :class="resultadoClass(detalle.resultado_prueba)">
                   {{ detalle.resultado_prueba }}

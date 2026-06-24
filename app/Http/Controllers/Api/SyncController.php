@@ -24,8 +24,14 @@ class SyncController extends Controller
         $user = $request->user();
         $veterinarioId = $user->id ?? auth()->id() ?? 1;
 
-        // Obtener predios con sus productores
-        $predios = Predio::with('productor')->get();
+        // Obtener predios con sus productores (filtrados si no es administrador)
+        $prediosQuery = Predio::with('productor');
+        if ($user && !$user->hasRole('Administrador')) {
+            $prediosQuery->whereHas('productor', function ($q) use ($veterinarioId) {
+                $q->where('medico_id', $veterinarioId);
+            });
+        }
+        $predios = $prediosQuery->get();
 
         // Obtener todas las visitas asignadas a este veterinario (o todas si es Administrador) con relaciones completas
         $query = Visita::with(['predio.productor', 'veterinario', 'inspeccion']);
@@ -65,6 +71,8 @@ class SyncController extends Controller
                         'localidad' => $visita->predio->productor->localidad,
                         'estado' => $visita->predio->productor->estado,
                         'email' => $visita->predio->productor->email,
+                        'clave_cuarentena' => $visita->predio->productor->clave_cuarentena,
+                        'zona' => $visita->predio->productor->zona,
                     ] : null,
                 ] : null,
                 'veterinario' => $visita->veterinario ? [
@@ -85,8 +93,12 @@ class SyncController extends Controller
             ];
         });
 
-        // Obtener productores y médicos para caché offline completo
-        $productores = Productor::with('predios')->get();
+        // Obtener productores (filtrados si no es administrador) y médicos para caché offline completo
+        $productoresQuery = Productor::with('predios');
+        if ($user && !$user->hasRole('Administrador')) {
+            $productoresQuery->where('medico_id', $veterinarioId);
+        }
+        $productores = $productoresQuery->get();
         $medicos = User::role('Medico_Campo')
             ->select('id', 'name', 'email')
             ->orderBy('name')
@@ -239,6 +251,12 @@ class SyncController extends Controller
                     // Borrar detalles anteriores si es una actualización (evitar duplicados en resync)
                     DetalleInspeccion::where('inspeccion_id', $inspeccion->id)->delete();
 
+                    $edadMinimaPrueba = 6;
+                    $predio = Predio::with('productor')->find($data['predio_id']);
+                    if ($predio && $predio->productor) {
+                        $edadMinimaPrueba = $predio->productor->edad_minima_prueba;
+                    }
+
                     foreach ($data['animales'] as $item) {
                         if (empty($item['identificador']) && $isDraft) {
                             continue;
@@ -253,8 +271,10 @@ class SyncController extends Controller
 
                         $edadMeses = $item['edad_meses'] ?? 0;
                         $resultado = $item['resultado'] ?? 'Negativo';
-                        if ($edadMeses > 0 && $edadMeses < 6) {
+                        $motivoNoAplica = $item['motivo_no_aplica'] ?? null;
+                        if ($edadMeses > 0 && $edadMeses < $edadMinimaPrueba) {
                             $resultado = 'No Aplica';
+                            $motivoNoAplica = "Menor a {$edadMeses} meses";
                         }
 
                         $animal = Animal::firstOrCreate(
@@ -278,6 +298,7 @@ class SyncController extends Controller
                             'sexo' => $sexo,
                             'fierro' => $item['fierro'] ?? null,
                             'resultado_prueba' => $resultado,
+                            'motivo_no_aplica' => $motivoNoAplica,
                             'observaciones_animal' => $item['observaciones'] ?? null,
                             'agregado_en_lectura' => $agregadoEnLectura,
                         ]);

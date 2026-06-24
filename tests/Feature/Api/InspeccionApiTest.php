@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Animal;
+use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\Predio;
 use App\Models\Productor;
@@ -157,5 +158,58 @@ class InspeccionApiTest extends TestCase
         $response->assertStatus(200);
         $this->assertCount(1, $response->json('data'));
         $this->assertEquals('borrador', $response->json('data.0.estado'));
+    }
+
+    public function test_show_incluye_motivo_no_aplica()
+    {
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->user->id,
+        ]);
+
+        $animal = Animal::factory()->create(['predio_id' => $this->predio->id]);
+        DetalleInspeccion::factory()->create([
+            'inspeccion_id' => $inspeccion->id,
+            'animal_id' => $animal->id,
+            'resultado_prueba' => 'No Aplica',
+            'motivo_no_aplica' => 'Menor a 4 meses',
+        ]);
+
+        $response = $this->getJson("/api/inspecciones/{$inspeccion->id}");
+
+        $response->assertStatus(200);
+        $response->assertJsonFragment([
+            'resultado_prueba' => 'No Aplica',
+            'motivo_no_aplica' => 'Menor a 4 meses',
+        ]);
+    }
+
+    public function test_sync_detalles_con_motivo_se_conserva()
+    {
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->user->id,
+        ]);
+
+        $animal = Animal::factory()->create(['predio_id' => $this->predio->id]);
+
+        $response = $this->postJson("/api/inspecciones/{$inspeccion->id}/sync-detalles", [
+            'inspeccion_id' => $inspeccion->id,
+            'detalles' => [
+                [
+                    'animal_id' => $animal->id,
+                    'resultado_prueba' => 'No Aplica',
+                    'motivo_no_aplica' => 'Menor a 5 meses',
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('detalles_inspeccion', [
+            'inspeccion_id' => $inspeccion->id,
+            'animal_id' => $animal->id,
+            'resultado_prueba' => 'No Aplica',
+            'motivo_no_aplica' => 'Menor a 5 meses',
+        ]);
     }
 }

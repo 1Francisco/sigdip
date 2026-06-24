@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Animal;
+use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\Predio;
 use App\Models\Productor;
@@ -128,5 +130,93 @@ class InspeccionTest extends TestCase
 
         $response->assertRedirect(route('inspecciones.index'));
         $this->assertDatabaseMissing('inspecciones', ['id' => $inspeccion->id]);
+    }
+
+    public function test_store_con_animal_menor_6_meses_setea_motivo()
+    {
+        $response = $this->actingAs($this->admin)->post(route('inspecciones.store'), [
+            'predio_id' => $this->predio->id,
+            'fecha' => now()->format('Y-m-d'),
+            'estado' => 'borrador',
+            'animales' => [
+                [
+                    'identificador' => 'MX-ARETE-MOTIVO-001',
+                    'edad_meses' => 4,
+                    'sexo' => 'H',
+                    'raza' => 'Cebú',
+                    'resultado' => 'Pendiente',
+                ],
+            ],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $detalle = DetalleInspeccion::whereHas('animal', function ($q) {
+            $q->where('numero_arete_siniiga', 'MX-ARETE-MOTIVO-001');
+        })->first();
+
+        $this->assertNotNull($detalle);
+        $this->assertEquals('No Aplica', $detalle->resultado_prueba);
+        $this->assertEquals('Menor a 4 meses', $detalle->motivo_no_aplica);
+    }
+
+    public function test_store_con_animal_mayor_6_meses_no_setea_motivo()
+    {
+        $response = $this->actingAs($this->admin)->post(route('inspecciones.store'), [
+            'predio_id' => $this->predio->id,
+            'fecha' => now()->format('Y-m-d'),
+            'estado' => 'borrador',
+            'animales' => [
+                [
+                    'identificador' => 'MX-ARETE-SIN-MOTIVO-001',
+                    'edad_meses' => 12,
+                    'sexo' => 'M',
+                    'raza' => 'Suizo',
+                    'resultado' => 'Negativo',
+                ],
+            ],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $detalle = DetalleInspeccion::whereHas('animal', function ($q) {
+            $q->where('numero_arete_siniiga', 'MX-ARETE-SIN-MOTIVO-001');
+        })->first();
+
+        $this->assertNotNull($detalle);
+        $this->assertEquals('Negativo', $detalle->resultado_prueba);
+        $this->assertNull($detalle->motivo_no_aplica);
+    }
+
+    public function test_update_con_animal_menor_6_meses_actualiza_motivo()
+    {
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->admin->id,
+            'estado' => 'borrador',
+        ]);
+
+        $response = $this->actingAs($this->admin)->patch(route('inspecciones.update', $inspeccion), [
+            'predio_id' => $this->predio->id,
+            'fecha' => now()->format('Y-m-d'),
+            'estado' => 'borrador',
+            'animales' => [
+                [
+                    'identificador' => 'MX-ARETE-UPDATE-MOTIVO',
+                    'edad_meses' => 3,
+                    'sexo' => 'H',
+                    'raza' => 'Angus',
+                    'resultado' => 'Pendiente',
+                ],
+            ],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        $detalle = DetalleInspeccion::whereHas('animal', function ($q) {
+            $q->where('numero_arete_siniiga', 'MX-ARETE-UPDATE-MOTIVO');
+        })->first();
+
+        $this->assertNotNull($detalle);
+        $this->assertEquals('No Aplica', $detalle->resultado_prueba);
+        $this->assertEquals('Menor a 3 meses', $detalle->motivo_no_aplica);
     }
 }

@@ -40,6 +40,7 @@ class InspeccionController extends Controller
                     ],
                     [
                         'resultado_prueba' => $detalle['resultado_prueba'],
+                        'motivo_no_aplica' => $detalle['motivo_no_aplica'] ?? null,
                     ]
                 );
             }

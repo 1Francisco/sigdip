@@ -81,6 +81,42 @@
                                 <label class="form-label fw-semibold">Correo Electrónico</label>
                                 <input type="email" name="email" class="form-control" value="{{ old('email') }}">
                             </div>
+                            
+                            @if(auth()->user()->hasRole('Administrador'))
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Clave de Cuarentena</label>
+                                <select name="clave_cuarentena" id="clave_cuarentena" class="form-select rounded-3">
+                                    <option value="">-- Sin Clave --</option>
+                                    <option value="AD" {{ old('clave_cuarentena') == 'AD' ? 'selected' : '' }}>AD (Zona A - Definitiva - 2 Meses)</option>
+                                    <option value="AP" {{ old('clave_cuarentena') == 'AP' ? 'selected' : '' }}>AP (Zona A - Provisional - 6 Meses)</option>
+                                    <option value="BD" {{ old('clave_cuarentena') == 'BD' ? 'selected' : '' }}>BD (Zona B - Definitiva - 2 Meses)</option>
+                                    <option value="BP" {{ old('clave_cuarentena') == 'BP' ? 'selected' : '' }}>BP (Zona B - Provisional - 6 Meses)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Zona / Sector</label>
+                                <select name="zona" id="zona" class="form-select rounded-3">
+                                    <option value="">-- Sin Zona --</option>
+                                    <option value="A" {{ old('zona') == 'A' ? 'selected' : '' }}>Sector A</option>
+                                    <option value="B" {{ old('zona') == 'B' ? 'selected' : '' }}>Sector B</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Médico Veterinario Zootecnista (MVZ) Asignado</label>
+                                <select name="medico_id" class="form-select rounded-3">
+                                    <option value="">-- Seleccionar Médico (Opcional) --</option>
+                                    @foreach($medicos as $medico)
+                                        <option value="{{ $medico->id }}" {{ old('medico_id') == $medico->id ? 'selected' : '' }}>{{ $medico->name }} ({{ $medico->email }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @else
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Médico Veterinario Zootecnista (MVZ) Asignado</label>
+                                <input type="text" class="form-control bg-light" value="{{ auth()->user()->name }}" readonly disabled>
+                            </div>
+                            @endif
                         </div>
 
                         <div class="d-flex justify-content-end gap-3 mt-5">
@@ -205,6 +241,20 @@
     const indicator2 = document.getElementById('indicator-2');
     const inputRegistrar = document.getElementById('inputRegistrarPredio');
     const form = document.getElementById('wizardForm');
+
+    // Auto-update zona based on clave_cuarentena selection
+    const claveSelect = document.getElementById('clave_cuarentena');
+    const zonaSelect = document.getElementById('zona');
+    if (claveSelect && zonaSelect) {
+        claveSelect.addEventListener('change', function() {
+            const val = this.value;
+            if (val.startsWith('A')) {
+                zonaSelect.value = 'A';
+            } else if (val.startsWith('B')) {
+                zonaSelect.value = 'B';
+            }
+        });
+    }
 
     function nextStep() {
         if (!validateStep1()) return;

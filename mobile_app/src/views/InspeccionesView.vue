@@ -41,11 +41,48 @@
           </div>
         </div>
 
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="filter-row">
+            <div class="filter-group filter-search">
+              <div class="search-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" v-model="filtro.texto" class="filter-input" placeholder="Buscar por folio, predio, veterinario...">
+              </div>
+            </div>
+            <div class="filter-group filter-date">
+              <input type="date" v-model="filtro.fecha_desde" class="filter-input" placeholder="Desde" title="Fecha desde">
+            </div>
+            <div class="filter-group filter-date">
+              <input type="date" v-model="filtro.fecha_hasta" class="filter-input" placeholder="Hasta" title="Fecha hasta">
+            </div>
+            <div class="filter-group filter-estado">
+              <select v-model="filtro.estado" class="filter-select">
+                <option value="">Todos los estados</option>
+                <option value="borrador">Borrador</option>
+                <option value="finalizado">Finalizado</option>
+              </select>
+            </div>
+            <div class="filter-group filter-actions">
+              <button v-if="hayFiltrosActivos" @click="limpiarFiltros" class="btn-clear">
+                <i class="bi bi-x-lg"></i> Limpiar
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="card-body p-0 text-start">
-          <!-- Empty State when filtered results are 0 -->
+          <!-- Empty State -->
           <div v-if="!loading && inspecciones.length === 0" class="text-center p-5 text-muted">
             <i class="bi bi-clipboard-x display-6 d-block mb-2 text-muted"></i>
             <p class="mb-0 small text-secondary">No hay inspecciones para mostrar</p>
+          </div>
+          <div v-else-if="!loading && inspeccionesFiltradas.length === 0" class="text-center p-5 text-muted">
+            <i class="bi bi-search display-6 d-block mb-2 text-muted"></i>
+            <p class="mb-0 small text-secondary">No hay inspecciones que coincidan con los filtros</p>
+            <button @click="limpiarFiltros" class="btn btn-sm btn-outline-secondary rounded-pill px-3 mt-3">
+              <i class="bi bi-x-lg"></i> Limpiar filtros
+            </button>
           </div>
 
           <div v-else>
@@ -263,15 +300,48 @@ export default {
       prediosCatalog: [],
       errorMsg: '',
       successMsg: '',
-      currentPage: 1
+      currentPage: 1,
+      filtro: {
+        texto: '',
+        fecha_desde: '',
+        fecha_hasta: '',
+        estado: ''
+      }
     };
   },
   computed: {
+    inspeccionesFiltradas() {
+      let items = this.inspecciones;
+      const q = this.filtro.texto.trim().toLowerCase();
+      if (q) {
+        items = items.filter(i => {
+          const folio = (i.folio || '').toLowerCase();
+          const clave = (i.clave_interna || '').toLowerCase();
+          const predio = (i.predio?.nombre_rancho || '').toLowerCase();
+          const vet = (i.veterinario?.name || '').toLowerCase();
+          const prod = this.getProductorName(i.predio?.productor).toLowerCase();
+          return folio.includes(q) || clave.includes(q) || predio.includes(q) || vet.includes(q) || prod.includes(q);
+        });
+      }
+      if (this.filtro.fecha_desde) {
+        items = items.filter(i => i.fecha >= this.filtro.fecha_desde);
+      }
+      if (this.filtro.fecha_hasta) {
+        items = items.filter(i => i.fecha <= this.filtro.fecha_hasta);
+      }
+      if (this.filtro.estado) {
+        items = items.filter(i => i.estado === this.filtro.estado);
+      }
+      return items;
+    },
+    hayFiltrosActivos() {
+      return this.filtro.texto || this.filtro.fecha_desde || this.filtro.fecha_hasta || this.filtro.estado;
+    },
     totalPages() {
       return Math.ceil(this.totalResults / 20) || 1;
     },
     totalResults() {
-      return this.inspecciones.length;
+      return this.inspeccionesFiltradas.length;
     },
     startResult() {
       return this.totalResults === 0 ? 0 : ((this.currentPage - 1) * 20) + 1;
@@ -282,7 +352,15 @@ export default {
     paginatedInspecciones() {
       const start = (this.currentPage - 1) * 20;
       const end = this.currentPage * 20;
-      return this.inspecciones.slice(start, end);
+      return this.inspeccionesFiltradas.slice(start, end);
+    }
+  },
+  watch: {
+    filtro: {
+      handler() {
+        this.currentPage = 1;
+      },
+      deep: true
     }
   },
   async mounted() {
@@ -390,6 +468,13 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    limpiarFiltros() {
+      this.filtro.texto = '';
+      this.filtro.fecha_desde = '';
+      this.filtro.fecha_hasta = '';
+      this.filtro.estado = '';
+      this.currentPage = 1;
     },
     async onRefresh() {
       this.refreshing = true;
@@ -991,6 +1076,151 @@ export default {
     border: 1px solid #e2e8f0 !important;
     margin-top: 16px !important;
     padding: 16px !important;
+  }
+}
+
+/* ===== Filter Bar ===== */
+.filter-bar {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 16px;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.filter-group {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.filter-search {
+  flex: 2 1 200px;
+}
+
+.filter-date {
+  flex: 1 1 140px;
+  min-width: 120px;
+}
+
+.filter-estado {
+  flex: 1 1 140px;
+  min-width: 120px;
+}
+
+.filter-actions {
+  flex: 0 0 auto;
+}
+
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 50px;
+  padding: 0 12px;
+  transition: border-color 0.2s ease;
+}
+
+.search-wrapper:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.search-icon {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.filter-input {
+  width: 100%;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: #1e293b;
+  outline: none;
+}
+
+.filter-input[type="date"] {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 50px;
+  background: white;
+  cursor: pointer;
+}
+
+.filter-input[type="date"]:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.filter-select {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 50px;
+  background: white;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: #1e293b;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.btn-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 50px;
+  background: white;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-clear:active {
+  background: #f1f5f9;
+}
+
+@media (max-width: 768px) {
+  .filter-search {
+    flex: 1 1 100%;
+  }
+  .filter-date {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
+  .filter-estado {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
+  .filter-actions {
+    flex: 1 1 100%;
+    display: flex;
+    justify-content: center;
   }
 }
 </style>

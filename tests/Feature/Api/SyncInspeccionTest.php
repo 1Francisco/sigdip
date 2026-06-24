@@ -97,4 +97,67 @@ class SyncInspeccionTest extends TestCase
         $this->assertNotNull($inspeccion);
         $this->assertCount(1, $inspeccion->detalles);
     }
+
+    public function test_upload_con_animal_menor_6_meses_setea_motivo()
+    {
+        $predio = Predio::factory()->create();
+
+        $response = $this->postJson('/api/sync/inspecciones', [
+            'inspecciones' => [
+                [
+                    'folio' => 'SYNC-MOTIVO-001',
+                    'predio_id' => $predio->id,
+                    'fecha' => now()->format('Y-m-d'),
+                    'estado' => 'sincronizado',
+                    'animales' => [
+                        [
+                            'identificador' => 'MX-SYNC-MENOR',
+                            'edad_meses' => 5,
+                            'sexo' => 'H',
+                            'raza' => 'Cebú',
+                            'resultado' => 'Pendiente',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('detalles_inspeccion', [
+            'resultado_prueba' => 'No Aplica',
+            'motivo_no_aplica' => 'Menor a 5 meses',
+        ]);
+    }
+
+    public function test_upload_con_motivo_existente_se_conserva()
+    {
+        $predio = Predio::factory()->create();
+
+        $response = $this->postJson('/api/sync/inspecciones', [
+            'inspecciones' => [
+                [
+                    'folio' => 'SYNC-MOTIVO-002',
+                    'predio_id' => $predio->id,
+                    'fecha' => now()->format('Y-m-d'),
+                    'estado' => 'sincronizado',
+                    'animales' => [
+                        [
+                            'identificador' => 'MX-SYNC-CONSERVA',
+                            'edad_meses' => 10,
+                            'sexo' => 'M',
+                            'raza' => 'Suizo',
+                            'resultado' => 'No Aplica',
+                            'motivo_no_aplica' => 'Otra razón personalizada',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('detalles_inspeccion', [
+            'resultado_prueba' => 'No Aplica',
+            'motivo_no_aplica' => 'Otra razón personalizada',
+        ]);
+    }
 }

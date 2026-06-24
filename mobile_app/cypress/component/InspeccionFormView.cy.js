@@ -386,6 +386,103 @@ describe('InspeccionFormView', () => {
     })
   })
 
+  it('asigna motivo_no_aplica cuando edad < 6 meses', () => {
+    seedPredios()
+
+    const router = buildRouter('/inspeccion')
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+    cy.get('select').first().select('1')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-MOTIVO', { force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().type('4', { force: true })
+
+    cy.window().should((win) => {
+      const vm = Cypress.vue
+      const animal = vm?.form?.animales?.[0]
+      expect(animal?.motivo_no_aplica).to.eq('Menor a 4 meses')
+      expect(animal?.resultado).to.eq('No Aplica')
+    })
+  })
+
+  it('no asigna motivo_no_aplica cuando edad >= 6 meses', () => {
+    seedPredios()
+
+    const router = buildRouter('/inspeccion')
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+    cy.get('select').first().select('1')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-ADULTO', { force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().type('36', { force: true })
+
+    cy.window().should((win) => {
+      const vm = Cypress.vue
+      const animal = vm?.form?.animales?.[0]
+      expect(animal?.motivo_no_aplica).to.eq('')
+      expect(animal?.resultado).not.to.eq('No Aplica')
+    })
+  })
+
+  it('actualiza motivo cuando edad cambia de >=6 a <6', () => {
+    seedPredios()
+
+    const router = buildRouter('/inspeccion')
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+    cy.get('select').first().select('1')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-CAMBIO', { force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().type('36', { force: true })
+
+    cy.window().should((win) => {
+      const vm = Cypress.vue
+      const animal = vm?.form?.animales?.[0]
+      expect(animal?.motivo_no_aplica).to.eq('')
+    })
+
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().clear({ force: true }).type('5', { force: true })
+
+    cy.then(() => {
+      const vm = Cypress.vue
+      const animal = vm?.form?.animales?.[0]
+      expect(animal?.motivo_no_aplica).to.eq('Menor a 5 meses')
+      expect(animal?.resultado).to.eq('No Aplica')
+    })
+  })
+
+  it('limpia motivo cuando edad cambia de <6 a >=6', () => {
+    seedPredios()
+
+    const router = buildRouter('/inspeccion')
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+    cy.get('select').first().select('1')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-LIMPIA', { force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().type('4', { force: true })
+
+    cy.window().should((win) => {
+      const vm = Cypress.vue
+      const animal = vm?.form?.animales?.[0]
+      expect(animal?.motivo_no_aplica).to.eq('Menor a 4 meses')
+      expect(animal?.resultado).to.eq('No Aplica')
+    })
+
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().clear({ force: true }).type('36', { force: true })
+
+    cy.window().should((win) => {
+      const vm = Cypress.vue
+      const animal = vm?.form?.animales?.[0]
+      expect(animal?.motivo_no_aplica).to.eq('')
+      expect(animal?.resultado).not.to.eq('No Aplica')
+    })
+  })
+
   it('muestra confirmacion fase inyeccion al finalizar sin fecha lectura', () => {
     seedPrediosWithFullData()
 

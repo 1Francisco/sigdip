@@ -15,7 +15,12 @@ class ProductoresApiController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user();
         $query = Productor::withCount('predios')->latest();
+
+        if ($user && !$user->hasRole('Administrador')) {
+            $query->where('medico_id', $user->id);
+        }
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -37,7 +42,15 @@ class ProductoresApiController extends Controller
 
     public function show(Request $request, $id)
     {
+        $user = $request->user();
         $productor = Productor::with(['predios.inspecciones', 'medico'])->withCount('predios')->findOrFail($id);
+
+        if ($user && !$user->hasRole('Administrador') && $productor->medico_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para ver este productor.'
+            ], 403);
+        }
 
         return response()->json([
             'success' => true,
@@ -47,7 +60,14 @@ class ProductoresApiController extends Controller
 
     public function predios(Request $request)
     {
+        $user = $request->user();
         $query = Predio::with('productor')->latest();
+
+        if ($user && !$user->hasRole('Administrador')) {
+            $query->whereHas('productor', function ($q) use ($user) {
+                $q->where('medico_id', $user->id);
+            });
+        }
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -88,6 +108,8 @@ class ProductoresApiController extends Controller
                         'localidad' => $predio->productor->localidad,
                         'estado' => $predio->productor->estado,
                         'email' => $predio->productor->email,
+                        'clave_cuarentena' => $predio->productor->clave_cuarentena,
+                        'zona' => $predio->productor->zona,
                     ] : null,
                 ];
             });
@@ -100,7 +122,15 @@ class ProductoresApiController extends Controller
 
     public function showPredio(Request $request, $id)
     {
+        $user = $request->user();
         $predio = Predio::with(['productor', 'animales'])->findOrFail($id);
+
+        if ($user && !$user->hasRole('Administrador') && (!$predio->productor || $predio->productor->medico_id !== $user->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para ver este predio.'
+            ], 403);
+        }
 
         return response()->json([
             'success' => true,
@@ -129,6 +159,8 @@ class ProductoresApiController extends Controller
                     'localidad' => $predio->productor->localidad,
                     'estado' => $predio->productor->estado,
                     'email' => $predio->productor->email,
+                    'clave_cuarentena' => $predio->productor->clave_cuarentena,
+                    'zona' => $predio->productor->zona,
                 ] : null,
                 'animales' => $predio->animales->map(function ($animal) {
                     return [
@@ -158,6 +190,9 @@ class ProductoresApiController extends Controller
                 'localidad' => 'nullable|string',
                 'estado' => 'nullable|string',
                 'email' => 'nullable|email',
+                'medico_id' => 'nullable|exists:users,id',
+                'clave_cuarentena' => 'nullable|string|in:AD,AP,BD,BP',
+                'zona' => 'nullable|string|in:A,B',
 
                 // Validaciones para el predio opcional (copia exacta de la web)
                 'registrar_predio' => 'nullable|boolean',
@@ -168,6 +203,13 @@ class ProductoresApiController extends Controller
             ]);
 
             return DB::transaction(function () use ($validated, $request) {
+                $user = $request->user();
+                $medicoId = $validated['medico_id'] ?? null;
+                if ($user && !$user->hasRole('Administrador')) {
+                    $medicoId = $user->id;
+                    unset($validated['clave_cuarentena'], $validated['zona']);
+                }
+
                 // 1. Crear el Productor
                 $productor = Productor::create([
                     'nombre' => $validated['nombre'],
@@ -181,6 +223,9 @@ class ProductoresApiController extends Controller
                     'localidad' => $validated['localidad'] ?? 'General',
                     'estado' => $validated['estado'] ?? 'NAYARIT',
                     'email' => $validated['email'] ?? null,
+                    'medico_id' => $medicoId,
+                    'clave_cuarentena' => $validated['clave_cuarentena'] ?? null,
+                    'zona' => $validated['zona'] ?? null,
                 ]);
 
                 // 2. Crear el Predio si se solicitó (copia exacta de la web)
@@ -226,7 +271,16 @@ class ProductoresApiController extends Controller
     public function destroyProductor($id)
     {
         try {
+            $user = request()->user();
             $productor = Productor::findOrFail($id);
+
+            if ($user && !$user->hasRole('Administrador') && $productor->medico_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes permiso para eliminar este productor.'
+                ], 403);
+            }
+
             $productor->delete();
 
             return response()->json([
@@ -244,12 +298,21 @@ class ProductoresApiController extends Controller
     public function updateCoordenadas(Request $request, $id)
     {
         try {
+            $user = $request->user();
+            $predio = Predio::with('productor')->findOrFail($id);
+
+            if ($user && !$user->hasRole('Administrador') && (!$predio->productor || $predio->productor->medico_id !== $user->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes permiso para modificar este predio.'
+                ], 403);
+            }
+
             $request->validate([
                 'latitud' => 'required|numeric|between:-90,90',
                 'longitud' => 'required|numeric|between:-180,180',
             ]);
 
-            $predio = Predio::findOrFail($id);
             $predio->update([
                 'latitud' => $request->latitud,
                 'longitud' => $request->longitud,
@@ -274,7 +337,16 @@ class ProductoresApiController extends Controller
     public function destroyPredio($id)
     {
         try {
-            $predio = Predio::findOrFail($id);
+            $user = request()->user();
+            $predio = Predio::with('productor')->findOrFail($id);
+
+            if ($user && !$user->hasRole('Administrador') && (!$predio->productor || $predio->productor->medico_id !== $user->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes permiso para eliminar este predio.'
+                ], 403);
+            }
+
             $predio->delete();
 
             return response()->json([
@@ -295,7 +367,15 @@ class ProductoresApiController extends Controller
     public function updateProductor(Request $request, $id)
     {
         try {
+            $user = $request->user();
             $productor = Productor::findOrFail($id);
+
+            if ($user && !$user->hasRole('Administrador') && $productor->medico_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes permiso para actualizar este productor.'
+                ], 403);
+            }
 
             $validated = $request->validate([
                 'nombre' => 'required|string|max:255',
@@ -309,7 +389,17 @@ class ProductoresApiController extends Controller
                 'localidad' => 'nullable|string',
                 'estado' => 'nullable|string',
                 'email' => 'nullable|email',
+                'medico_id' => 'nullable|exists:users,id',
+                'clave_cuarentena' => 'nullable|string|in:AD,AP,BD,BP',
+                'zona' => 'nullable|string|in:A,B',
             ]);
+
+            $medicoId = $validated['medico_id'] ?? $productor->medico_id;
+            if ($user && !$user->hasRole('Administrador')) {
+                $medicoId = $user->id;
+                unset($validated['clave_cuarentena'], $validated['zona']);
+            }
+            $validated['medico_id'] = $medicoId;
 
             if (isset($validated['curp'])) {
                 $validated['curp'] = strtoupper($validated['curp']);
@@ -350,6 +440,19 @@ class ProductoresApiController extends Controller
     public function storeRancho(Request $request)
     {
         try {
+            $user = $request->user();
+            if ($user && !$user->hasRole('Administrador')) {
+                $productorExists = Productor::where('id', $request->productor_id)
+                    ->where('medico_id', $user->id)
+                    ->exists();
+                if (!$productorExists) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'El productor seleccionado no está asignado a tu usuario.'
+                    ], 403);
+                }
+            }
+
             $validated = $request->validate([
                 'nombre_rancho' => 'required|string|max:255',
                 'clave_unidad_produccion' => 'required|string|unique:predios,clave_unidad_produccion',
@@ -403,7 +506,26 @@ class ProductoresApiController extends Controller
     public function updateRancho(Request $request, $id)
     {
         try {
-            $predio = Predio::findOrFail($id);
+            $user = $request->user();
+            $predio = Predio::with('productor')->findOrFail($id);
+
+            if ($user && !$user->hasRole('Administrador')) {
+                if (!$predio->productor || $predio->productor->medico_id !== $user->id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No tienes permiso para modificar este predio.'
+                    ], 403);
+                }
+                $productorExists = Productor::where('id', $request->productor_id)
+                    ->where('medico_id', $user->id)
+                    ->exists();
+                if (!$productorExists) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'El productor seleccionado no está asignado a tu usuario.'
+                    ], 403);
+                }
+            }
 
             $validated = $request->validate([
                 'nombre_rancho' => 'required|string|max:255',
@@ -457,6 +579,8 @@ class ProductoresApiController extends Controller
                         'localidad' => $predio->productor->localidad,
                         'estado' => $predio->productor->estado,
                         'email' => $predio->productor->email,
+                        'clave_cuarentena' => $predio->productor->clave_cuarentena,
+                        'zona' => $predio->productor->zona,
                     ] : null,
                 ],
             ]);
@@ -498,6 +622,8 @@ class ProductoresApiController extends Controller
             'estado' => $productor->estado,
             'telefono' => $productor->telefono,
             'email' => $productor->email,
+            'clave_cuarentena' => $productor->clave_cuarentena,
+            'zona' => $productor->zona,
             'predios_count' => $productor->predios_count ?? $productor->predios()->count(),
             'medico_id' => $productor->medico_id,
         ];

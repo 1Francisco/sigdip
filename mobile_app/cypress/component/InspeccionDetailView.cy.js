@@ -176,6 +176,29 @@ describe('InspeccionDetailView', () => {
     cy.get('@windowOpen').should('have.been.calledOnce')
   })
 
+  it('muestra motivo_no_aplica para resultado No Aplica', () => {
+    const inspeccionConMotivo = {
+      ...fakeInspeccion,
+      id: 102,
+      detalles: [
+        { id: 1, animal: { numero_arete_siniiga: 'ARETE-NA', raza: 'Cebu', sexo: 'M' }, raza: 'Cebu', sexo: 'M', resultado_prueba: 'No Aplica', motivo_no_aplica: 'Menor a 5 meses', observaciones_animal: '' },
+        { id: 2, animal: { numero_arete_siniiga: 'ARETE-NEG', raza: 'Suizo', sexo: 'H' }, raza: 'Suizo', sexo: 'H', resultado_prueba: 'Negativo', observaciones_animal: '' },
+      ],
+    }
+
+    cy.intercept('GET', '**/api/inspecciones/102', {
+      statusCode: 200,
+      body: { data: inspeccionConMotivo },
+    }).as('getInspeccionConMotivo')
+
+    const router = buildRouter(102)
+    mount(InspeccionDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getInspeccionConMotivo', { timeout: 10000 })
+    cy.contains('No Aplica', { timeout: 5000 }).should('be.visible')
+    cy.contains('Menor a 5 meses').should('be.visible')
+  })
+
   it('muestra error cuando falla carga de inspeccion', () => {
     cy.intercept('GET', '**/api/inspecciones/999', {
       statusCode: 404,

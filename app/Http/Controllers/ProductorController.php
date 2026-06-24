@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Predio;
 use App\Models\Productor;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -11,7 +12,12 @@ class ProductorController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Productor::withCount('predios')->latest();
+        $user = auth()->user();
+        $query = Productor::with(['medico'])->withCount('predios')->latest();
+
+        if ($user && !$user->hasRole('Administrador')) {
+            $query->where('medico_id', $user->id);
+        }
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -31,7 +37,8 @@ class ProductorController extends Controller
 
     public function create()
     {
-        return view('productores.create');
+        $medicos = User::role('Medico_Campo')->orderBy('name')->get();
+        return view('productores.create', compact('medicos'));
     }
 
     public function store(Request $request)
@@ -48,6 +55,9 @@ class ProductorController extends Controller
             'estado' => 'nullable|string',
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email',
+            'medico_id' => 'nullable|exists:users,id',
+            'clave_cuarentena' => 'nullable|string|in:AD,AP,BD,BP',
+            'zona' => 'nullable|string|in:A,B',
 
             // Validaciones para el predio (si se envían)
             'registrar_predio' => 'nullable|boolean',
@@ -62,6 +72,12 @@ class ProductorController extends Controller
 
         try {
             return DB::transaction(function () use ($request, $validated) {
+                $medicoId = $validated['medico_id'] ?? null;
+                if (!auth()->user()->hasRole('Administrador')) {
+                    $medicoId = auth()->id();
+                    unset($validated['clave_cuarentena'], $validated['zona']);
+                }
+
                 // 1. Crear el Productor
                 $productor = Productor::create([
                     'nombre' => $validated['nombre'],
@@ -75,6 +91,9 @@ class ProductorController extends Controller
                     'estado' => $validated['estado'] ?? 'Sinaloa',
                     'telefono' => $validated['telefono'] ?? null,
                     'email' => $validated['email'] ?? null,
+                    'medico_id' => $medicoId,
+                    'clave_cuarentena' => $validated['clave_cuarentena'] ?? null,
+                    'zona' => $validated['zona'] ?? null,
                 ]);
 
                 $message = 'Productor registrado con éxito.';
@@ -103,11 +122,21 @@ class ProductorController extends Controller
 
     public function edit(Productor $productor)
     {
-        return view('productores.edit', ['productor' => $productor]);
+        if (!auth()->user()->hasRole('Administrador') && $productor->medico_id !== auth()->id()) {
+            abort(403, 'No tienes permiso para editar este productor.');
+        }
+
+        $medicos = User::role('Medico_Campo')->orderBy('name')->get();
+
+        return view('productores.edit', ['productor' => $productor, 'medicos' => $medicos]);
     }
 
     public function update(Request $request, Productor $productor)
     {
+        if (!auth()->user()->hasRole('Administrador') && $productor->medico_id !== auth()->id()) {
+            abort(403, 'No tienes permiso para editar este productor.');
+        }
+
         $validated = $request->validate([
             'nombre' => 'required|string|max:255',
             'apellido_paterno' => 'required|string|max:255',
@@ -120,7 +149,17 @@ class ProductorController extends Controller
             'estado' => 'nullable|string',
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email',
+            'medico_id' => 'nullable|exists:users,id',
+            'clave_cuarentena' => 'nullable|string|in:AD,AP,BD,BP',
+            'zona' => 'nullable|string|in:A,B',
         ]);
+
+        $medicoId = $validated['medico_id'] ?? $productor->medico_id;
+        if (!auth()->user()->hasRole('Administrador')) {
+            $medicoId = auth()->id();
+            unset($validated['clave_cuarentena'], $validated['zona']);
+        }
+        $validated['medico_id'] = $medicoId;
 
         $productor->update($validated);
 
@@ -130,6 +169,10 @@ class ProductorController extends Controller
 
     public function show(Productor $productor)
     {
+        if (!auth()->user()->hasRole('Administrador') && $productor->medico_id !== auth()->id()) {
+            abort(403, 'No tienes permiso para ver este productor.');
+        }
+
         $productor->load(['predios', 'medico']);
 
         return view('productores.show', ['productor' => $productor]);
@@ -137,6 +180,10 @@ class ProductorController extends Controller
 
     public function destroy(Productor $productor)
     {
+        if (!auth()->user()->hasRole('Administrador') && $productor->medico_id !== auth()->id()) {
+            abort(403, 'No tienes permiso para eliminar este productor.');
+        }
+
         $productor->predios()->delete();
         $productor->delete();
 
@@ -158,7 +205,17 @@ class ProductorController extends Controller
             'estado' => 'nullable|string',
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email',
+            'medico_id' => 'nullable|exists:users,id',
+            'clave_cuarentena' => 'nullable|string|in:AD,AP,BD,BP',
+            'zona' => 'nullable|string|in:A,B',
         ]);
+
+        $medicoId = $validated['medico_id'] ?? null;
+        if (!auth()->user()->hasRole('Administrador')) {
+            $medicoId = auth()->id();
+            unset($validated['clave_cuarentena'], $validated['zona']);
+        }
+        $validated['medico_id'] = $medicoId;
 
         $productor = Productor::create($validated);
 

@@ -187,6 +187,80 @@ describe('InspeccionesView', () => {
       cy.get('.connectivity-badge', { timeout: 5000 }).should('be.visible')
     })
 
+    it('filtra por texto de busqueda', () => {
+      cy.seedIndexedDB('catalogos', 'predios', fakePredios)
+      cy.intercept('GET', '**/api/inspecciones*', {
+        statusCode: 200,
+        body: { data: fakeInspecciones },
+      }).as('getInspecciones')
+
+      const router = buildRouter()
+      router.push('/inspecciones')
+      mount(InspeccionesView, { global: { plugins: [router] } })
+
+      cy.wait('@getInspecciones', { timeout: 10000 })
+      cy.contains('INSP-2026-001', { timeout: 5000 }).should('be.visible')
+      cy.contains('Sin Folio (Borrador)').should('be.visible')
+
+      cy.get('.filter-input[placeholder*="Buscar"]').type('INSP-2026-001', { force: true })
+      cy.contains('INSP-2026-001', { timeout: 5000 }).should('be.visible')
+      cy.contains('Sin Folio (Borrador)').should('not.exist')
+    })
+
+    it('filtra por estado seleccionado', () => {
+      cy.seedIndexedDB('catalogos', 'predios', fakePredios)
+      cy.intercept('GET', '**/api/inspecciones*', {
+        statusCode: 200,
+        body: { data: fakeInspecciones },
+      }).as('getInspecciones')
+
+      const router = buildRouter()
+      router.push('/inspecciones')
+      mount(InspeccionesView, { global: { plugins: [router] } })
+
+      cy.wait('@getInspecciones', { timeout: 10000 })
+      cy.get('.filter-select').select('borrador')
+      cy.contains('Sin Folio (Borrador)').should('be.visible')
+      cy.contains('INSP-2026-001').should('not.exist')
+    })
+
+    it('muestra empty state filtrado cuando no hay coincidencias', () => {
+      cy.seedIndexedDB('catalogos', 'predios', fakePredios)
+      cy.intercept('GET', '**/api/inspecciones*', {
+        statusCode: 200,
+        body: { data: fakeInspecciones },
+      }).as('getInspecciones')
+
+      const router = buildRouter()
+      router.push('/inspecciones')
+      mount(InspeccionesView, { global: { plugins: [router] } })
+
+      cy.wait('@getInspecciones', { timeout: 10000 })
+      cy.get('.filter-input[placeholder*="Buscar"]').type('NOEXISTE', { force: true })
+      cy.contains('No hay inspecciones que coincidan con los filtros').should('be.visible')
+    })
+
+    it('limpia filtros con boton Limpiar', () => {
+      cy.seedIndexedDB('catalogos', 'predios', fakePredios)
+      cy.intercept('GET', '**/api/inspecciones*', {
+        statusCode: 200,
+        body: { data: fakeInspecciones },
+      }).as('getInspecciones')
+
+      const router = buildRouter()
+      router.push('/inspecciones')
+      mount(InspeccionesView, { global: { plugins: [router] } })
+
+      cy.wait('@getInspecciones', { timeout: 10000 })
+      cy.get('.filter-input[placeholder*="Buscar"]').type('INSP-2026-001', { force: true })
+      cy.contains('INSP-2026-001').should('be.visible')
+
+      cy.get('.btn-clear').click()
+      cy.get('.filter-input[placeholder*="Buscar"]').should('have.value', '')
+      cy.contains('INSP-2026-001', { timeout: 5000 }).should('be.visible')
+      cy.contains('Sin Folio (Borrador)').should('be.visible')
+    })
+
     it('navega entre paginas con prevPage y nextPage', () => {
       const manyInspecciones = Array.from({ length: 25 }, (_, i) => ({
         id: i + 1,

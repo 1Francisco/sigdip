@@ -50,6 +50,25 @@
                         <td class="text-muted ps-0">Domicilio</td>
                         <td>{{ $productor->domicilio ?? 'N/A' }}</td>
                     </tr>
+                    <tr>
+                        <td class="text-muted ps-0">Clave de Cuarentena</td>
+                        <td>
+                            @if ($productor->clave_cuarentena)
+                                <span class="badge bg-primary">{{ $productor->clave_cuarentena }}</span>
+                                <small class="text-muted ms-1">(Edad mínima de prueba: {{ $productor->edad_minima_prueba }} meses)</small>
+                            @else
+                                <span class="text-muted">N/A</span>
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted ps-0">Zona / Sector</td>
+                        <td>{{ $productor->zona ?? 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted ps-0">Médico Asignado</td>
+                        <td>{{ $productor->medico ? $productor->medico->name : 'No Asignado' }}</td>
+                    </tr>
                 </table>
             </div>
         </div>

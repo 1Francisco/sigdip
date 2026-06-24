@@ -249,6 +249,7 @@ class InspeccionesApiController extends Controller
                     'sexo' => $detalle->sexo,
                     'fierro' => $detalle->fierro,
                     'resultado_prueba' => $detalle->resultado_prueba,
+                    'motivo_no_aplica' => $detalle->motivo_no_aplica,
                     'observaciones_animal' => $detalle->observaciones_animal,
                     'animal' => $detalle->animal ? [
                         'id' => $detalle->animal->id,

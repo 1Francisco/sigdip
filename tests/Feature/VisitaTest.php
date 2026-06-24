@@ -32,7 +32,7 @@ class VisitaTest extends TestCase
         $this->medico = User::factory()->create();
         $this->medico->assignRole('Medico_Campo');
 
-        $productor = Productor::factory()->create();
+        $productor = Productor::factory()->create(['medico_id' => $this->medico->id]);
         $this->predio = Predio::factory()->create(['productor_id' => $productor->id]);
     }
 

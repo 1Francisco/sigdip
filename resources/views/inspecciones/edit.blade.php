@@ -627,7 +627,7 @@
                                     <i class="bi bi-slash-circle me-1"></i>
                                     #{{ $loop->iteration }}
                                     {{ $det->animal->numero_arete_siniiga ?? 'SIN ARETE' }}
-                                    ({{ $det->edad_meses ?? '?' }} meses)
+                                    ({{ $det->edad_meses ?? '?' }} meses){{ $det->motivo_no_aplica ? ' - ' . $det->motivo_no_aplica : '' }}
                                 </span>
                             @endforeach
                         </div>

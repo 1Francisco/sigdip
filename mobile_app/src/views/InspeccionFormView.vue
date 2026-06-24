@@ -461,14 +461,14 @@
                     <i class="bi bi-info-circle"></i>
                     <strong>{{ animalesSinInyeccion.length }}</strong>
                     {{ animalesSinInyeccion.length === 1 ? 'animal no recibi\u00f3 inyecci\u00f3n' : 'animales no recibieron inyecci\u00f3n' }}
-                    (menores de 6 meses)
+                    (menores de {{ edadMinimaPrueba }} meses)
                   </div>
                   <div class="d-flex flex-wrap gap-2">
                     <span v-for="animal in animalesSinInyeccion" :key="animal" class="badge bg-secondary text-white small px-2 py-1">
                       <i class="bi bi-slash-circle me-1"></i>
                       #{{ getOriginalAnimalIndex(animal) + 1 }}
                       {{ animal.identificador || 'SIN ARETE' }}
-                      ({{ animal.edad_meses || '?' }} meses)
+                      ({{ animal.edad_meses || '?' }} meses){{ animal.motivo_no_aplica ? ' - ' + animal.motivo_no_aplica : '' }}
                     </span>
                   </div>
                 </div>
@@ -629,6 +629,9 @@
                         <button type="button" class="btn btn-outline-danger btn-sm lectura-btn-delete" @click="removeAnimal(animal)" title="Eliminar">
                           <i class="bi bi-trash"></i>
                         </button>
+                      </div>
+                      <div v-if="animal.motivo_no_aplica" class="px-2 pt-1">
+                        <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>{{ animal.motivo_no_aplica }}</span>
                       </div>
                     </div>
                   </div>
@@ -837,6 +840,15 @@ export default {
     };
   },
   computed: {
+    edadMinimaPrueba() {
+      if (this.selectedProductor && this.selectedProductor.clave_cuarentena) {
+        const clave = this.selectedProductor.clave_cuarentena.toUpperCase();
+        if (clave.length >= 2 && clave[1] === 'D') {
+          return 2;
+        }
+      }
+      return 6;
+    },
     _animalesIdx() {
       return this.form.animales.map(a => ({
         animal: a,
@@ -1194,6 +1206,7 @@ export default {
           fierro: detalle.fierro || 'Si',
           resultado: detalle.resultado_prueba || 'Pendiente',
           observaciones: detalle.observaciones_animal || '',
+          motivo_no_aplica: detalle.motivo_no_aplica || '',
           en_base_datos: (detalle.tipo_arete && detalle.tipo_arete !== 'SINIIGA') ? false : true,
           agregado_en_lectura: detalle.agregado_en_lectura || false
         }));
@@ -1207,6 +1220,7 @@ export default {
           fierro: a.fierro || 'Si',
           resultado: a.resultado || 'Pendiente',
           observaciones: a.observaciones || '',
+          motivo_no_aplica: a.motivo_no_aplica || '',
           en_base_datos: a.en_base_datos !== undefined ? a.en_base_datos : false,
           agregado_en_lectura: a.agregado_en_lectura || false
         }));
@@ -1356,6 +1370,7 @@ export default {
         fierro: 'Si',
         resultado: 'Pendiente',
         observaciones: '',
+        motivo_no_aplica: '',
         en_base_datos: false,
         agregado_en_lectura: this.puedoEditarResultados()
       });
@@ -1382,6 +1397,7 @@ export default {
         fierro: 'Si',
         resultado: 'Pendiente',
         observaciones: '',
+        motivo_no_aplica: '',
         en_base_datos: false,
         agregado_en_lectura: this.puedoEditarResultados()
       });
@@ -1396,10 +1412,12 @@ export default {
     },
     onEdadChange(animal) {
       const edad = parseInt(animal.edad_meses) || 0;
-      if (edad > 0 && edad < 6) {
+      if (edad > 0 && edad < this.edadMinimaPrueba) {
         animal.resultado = 'No Aplica';
+        animal.motivo_no_aplica = `Menor a ${this.edadMinimaPrueba} meses`;
       } else if (animal.resultado === 'No Aplica') {
         animal.resultado = 'Pendiente';
+        animal.motivo_no_aplica = '';
       }
     },
     getResultadoClass(res) {
@@ -1493,6 +1511,7 @@ export default {
               const s = data.sexo.charAt(0).toUpperCase();
               animal.sexo = (s === 'H' || s === 'F') ? 'H' : 'M';
             }
+            this.onEdadChange(animal);
           } else {
             animal.en_base_datos = false;
           }
@@ -1556,7 +1575,7 @@ export default {
 
         const hasPendientes = this.form.animales.filter(a => a.resultado !== 'No Aplica').some(a => !a.resultado || a.resultado === 'Pendiente');
         if (hasPendientes && this.puedoEditarResultados()) {
-          alert('⚠️ Todos los animales (excepto los menores de 6 meses sin inyecci\u00f3n) deben tener un resultado asignado (Negativo, Positivo o Sospechoso) para poder finalizar el dictamen.');
+          alert(`⚠️ Todos los animales (excepto los menores de ${this.edadMinimaPrueba} meses sin inyección) deben tener un resultado asignado (Negativo, Positivo o Sospechoso) para poder finalizar el dictamen.`);
           this.activeSection = 4;
           return;
         }

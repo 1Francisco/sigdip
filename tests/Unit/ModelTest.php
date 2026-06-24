@@ -102,4 +102,23 @@ class ModelTest extends TestCase
 
         $this->assertEquals('Juan Pérez López', $productor->nombreCompleto);
     }
+
+    public function test_detalle_inspeccion_motivo_no_aplica_es_fillable()
+    {
+        $inspeccion = Inspeccion::factory()->create();
+        $animal = Animal::factory()->create(['predio_id' => $inspeccion->predio_id]);
+
+        $detalle = DetalleInspeccion::create([
+            'inspeccion_id' => $inspeccion->id,
+            'animal_id' => $animal->id,
+            'resultado_prueba' => 'No Aplica',
+            'motivo_no_aplica' => 'Menor a 6 meses',
+        ]);
+
+        $this->assertEquals('Menor a 6 meses', $detalle->motivo_no_aplica);
+        $this->assertDatabaseHas('detalles_inspeccion', [
+            'id' => $detalle->id,
+            'motivo_no_aplica' => 'Menor a 6 meses',
+        ]);
+    }
 }
