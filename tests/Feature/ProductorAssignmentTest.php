@@ -146,6 +146,18 @@ class ProductorAssignmentTest extends TestCase
 
         $prodDefinitiveB = Productor::factory()->make(['clave_cuarentena' => 'BD']);
         $this->assertEquals(2, $prodDefinitiveB->edad_minima_prueba);
+
+        // Edge cases: key without suffix
+        $prodOnlyPrefix = Productor::factory()->make(['clave_cuarentena' => 'AD']);
+        $this->assertEquals(2, $prodOnlyPrefix->edad_minima_prueba);
+
+        // Edge case: short key (< 2 chars) should fallback to 6
+        $prodShort = Productor::factory()->make(['clave_cuarentena' => 'B']);
+        $this->assertEquals(6, $prodShort->edad_minima_prueba);
+
+        // Edge case: empty string key
+        $prodEmpty = Productor::factory()->make(['clave_cuarentena' => '']);
+        $this->assertEquals(6, $prodEmpty->edad_minima_prueba);
     }
 
     public function test_admin_can_assign_quarantine_key_and_zone()

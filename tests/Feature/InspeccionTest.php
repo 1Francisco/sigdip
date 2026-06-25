@@ -286,6 +286,80 @@ class InspeccionTest extends TestCase
         $this->assertEquals('Menor a 2 meses', $detalle->motivo_no_aplica);
     }
 
+    public function test_update_con_productor_ad_usa_umbral_2_meses()
+    {
+        $productorAD = Productor::factory()->create(['clave_cuarentena' => 'AD-987654', 'zona' => 'A']);
+        $predioAD = Predio::factory()->create(['productor_id' => $productorAD->id]);
+
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $predioAD->id,
+            'veterinario_id' => $this->admin->id,
+            'estado' => 'borrador',
+        ]);
+
+        $response = $this->actingAs($this->admin)->patch(
+            route('inspecciones.update', $inspeccion), [
+                'predio_id' => $predioAD->id,
+                'fecha' => now()->format('Y-m-d'),
+                'estado' => 'borrador',
+                'animales' => [
+                    [
+                        'identificador' => 'MX-ARETE-AD-UPDATE',
+                        'edad_meses' => 1,
+                        'sexo' => 'H',
+                        'raza' => 'Cebú',
+                        'resultado' => 'Pendiente',
+                    ],
+                ],
+            ]);
+
+        $response->assertSessionHasNoErrors();
+        $detalle = DetalleInspeccion::whereHas('animal', function ($q) {
+            $q->where('numero_arete_siniiga', 'MX-ARETE-AD-UPDATE');
+        })->first();
+
+        $this->assertNotNull($detalle);
+        $this->assertEquals('No Aplica', $detalle->resultado_prueba);
+        $this->assertEquals('Menor a 2 meses', $detalle->motivo_no_aplica);
+    }
+
+    public function test_update_con_productor_sin_clave_usa_umbral_6_meses()
+    {
+        $productor = Productor::factory()->create(['clave_cuarentena' => null]);
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $predio->id,
+            'veterinario_id' => $this->admin->id,
+            'estado' => 'borrador',
+        ]);
+
+        $response = $this->actingAs($this->admin)->patch(
+            route('inspecciones.update', $inspeccion), [
+                'predio_id' => $predio->id,
+                'fecha' => now()->format('Y-m-d'),
+                'estado' => 'borrador',
+                'animales' => [
+                    [
+                        'identificador' => 'MX-ARETE-SIN-CLAVE',
+                        'edad_meses' => 3,
+                        'sexo' => 'M',
+                        'raza' => 'Brangus',
+                        'resultado' => 'Pendiente',
+                    ],
+                ],
+            ]);
+
+        $response->assertSessionHasNoErrors();
+        $detalle = DetalleInspeccion::whereHas('animal', function ($q) {
+            $q->where('numero_arete_siniiga', 'MX-ARETE-SIN-CLAVE');
+        })->first();
+
+        $this->assertNotNull($detalle);
+        $this->assertEquals('No Aplica', $detalle->resultado_prueba);
+        $this->assertEquals('Menor a 6 meses', $detalle->motivo_no_aplica);
+    }
+
     public function test_destroy_completada_rechazada_para_medico()
     {
         $medico = User::factory()->create();

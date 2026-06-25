@@ -21,7 +21,7 @@ function buildRouter(id) {
 
 const fakeInspeccion = {
   id: 100,
-  folio: 'INSP-2026-001',
+  clave_interna: 'INSP-2026-001',
   fecha: '2026-06-01',
   estado: 'completada',
   predio_id: 1,
@@ -70,7 +70,7 @@ describe('InspeccionDetailView', () => {
   })
 
   it('muestra badge Borrador y boton continuar edicion', () => {
-    const borrador = { ...fakeInspeccion, estado: 'borrador', folio: null }
+    const borrador = { ...fakeInspeccion, estado: 'borrador', folio: null, clave_interna: null }
 
     cy.intercept('GET', '**/api/inspecciones/101', {
       statusCode: 200,
@@ -135,7 +135,7 @@ describe('InspeccionDetailView', () => {
   })
 
   it('navega a continuar edicion para borrador', () => {
-    const borrador = { ...fakeInspeccion, estado: 'borrador', folio: null }
+    const borrador = { ...fakeInspeccion, estado: 'borrador', folio: null, clave_interna: null }
 
     cy.intercept('GET', '**/api/inspecciones/101', {
       statusCode: 200,

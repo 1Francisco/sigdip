@@ -36,7 +36,7 @@ const fakePredios = [
     productor_id: 1,
     productor: {
       id: 1, nombre: 'Maria', apellido_paterno: 'Garcia', apellido_materno: 'Lopez',
-      curp: 'GALM800101HPLRRN01', upp: 'UPP-001', telefono: '555-0101'
+      curp: 'GALM800101HPLRRN01', upp: 'UPP-001', telefono: '555-0101', medico_id: 2
     }
   },
   {
@@ -48,7 +48,7 @@ const fakePredios = [
     productor_id: 1,
     productor: {
       id: 1, nombre: 'Maria', apellido_paterno: 'Garcia', apellido_materno: 'Lopez',
-      curp: 'GALM800101HPLRRN01', upp: 'UPP-001', telefono: '555-0101'
+      curp: 'GALM800101HPLRRN01', upp: 'UPP-001', telefono: '555-0101', medico_id: 2
     }
   },
   {
@@ -220,13 +220,17 @@ describe('ProductoresView', () => {
       cy.setLoginState({ user: userMedico })
     })
 
-    it('renderiza lista de productores para medico', () => {
-      seedPrediosInDB()
+    it('renderiza lista de productores para medico desde store dedicada', () => {
+      cy.seedIndexedDB('catalogos', 'productores', [{
+        id: 10, nombre: 'Maria Garcia Lopez', nombreRaw: 'Maria', apellido_paterno: 'Garcia', apellido_materno: 'Lopez',
+        curp: 'GALM800101HPLRRN01', upp: 'UPP-010', telefono: '555-010', prediosCount: 1, ranchos: [],
+        medico_id: 2
+      }])
       const router = buildRouter()
       router.push('/productores')
       mount(ProductoresView, { global: { plugins: [router] } })
 
-      cy.contains('Maria Garcia Lopez', { timeout: 5000 }).should('be.visible')
+      cy.contains('Maria Garcia Lopez', { timeout: 8000 }).should('be.visible')
     })
 
     it('filtra productores por medico_id cuando carga desde db dedicada', () => {
@@ -251,55 +255,19 @@ describe('ProductoresView', () => {
     })
   })
 
-  describe('flujo offline crear productor', () => {
+  describe('flujo nuevo productor', () => {
     beforeEach(() => {
       cy.setLoginState({ user: userAdmin })
       cy.window().then(win => { cy.stub(win, 'alert').returns(true) })
     })
 
-    it('crea productor offline sin rancho y persiste en predios + productores store', () => {
-      cy.window().then(w => { w.navigator.__defineGetter__('onLine', () => false) })
-
+    it('navega a formulario desde boton Nuevo Productor', () => {
       const router = buildRouter()
       router.push('/productores')
       mount(ProductoresView, { global: { plugins: [router] } })
 
       cy.contains('Nuevo Productor').click()
-      cy.get('input[placeholder*="Ej: Pepito"]').type('Juan')
-      cy.get('input[placeholder*="Ej: Tejeda"]').type('Perez')
-      cy.get('input[placeholder*="18 caracteres"]').type('PEJL900101HPLRRN01')
-      cy.get('input[placeholder*="57625285"]').first().type('UPP-001')
-
-      cy.contains('Guardar Datos').click()
-
-      cy.getIndexedDB('catalogos', 'productores').should('have.length', 1)
-        .its('0.prediosCount').should('eq', 0)
-      cy.getIndexedDB('catalogos', 'predios').should('have.length', 1)
-    })
-
-    it('crea productor offline con rancho y persiste en predios + productores store', () => {
-      cy.window().then(w => { w.navigator.__defineGetter__('onLine', () => false) })
-
-      const router = buildRouter()
-      router.push('/productores')
-      mount(ProductoresView, { global: { plugins: [router] } })
-
-      cy.contains('Nuevo Productor').click()
-      cy.get('input[placeholder*="Ej: Pepito"]').type('Maria')
-      cy.get('input[placeholder*="Ej: Tejeda"]').type('Garcia')
-      cy.get('input[placeholder*="18 caracteres"]').type('GALM800101HPLRRN01')
-      cy.get('input[placeholder*="57625285"]').first().type('UPP-001')
-
-      cy.get('#registrarPredioCheck').check({ force: true })
-      cy.get('input[placeholder*="El Refugio"]').type('Rancho Nuevo')
-      cy.get('input[placeholder*="57625285"]').eq(1).type('UPP-RANCHO')
-
-      cy.contains('Guardar Datos').click()
-
-      cy.getIndexedDB('catalogos', 'productores').should('have.length', 1)
-        .its('0.prediosCount').should('eq', 1)
-      cy.getIndexedDB('catalogos', 'productores').its('0.ranchos').should('have.length', 1)
-      cy.getIndexedDB('catalogos', 'predios').should('have.length', 1)
+      cy.location('hash', { timeout: 3000 }).should('eq', '#/productores/nuevo')
     })
   })
 

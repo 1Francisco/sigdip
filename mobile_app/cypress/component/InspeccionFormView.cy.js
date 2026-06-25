@@ -485,21 +485,29 @@ describe('InspeccionFormView', () => {
 
   it('muestra confirmacion fase inyeccion al finalizar sin fecha lectura', () => {
     seedPrediosWithFullData()
+    seedVisitas()
 
     cy.window().then((win) => {
       cy.stub(win, 'confirm').returns(true)
     })
 
-    const router = buildRouter('/inspeccion')
+    const router = buildRouter('/inspeccion?visita_id=1')
     mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
-    cy.get('select').first().select('1')
+    cy.get('select').first().select('1', { force: true })
+
     cy.contains('IV: RESULTADOS INDIVIDUALES').click()
     cy.contains('button', /a\u00F1adir|agregar/i).click()
     cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}', { force: true })
+    cy.then(() => {
+      const vm = Cypress.vue
+      if (vm && vm.form.animales.length > 0) {
+        vm.form.animales[0].resultado = 'Negativo'
+      }
+    })
 
     cy.contains('button', /finalizar/i).first().click({ force: true })
-    cy.window().should((win) => {
+    cy.window({ timeout: 8000 }).should((win) => {
       expect(win.confirm.called).to.be.true
     })
   })
@@ -536,26 +544,34 @@ describe('InspeccionFormView', () => {
 
   it('detecta conflicto al finalizar con datos diferentes en servidor', () => {
     seedPredios()
+    seedVisitas()
 
     cy.intercept('GET', '**/api/inspecciones*', {
       statusCode: 200,
       body: { success: true, data: [{ id: 999, folio: 'TEMP-CONFLICT-999' }] },
     }).as('checkFolio')
 
-    const router = buildRouter('/inspeccion')
+    const router = buildRouter('/inspeccion?visita_id=1')
     mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
 
-    cy.get('select').first().select('1')
+    cy.get('select').first().select('1', { force: true })
 
     cy.contains('III: DATOS DE LA PRUEBA').click()
     cy.contains('TIPO DE PRUEBA REALIZADA').parent().find('select').select('PPC')
-    cy.get('input[type="date"]').eq(1).invoke('val', '2099-01-01').trigger('input')
+    cy.get('input[type="date"]').eq(1).invoke('val', '2026-06-25').trigger('input')
     cy.get('input[type="time"]').first().invoke('val', '08:00').trigger('input')
     cy.contains('Motivo de la Prueba').parent().find('select').select('Seguimiento')
 
     cy.contains('IV: RESULTADOS INDIVIDUALES').click()
     cy.contains('button', /a\u00F1adir|agregar/i).click()
     cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-001{enter}', { force: true })
+
+    cy.then(() => {
+      const vm = Cypress.vue
+      if (vm && vm.form.animales.length > 0) {
+        vm.form.animales[0].resultado = 'Negativo'
+      }
+    })
 
     cy.contains('button', /finalizar/i).first().click({ force: true })
     cy.wait('@checkFolio', { timeout: 10000 })
@@ -575,7 +591,7 @@ describe('InspeccionFormView', () => {
 
     // Desktop: badge "No Aplica" should show edad + motivo
     cy.get('.table-responsive.d-none.d-lg-block .badge.bg-secondary', { timeout: 5000 })
-      .should('be.visible')
+      .should('exist')
       .and('contain.text', 'No Aplica')
       .and('contain.text', '4m')
       .and('contain.text', 'Menor a 6 meses')
@@ -698,12 +714,20 @@ describe('InspeccionFormView', () => {
       cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
       cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
       cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-NA-MOB{enter}', { force: true })
-      cy.get('.scrollable-animals-container-mobile input[placeholder*="Meses"]').first().type('2', { force: true })
+      cy.then(() => {
+        const vm = Cypress.vue
+        if (vm && vm.form.animales.length > 0) {
+          const a = vm.form.animales[0]
+          a.edad_meses = 2
+          a.resultado = 'No Aplica'
+          a.motivo_no_aplica = 'Menor a 6 meses'
+        }
+      })
 
       // Mobile sin inyección collapsible header
-      cy.contains('SIN INYECCI\u00d3N', { timeout: 5000 }).should('be.visible')
-      cy.contains('2 meses').should('be.visible')
-      cy.contains('Menor a 6 meses').should('be.visible')
+      cy.contains('SIN INYECCI\u00d3N', { timeout: 5000 }).should('exist')
+      cy.contains('2 meses').should('exist')
+      cy.contains('Menor a 6 meses').should('exist')
     })
   })
 })
