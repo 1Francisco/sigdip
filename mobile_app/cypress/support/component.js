@@ -5,11 +5,8 @@ import api from '../../src/services/api.js'
 beforeEach(() => {
   mockCapacitorModules(cy)
   api.invalidateConnectivityCache()
-  cy.window().then((win) => {
-    if (win && win.navigator) {
-      try {
-        delete win.navigator.onLine
-      } catch (e) {}
-    }
-  })
+  // NOTA: navigator.onLine no se puede mockear en Electron 138 (propiedad
+  // no-configurable). Los tests de conectividad offline deben usar cy.intercept
+  // para simular fallos de red en lugar de cambiar navigator.onLine.
+  // Ver: https://github.com/cypress-io/cypress/issues/27538
 })

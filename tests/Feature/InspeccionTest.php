@@ -360,6 +360,116 @@ class InspeccionTest extends TestCase
         $this->assertEquals('Menor a 6 meses', $detalle->motivo_no_aplica);
     }
 
+    public function test_store_con_edad_cero_no_asigna_motivo()
+    {
+        $response = $this->actingAs($this->admin)->post(route('inspecciones.store'), [
+            'predio_id' => $this->predio->id,
+            'fecha' => now()->format('Y-m-d'),
+            'estado' => 'borrador',
+            'animales' => [
+                [
+                    'identificador' => 'MX-EDAD-CERO',
+                    'edad_meses' => 0,
+                    'sexo' => 'H',
+                    'resultado' => 'Negativo',
+                ],
+            ],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $detalle = DetalleInspeccion::whereHas('animal', function ($q) {
+            $q->where('numero_arete_siniiga', 'MX-EDAD-CERO');
+        })->first();
+
+        $this->assertNotNull($detalle);
+        $this->assertEquals('Negativo', $detalle->resultado_prueba);
+        $this->assertNull($detalle->motivo_no_aplica);
+    }
+
+    public function test_store_con_edad_exactamente_6_no_asigna_motivo()
+    {
+        $response = $this->actingAs($this->admin)->post(route('inspecciones.store'), [
+            'predio_id' => $this->predio->id,
+            'fecha' => now()->format('Y-m-d'),
+            'estado' => 'borrador',
+            'animales' => [
+                [
+                    'identificador' => 'MX-BOUNDARY-6',
+                    'edad_meses' => 6,
+                    'sexo' => 'M',
+                    'resultado' => 'Negativo',
+                ],
+            ],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $detalle = DetalleInspeccion::whereHas('animal', function ($q) {
+            $q->where('numero_arete_siniiga', 'MX-BOUNDARY-6');
+        })->first();
+
+        $this->assertNotNull($detalle);
+        $this->assertEquals('Negativo', $detalle->resultado_prueba);
+        $this->assertNull($detalle->motivo_no_aplica);
+    }
+
+    public function test_store_con_productor_bd_edad_exactamente_2_no_asigna_motivo()
+    {
+        $productorBD = Productor::factory()->create(['clave_cuarentena' => 'BD-123456', 'zona' => 'B']);
+        $predioBD = Predio::factory()->create(['productor_id' => $productorBD->id]);
+
+        $response = $this->actingAs($this->admin)->post(route('inspecciones.store'), [
+            'predio_id' => $predioBD->id,
+            'fecha' => now()->format('Y-m-d'),
+            'estado' => 'borrador',
+            'animales' => [
+                [
+                    'identificador' => 'MX-BOUNDARY-BD-2',
+                    'edad_meses' => 2,
+                    'sexo' => 'H',
+                    'resultado' => 'Negativo',
+                ],
+            ],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $detalle = DetalleInspeccion::whereHas('animal', function ($q) {
+            $q->where('numero_arete_siniiga', 'MX-BOUNDARY-BD-2');
+        })->first();
+
+        $this->assertNotNull($detalle);
+        $this->assertEquals('Negativo', $detalle->resultado_prueba);
+        $this->assertNull($detalle->motivo_no_aplica);
+    }
+
+    public function test_store_con_productor_clave_vacia_usa_6_meses()
+    {
+        $productor = Productor::factory()->create(['clave_cuarentena' => '']);
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+
+        $response = $this->actingAs($this->admin)->post(route('inspecciones.store'), [
+            'predio_id' => $predio->id,
+            'fecha' => now()->format('Y-m-d'),
+            'estado' => 'borrador',
+            'animales' => [
+                [
+                    'identificador' => 'MX-CLAVE-VACIA',
+                    'edad_meses' => 3,
+                    'sexo' => 'H',
+                    'resultado' => 'Pendiente',
+                ],
+            ],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $detalle = DetalleInspeccion::whereHas('animal', function ($q) {
+            $q->where('numero_arete_siniiga', 'MX-CLAVE-VACIA');
+        })->first();
+
+        $this->assertNotNull($detalle);
+        $this->assertEquals('No Aplica', $detalle->resultado_prueba);
+        $this->assertEquals('Menor a 6 meses', $detalle->motivo_no_aplica);
+    }
+
     public function test_destroy_completada_rechazada_para_medico()
     {
         $medico = User::factory()->create();

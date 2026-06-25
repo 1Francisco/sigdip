@@ -127,6 +127,38 @@ describe('AretesCensoListView', () => {
       cy.contains('MX-001-001', { timeout: 5000 }).should('be.visible')
     })
 
+    it('navega entre paginas de aretes', () => {
+      const manyAretes = Array.from({ length: 25 }, (_, i) => ({
+        id: i + 1,
+        numero_arete: `MX-${String(i + 1).padStart(3, '0')}`,
+        raza: 'Angus',
+        sexo: i % 2 === 0 ? 'Macho' : 'Hembra',
+        edad_meses: (i % 48) + 1,
+        fecha_nacimiento: '2023-01-15',
+        sacrificio: false,
+        productor: { id: 1, nombre: 'Juan', apellido_paterno: 'Perez' },
+        predio: { id: 1, nombre_rancho: 'Rancho Norte', clave_unidad_produccion: 'CUP-001' },
+      }))
+
+      cy.intercept('GET', '**/api/aretes-censo', {
+        statusCode: 200,
+        body: { data: manyAretes },
+      }).as('getAretes')
+
+      const router = buildRouter()
+      router.push('/aretes-censo')
+      mount(AretesCensoListView, { global: { plugins: [router] } })
+
+      cy.wait('@getAretes', { timeout: 10000 })
+      cy.contains('Pág. 1 de 2', { timeout: 5000 }).should('be.visible')
+
+      cy.get('.next-btn').click({ force: true })
+      cy.contains('Pág. 2 de 2', { timeout: 5000 }).should('be.visible')
+
+      cy.get('.prev-btn').click({ force: true })
+      cy.contains('Pág. 1 de 2', { timeout: 5000 }).should('be.visible')
+    })
+
     it('muestra empty state sin aretes', () => {
       cy.intercept('GET', '**/api/aretes-censo', {
         statusCode: 200,

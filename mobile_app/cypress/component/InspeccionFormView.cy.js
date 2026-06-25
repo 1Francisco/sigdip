@@ -483,6 +483,166 @@ describe('InspeccionFormView', () => {
     })
   })
 
+  it('no asigna motivo cuando edad es 0', () => {
+    seedPredios()
+
+    const router = buildRouter('/inspeccion')
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+    cy.get('select').first().select('1')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-CERO', { force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().clear({ force: true }).type('0', { force: true })
+
+    cy.window().should(() => {
+      const vm = Cypress.vue
+      const animal = vm?.form?.animales?.[0]
+      expect(animal?.motivo_no_aplica).to.eq('')
+      expect(animal?.resultado).not.to.eq('No Aplica')
+    })
+  })
+
+  it('no asigna motivo cuando edad es exactamente 6', () => {
+    seedPredios()
+
+    const router = buildRouter('/inspeccion')
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+    cy.get('select').first().select('1')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-BOUND6', { force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().clear({ force: true }).type('6', { force: true })
+
+    cy.window().should(() => {
+      const vm = Cypress.vue
+      const animal = vm?.form?.animales?.[0]
+      expect(animal?.motivo_no_aplica).to.eq('')
+      expect(animal?.resultado).not.to.eq('No Aplica')
+    })
+  })
+
+  it('usa umbral 2 meses con productor AD', () => {
+    const seedPrediosConAD = () => {
+      cy.seedIndexedDB('catalogos', 'productores', [{
+        id: 98, nombre: 'Prod AD', apellido_paterno: 'Test',
+        clave_cuarentena: 'AD-456', zona: 'A',
+        curp: 'ADXX990101HPLRRN98', upp: 'UPP-AD',
+        telefono: '555-098'
+      }])
+      cy.seedIndexedDB('catalogos', 'predios', [{
+        id: 20, nombre_rancho: 'Rancho AD', upp: 'UPP-AD',
+        localidad: 'X', municipio: 'Y',
+        productor_id: 98,
+        productor: {
+          id: 98, nombre: 'Prod AD', apellido_paterno: 'Test',
+          clave_cuarentena: 'AD-456', zona: 'A',
+          curp: 'ADXX990101HPLRRN98', upp: 'UPP-AD'
+        }
+      }])
+    }
+
+    seedPrediosConAD()
+
+    const router = buildRouter('/inspeccion')
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+    cy.get('select').first().select('20')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-AD-1M', { force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().type('1', { force: true })
+
+    cy.window().should(() => {
+      const vm = Cypress.vue
+      const animal = vm?.form?.animales?.[0]
+      expect(animal?.resultado).to.eq('No Aplica')
+      expect(animal?.motivo_no_aplica).to.eq('Menor a 2 meses')
+    })
+  })
+
+  it('edad exactamente 2 con productor BD no asigna motivo', () => {
+    const seedPrediosConBD = () => {
+      cy.seedIndexedDB('catalogos', 'productores', [{
+        id: 97, nombre: 'Prod BD2', apellido_paterno: 'Test',
+        clave_cuarentena: 'BD-789', zona: 'B',
+        curp: 'BDXX990101HPLRRN97', upp: 'UPP-BD2',
+        telefono: '555-097'
+      }])
+      cy.seedIndexedDB('catalogos', 'predios', [{
+        id: 30, nombre_rancho: 'Rancho BD2', upp: 'UPP-BD2',
+        localidad: 'X', municipio: 'Y',
+        productor_id: 97,
+        productor: {
+          id: 97, nombre: 'Prod BD2', apellido_paterno: 'Test',
+          clave_cuarentena: 'BD-789', zona: 'B',
+          curp: 'BDXX990101HPLRRN97', upp: 'UPP-BD2'
+        }
+      }])
+    }
+
+    seedPrediosConBD()
+
+    const router = buildRouter('/inspeccion')
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+    cy.get('select').first().select('30')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-BD-2M', { force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().clear({ force: true }).type('2', { force: true })
+
+    cy.window().should(() => {
+      const vm = Cypress.vue
+      const animal = vm?.form?.animales?.[0]
+      expect(animal?.motivo_no_aplica).to.eq('')
+      expect(animal?.resultado).not.to.eq('No Aplica')
+    })
+  })
+
+  it('recalcula motivo al cambiar a predio con diferente umbral', () => {
+    const seedPrediosMultiUmbral = () => {
+      cy.seedIndexedDB('catalogos', 'productores', [
+        { id: 1, nombre: 'Prod Normal', apellido_paterno: 'Test', clave_cuarentena: null, curp: 'NORM990101HPLRRN01', upp: 'UPP-NORM' },
+        { id: 99, nombre: 'Prod BD', apellido_paterno: 'Test', clave_cuarentena: 'BD-123', zona: 'B', curp: 'BDXX990101HPLRRN99', upp: 'UPP-BD' },
+      ])
+      cy.seedIndexedDB('catalogos', 'predios', [
+        { id: 1, nombre_rancho: 'Rancho Normal', upp: 'UPP-NORM', localidad: 'X', municipio: 'Y', productor_id: 1, productor: { id: 1, nombre: 'Prod Normal', apellido_paterno: 'Test', clave_cuarentena: null } },
+        { id: 10, nombre_rancho: 'Rancho BD', upp: 'UPP-BD', localidad: 'X', municipio: 'Y', productor_id: 99, productor: { id: 99, nombre: 'Prod BD', apellido_paterno: 'Test', clave_cuarentena: 'BD-123', zona: 'B', curp: 'BDXX990101HPLRRN99', upp: 'UPP-BD' } },
+      ])
+    }
+
+    seedPrediosMultiUmbral()
+
+    const router = buildRouter('/inspeccion')
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+    // Seleccionar predio normal (umbral 6) y agregar animal con edad 3
+    cy.get('select').first().select('1')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-RECALC', { force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().clear({ force: true }).type('3', { force: true })
+
+    // Con umbral 6, edad=3 debe dar 'Menor a 6 meses'
+    cy.window().should(() => {
+      const a = Cypress.vue?.form?.animales?.[0]
+      expect(a?.motivo_no_aplica).to.eq('Menor a 6 meses')
+      expect(a?.resultado).to.eq('No Aplica')
+    })
+
+    // Cambiar a predio BD (umbral 2)
+    cy.get('select').first().select('10', { force: true })
+
+    // Con umbral 2, edad=3 ya NO debe ser 'No Aplica'
+    cy.window().should(() => {
+      const a = Cypress.vue?.form?.animales?.[0]
+      expect(a?.motivo_no_aplica).to.eq('')
+      expect(a?.resultado).not.to.eq('No Aplica')
+    })
+  })
+
   it('muestra confirmacion fase inyeccion al finalizar sin fecha lectura', () => {
     seedPrediosWithFullData()
     seedVisitas()

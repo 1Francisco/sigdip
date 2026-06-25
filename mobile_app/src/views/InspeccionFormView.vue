@@ -1299,6 +1299,8 @@ export default {
           }
         }
       }
+      // Recalcular validación de edad para animales existentes al cambiar de predio
+      (this.form.animales || []).forEach(a => this.onEdadChange(a));
     },
     onTipoPruebaChange() {
       // Si cambia de PPC a PCC y no tiene censo anterior

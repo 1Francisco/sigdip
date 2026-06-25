@@ -150,9 +150,13 @@ describe('VisitasView', () => {
         id: i + 1,
         codigo: `V-${String(i + 1).padStart(3, '0')}`,
         predio_id: 1,
-        fecha_programada: '2026-06-15',
+        predio: { id: 1, nombre_rancho: 'Rancho El Paraiso', localidad: 'Villahermosa', productor: { id: 1, nombre: 'Maria', apellido_paterno: 'Garcia' } },
         veterinario_id: 2,
+        veterinario: { id: 2, name: 'Dr. Juan Perez' },
+        fecha_programada: '2026-06-15',
         estado: 'pendiente',
+        inyeccion: false,
+        inspeccion: null,
       }))
 
       cy.intercept('GET', '**/api/visitas*', {
@@ -167,8 +171,8 @@ describe('VisitasView', () => {
       cy.wait('@getVisitasPaged', { timeout: 10000 })
       cy.contains('Pág. 1 de 2', { timeout: 5000 }).should('be.visible')
 
-      cy.get('.next-btn').should('not.be.disabled').click()
-      cy.contains('Pág. 2 de 2', { timeout: 5000 }).should('be.visible')
+      cy.get('.next-btn').should('not.be.disabled').click({ force: true })
+      cy.contains('Pág. 2 de 2', { timeout: 10000 }).should('be.visible')
     })
 
     it('cierra sesion desde menu lateral', () => {

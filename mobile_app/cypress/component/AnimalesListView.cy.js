@@ -104,6 +104,35 @@ describe('AnimalesListView', () => {
       cy.contains('2 registros').should('be.visible')
     })
 
+    it('navega entre paginas de animales', () => {
+      const manyAnimales = Array.from({ length: 25 }, (_, i) => ({
+        id: i + 1,
+        numero_arete_siniiga: `MX-${String(i + 1).padStart(3, '0')}`,
+        raza: 'Angus',
+        sexo: i % 2 === 0 ? 'Macho' : 'Hembra',
+        edad: (i % 8) + 1,
+        predio: { id: 1, nombre_rancho: 'Rancho Norte', clave_unidad_produccion: 'CUP-001', productor: { id: 1, nombre: 'Juan', apellido_paterno: 'Perez' } },
+      }))
+
+      cy.intercept('GET', '**/api/animales', {
+        statusCode: 200,
+        body: { data: manyAnimales },
+      }).as('getAnimales')
+
+      const router = buildRouter()
+      router.push('/animales')
+      mount(AnimalesListView, { global: { plugins: [router] } })
+
+      cy.wait('@getAnimales', { timeout: 10000 })
+      cy.contains('Pág. 1 de 2', { timeout: 5000 }).should('be.visible')
+
+      cy.get('.next-btn').click({ force: true })
+      cy.contains('Pág. 2 de 2', { timeout: 5000 }).should('be.visible')
+
+      cy.get('.prev-btn').click({ force: true })
+      cy.contains('Pág. 1 de 2', { timeout: 5000 }).should('be.visible')
+    })
+
     it('elimina animal con confirmacion', () => {
       cy.intercept('GET', '**/api/animales', {
         statusCode: 200,

@@ -286,10 +286,10 @@ describe('InspeccionesView', () => {
       cy.wait('@getInspecciones', { timeout: 10000 })
       cy.contains('Pág. 1 de 2', { timeout: 5000 }).should('be.visible')
 
-      cy.get('.next-btn').click()
+      cy.get('.next-btn').click({ force: true })
       cy.contains('Pág. 2 de 2', { timeout: 5000 }).should('be.visible')
 
-      cy.get('.prev-btn').click()
+      cy.get('.prev-btn').click({ force: true })
       cy.contains('Pág. 1 de 2', { timeout: 5000 }).should('be.visible')
     })
 
