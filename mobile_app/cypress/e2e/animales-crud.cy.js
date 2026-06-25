@@ -22,22 +22,13 @@ describe('Animales CRUD Flow (E2E)', () => {
     cy.contains('Registrar Animal', { timeout: 5000 }).should('be.visible')
   })
 
-  it('ve el sidebar con enlace a Animales', () => {
+  it('ve el sidebar sin enlace a Animales', () => {
     cy.interceptDashboardStats()
 
     cy.visit('/#/dashboard')
     cy.get('.header-hamburger-btn').click()
     cy.get('.sidebar').should('be.visible')
-    cy.get('.sidebar').contains('Animales').should('be.visible')
-  })
-
-  it('navegacion como admin desde sidebar a Animales', () => {
-    cy.intercept('GET', '**/api/animales', { statusCode: 200, body: { data: [] } }).as('getAnimales')
-
-    cy.visit('/#/dashboard')
-    cy.get('.header-hamburger-btn').click()
-    cy.get('.sidebar').contains('Animales').click()
-    cy.location('hash', { timeout: 5000 }).should('include', '/animales')
+    cy.get('.sidebar').contains('Animales').should('not.exist')
   })
 
   it('navega a todas las vistas de animales', () => {

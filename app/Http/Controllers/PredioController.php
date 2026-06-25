@@ -13,7 +13,7 @@ class PredioController extends Controller
         $user = auth()->user();
         $query = Predio::with('productor')->latest();
 
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             $query->whereHas('productor', function ($q) use ($user) {
                 $q->where('medico_id', $user->id);
             });
@@ -40,7 +40,7 @@ class PredioController extends Controller
     public function create()
     {
         $user = auth()->user();
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             $productores = Productor::where('medico_id', $user->id)->get();
         } else {
             $productores = Productor::all();
@@ -63,11 +63,11 @@ class PredioController extends Controller
         ]);
 
         $user = auth()->user();
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             $productorExists = Productor::where('id', $request->productor_id)
                 ->where('medico_id', $user->id)
                 ->exists();
-            if (!$productorExists) {
+            if (! $productorExists) {
                 return back()->withInput()->with('error', 'El productor seleccionado no está asignado a tu usuario.');
             }
         }
@@ -81,11 +81,11 @@ class PredioController extends Controller
     public function edit(Predio $predio)
     {
         $user = auth()->user();
-        if ($user && !$user->hasRole('Administrador') && $predio->productor->medico_id !== $user->id) {
+        if ($user && ! $user->hasRole('Administrador') && $predio->productor->medico_id !== $user->id) {
             abort(403, 'No tienes permiso para editar este predio.');
         }
 
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             $productores = Productor::where('medico_id', $user->id)->get();
         } else {
             $productores = Productor::all();
@@ -97,14 +97,14 @@ class PredioController extends Controller
     public function update(Request $request, Predio $predio)
     {
         $user = auth()->user();
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             if ($predio->productor->medico_id !== $user->id) {
                 abort(403, 'No tienes permiso para modificar este predio.');
             }
             $productorExists = Productor::where('id', $request->productor_id)
                 ->where('medico_id', $user->id)
                 ->exists();
-            if (!$productorExists) {
+            if (! $productorExists) {
                 return back()->withInput()->with('error', 'El productor seleccionado no está asignado a tu usuario.');
             }
         }
@@ -129,7 +129,7 @@ class PredioController extends Controller
     public function show(Predio $predio)
     {
         $user = auth()->user();
-        if ($user && !$user->hasRole('Administrador') && $predio->productor->medico_id !== $user->id) {
+        if ($user && ! $user->hasRole('Administrador') && $predio->productor->medico_id !== $user->id) {
             abort(403, 'No tienes permiso para ver este predio.');
         }
 
@@ -141,7 +141,7 @@ class PredioController extends Controller
     public function destroy(Predio $predio)
     {
         $user = auth()->user();
-        if ($user && !$user->hasRole('Administrador') && $predio->productor->medico_id !== $user->id) {
+        if ($user && ! $user->hasRole('Administrador') && $predio->productor->medico_id !== $user->id) {
             abort(403, 'No tienes permiso para eliminar este predio.');
         }
 
@@ -158,10 +158,10 @@ class PredioController extends Controller
     public function updateCoordenadas(Request $request, Predio $predio)
     {
         $user = auth()->user();
-        if ($user && !$user->hasRole('Administrador') && $predio->productor->medico_id !== $user->id) {
+        if ($user && ! $user->hasRole('Administrador') && $predio->productor->medico_id !== $user->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'No tienes permiso para modificar este predio.'
+                'message' => 'No tienes permiso para modificar este predio.',
             ], 403);
         }
 

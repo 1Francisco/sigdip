@@ -101,4 +101,14 @@ class UserTest extends TestCase
         $response->assertRedirect(route('usuarios.index'));
         $this->assertDatabaseMissing('users', ['id' => $usuario->id]);
     }
+
+    public function test_admin_no_puede_eliminarse_a_si_mismo()
+    {
+        $response = $this->actingAs($this->admin)
+            ->delete(route('usuarios.destroy', $this->admin));
+
+        $response->assertRedirect(route('usuarios.index'));
+        $response->assertSessionHas('error');
+        $this->assertDatabaseHas('users', ['id' => $this->admin->id]);
+    }
 }

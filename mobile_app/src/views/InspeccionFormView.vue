@@ -521,8 +521,9 @@
                         <input type="checkbox" v-model="animal.fierro" class="form-check-input" true-value="Si" false-value="No" />
                       </td>
                       <td>
-                        <span v-if="animal.resultado === 'No Aplica'" class="badge bg-secondary text-white fw-normal px-2 py-1" style="font-size: 0.75rem;">
-                          <i class="bi bi-slash-circle me-1"></i> No Aplica
+                        <span v-if="animal.resultado === 'No Aplica'" class="badge bg-secondary text-white fw-normal px-2 py-1 d-inline-flex align-items-center gap-1" style="font-size: 0.75rem; white-space: normal; text-align: left;">
+                          <i class="bi bi-slash-circle me-1 flex-shrink-0"></i>
+                          <span>No Aplica · {{ animal.edad_meses || '?' }}m{{ animal.motivo_no_aplica ? ' / ' + animal.motivo_no_aplica : '' }}</span>
                         </span>
                         <span v-else class="badge bg-light text-secondary fw-normal px-2 py-1" style="font-size: 0.75rem;">
                           <i class="bi bi-hourglass-split me-1"></i> Pendiente
@@ -630,8 +631,11 @@
                           <i class="bi bi-trash"></i>
                         </button>
                       </div>
-                      <div v-if="animal.motivo_no_aplica" class="px-2 pt-1">
-                        <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>{{ animal.motivo_no_aplica }}</span>
+                      <div class="px-2 pt-1 d-flex align-items-center gap-3 flex-wrap">
+                        <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i><strong>Edad:</strong> {{ animal.edad_meses || '?' }} meses</span>
+                        <span v-if="animal.motivo_no_aplica" class="text-muted small">
+                          <i class="bi bi-info-circle me-1"></i>{{ animal.motivo_no_aplica }}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -713,7 +717,10 @@
                     <div class="col-12">
                       <label class="form-label-custom">ESTADO</label>
                       <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-light text-secondary fw-normal px-3 py-2 w-100 text-start" style="font-size: 0.82rem; border: 1px solid #e2e8f0;">
+                        <span v-if="animal.resultado === 'No Aplica'" class="badge bg-secondary text-white fw-normal px-3 py-2 w-100 text-start" style="font-size: 0.82rem; white-space: normal;">
+                          <i class="bi bi-slash-circle me-1"></i> No Aplica · {{ animal.edad_meses || '?' }} meses{{ animal.motivo_no_aplica ? ' — ' + animal.motivo_no_aplica : '' }}
+                        </span>
+                        <span v-else class="badge bg-light text-secondary fw-normal px-3 py-2 w-100 text-start" style="font-size: 0.82rem; border: 1px solid #e2e8f0;">
                           <i class="bi bi-hourglass-split me-1 text-muted"></i> Pendiente (se captura en lectura)
                         </span>
                       </div>

@@ -401,7 +401,7 @@ describe('InspeccionFormView', () => {
     cy.window().should((win) => {
       const vm = Cypress.vue
       const animal = vm?.form?.animales?.[0]
-      expect(animal?.motivo_no_aplica).to.eq('Menor a 4 meses')
+      expect(animal?.motivo_no_aplica).to.eq('Menor a 6 meses')
       expect(animal?.resultado).to.eq('No Aplica')
     })
   })
@@ -449,7 +449,7 @@ describe('InspeccionFormView', () => {
     cy.then(() => {
       const vm = Cypress.vue
       const animal = vm?.form?.animales?.[0]
-      expect(animal?.motivo_no_aplica).to.eq('Menor a 5 meses')
+      expect(animal?.motivo_no_aplica).to.eq('Menor a 6 meses')
       expect(animal?.resultado).to.eq('No Aplica')
     })
   })
@@ -469,7 +469,7 @@ describe('InspeccionFormView', () => {
     cy.window().should((win) => {
       const vm = Cypress.vue
       const animal = vm?.form?.animales?.[0]
-      expect(animal?.motivo_no_aplica).to.eq('Menor a 4 meses')
+      expect(animal?.motivo_no_aplica).to.eq('Menor a 6 meses')
       expect(animal?.resultado).to.eq('No Aplica')
     })
 
@@ -559,5 +559,151 @@ describe('InspeccionFormView', () => {
 
     cy.contains('button', /finalizar/i).first().click({ force: true })
     cy.wait('@checkFolio', { timeout: 10000 })
+  })
+
+  it('inyeccion_desktop_muestra_edad_y_motivo_en_badge', () => {
+    seedPredios()
+
+    const router = buildRouter('/inspeccion')
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+    cy.get('select').first().select('1')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-BADGE', { force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().type('4', { force: true })
+
+    // Desktop: badge "No Aplica" should show edad + motivo
+    cy.get('.table-responsive.d-none.d-lg-block .badge.bg-secondary', { timeout: 5000 })
+      .should('be.visible')
+      .and('contain.text', 'No Aplica')
+      .and('contain.text', '4m')
+      .and('contain.text', 'Menor a 6 meses')
+  })
+
+  it('inyeccion_movil_muestra_no_aplica_con_edad_y_motivo', () => {
+    cy.viewport('iphone-6')
+
+    seedPredios()
+
+    const router = buildRouter('/inspeccion')
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+    cy.get('select').first().select('1')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-MOVIL-NA', { force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().type('4', { force: true })
+
+    cy.window().should((win) => {
+      const vm = Cypress.vue
+      const animal = vm?.form?.animales?.[0]
+      expect(animal?.resultado).to.eq('No Aplica')
+      expect(animal?.motivo_no_aplica).to.eq('Menor a 6 meses')
+    })
+
+    // Mobile: ESTADO field should show "No Aplica" with edad + motivo
+    cy.get('.animal-mobile-card .badge.bg-secondary', { timeout: 5000 })
+      .should('be.visible')
+      .and('contain.text', 'No Aplica')
+      .and('contain.text', '4 meses')
+      .and('contain.text', 'Menor a 6 meses')
+  })
+
+  it('inyeccion_asigna_motivo_bd_2_meses_cuando_edad_es_1_mes', () => {
+    const seedPrediosConBD = () => {
+      cy.seedIndexedDB('catalogos', 'productores', [{
+        id: 99, nombre: 'Prod BD', apellido_paterno: 'Test',
+        clave_cuarentena: 'BD-123', zona: 'B',
+        curp: 'BDXX990101HPLRRN99', upp: 'UPP-BD',
+        telefono: '555-099'
+      }])
+      cy.seedIndexedDB('catalogos', 'predios', [{
+        id: 10, nombre_rancho: 'Rancho BD', upp: 'UPP-BD',
+        localidad: 'X', municipio: 'Y',
+        productor_id: 99,
+        productor: {
+          id: 99, nombre: 'Prod BD', apellido_paterno: 'Test',
+          clave_cuarentena: 'BD-123', zona: 'B',
+          curp: 'BDXX990101HPLRRN99', upp: 'UPP-BD'
+        }
+      }])
+    }
+
+    seedPrediosConBD()
+
+    const router = buildRouter('/inspeccion')
+    mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+    cy.get('select').first().select('10')
+    cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+    cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-BD-1M', { force: true })
+    cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().type('1', { force: true })
+
+    cy.window().should(() => {
+      const vm = Cypress.vue
+      const animal = vm?.form?.animales?.[0]
+      expect(animal?.resultado).to.eq('No Aplica')
+      expect(animal?.motivo_no_aplica).to.eq('Menor a 2 meses')
+    })
+  })
+
+  describe('modo lectura sin inyeccion', () => {
+    function setupLecturaEnModoLectura() {
+      cy.then(() => {
+        const vm = Cypress.vue
+        if (vm && vm.form) {
+          vm.form.fecha_inyeccion = '2000-01-01'
+          vm.form.fecha_lectura = '2000-01-04'
+          vm.form.hora_inyeccion = '08:00'
+          vm.form.tipo_prueba = 'PPC'
+          vm.form.motivo_prueba = 'Seguimiento'
+        }
+      })
+    }
+
+    beforeEach(() => {
+      cy.setLoginState({ user: userMedico })
+      seedPredios()
+    })
+
+    it('lectura_desktop_muestra_sin_inyeccion_con_edad_y_motivo', () => {
+      const router = buildRouter('/inspeccion')
+      mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+      cy.get('select').first().select('1')
+      setupLecturaEnModoLectura()
+
+      cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+      cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+      cy.get('.scrollable-animals-container input[placeholder*="SINIIGA"]').first().type('ARETE-NA-DESK', { force: true })
+      cy.get('.scrollable-animals-container input[placeholder*="Meses"]').first().type('4', { force: true })
+
+      // Desktop sin inyección: edad + motivo
+      cy.contains('.table-responsive.d-none.d-lg-block', '4 meses', { timeout: 5000 }).should('be.visible')
+      cy.contains('.table-responsive.d-none.d-lg-block', 'Menor a 6 meses').should('be.visible')
+      cy.contains('1 animal no recibi\u00f3 inyecci\u00f3n').should('be.visible')
+    })
+
+    it('lectura_movil_muestra_sin_inyeccion_con_edad_y_motivo', () => {
+      cy.viewport('iphone-6')
+
+      const router = buildRouter('/inspeccion')
+      mount(InspeccionFormView, { global: { plugins: [router, createPinia()] } })
+
+      cy.get('select').first().select('1')
+      setupLecturaEnModoLectura()
+
+      cy.contains('IV: RESULTADOS INDIVIDUALES').click({ force: true })
+      cy.contains('button', /a\u00F1adir|agregar/i).click({ force: true })
+      cy.get('input[placeholder*="Registrar arete manualmente"]').first().type('ARETE-NA-MOB{enter}', { force: true })
+      cy.get('.scrollable-animals-container-mobile input[placeholder*="Meses"]').first().type('2', { force: true })
+
+      // Mobile sin inyección collapsible header
+      cy.contains('SIN INYECCI\u00d3N', { timeout: 5000 }).should('be.visible')
+      cy.contains('2 meses').should('be.visible')
+      cy.contains('Menor a 6 meses').should('be.visible')
+    })
   })
 })

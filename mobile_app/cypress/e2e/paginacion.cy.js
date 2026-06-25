@@ -17,7 +17,7 @@ describe('Paginación en listas (E2E)', () => {
     }))
 
   it('muestra primera pagina con 20 registros de 25', () => {
-    cy.intercept('GET', '**/api/inspecciones', {
+    cy.intercept('GET', /\/api\/inspecciones(\?.*)?$/, {
       statusCode: 200,
       body: { data: buildInspecciones(25) },
     }).as('getInspecciones')
@@ -33,7 +33,7 @@ describe('Paginación en listas (E2E)', () => {
   })
 
   it('navega a la segunda pagina usando next', () => {
-    cy.intercept('GET', '**/api/inspecciones', {
+    cy.intercept('GET', /\/api\/inspecciones(\?.*)?$/, {
       statusCode: 200,
       body: { data: buildInspecciones(25) },
     }).as('getInspecciones')
@@ -48,7 +48,7 @@ describe('Paginación en listas (E2E)', () => {
   })
 
   it('deshabilita botones prev y next en los extremos', () => {
-    cy.intercept('GET', '**/api/inspecciones', {
+    cy.intercept('GET', /\/api\/inspecciones(\?.*)?$/, {
       statusCode: 200,
       body: { data: buildInspecciones(1) },
     }).as('getInspecciones')

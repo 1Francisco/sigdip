@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Productor;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,7 +14,7 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::role('Medico_Campo');
+        $query = User::role('Medico_Campo')->withCount('productores');
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -64,8 +65,14 @@ class UserController extends Controller
     public function show(User $usuario)
     {
         $usuario->load('roles');
+        $usuario->loadCount('productores');
+        $productores = Productor::where('medico_id', $usuario->id)
+            ->with('medico')
+            ->withCount('predios')
+            ->latest()
+            ->paginate(10);
 
-        return view('users.show', compact('usuario'));
+        return view('users.show', compact('usuario', 'productores'));
     }
 
     /**
@@ -104,8 +111,72 @@ class UserController extends Controller
      */
     public function destroy(User $usuario)
     {
+        if ($usuario->id === auth()->id()) {
+            return redirect()->route('usuarios.index')->with('error', 'No puedes eliminarte a ti mismo.');
+        }
+
         $usuario->delete();
 
         return redirect()->route('usuarios.index')->with('success', 'Médico eliminado del sistema.');
+    }
+
+    /**
+     * Show form to assign productores to a medico.
+     */
+    public function asignarProductores(User $usuario)
+    {
+        $asignados = Productor::where('medico_id', $usuario->id)
+            ->withCount('predios')
+            ->orderBy('nombre')
+            ->get();
+
+        $disponibles = Productor::whereNull('medico_id')
+            ->orWhere('medico_id', '!=', $usuario->id)
+            ->withCount('predios')
+            ->orderBy('nombre')
+            ->paginate(20);
+
+        return view('users.asignar-productores', compact('usuario', 'asignados', 'disponibles'));
+    }
+
+    /**
+     * Save productores assignment to a medico.
+     */
+    public function guardarAsignacion(Request $request, User $usuario)
+    {
+        $request->validate([
+            'productor_ids' => 'nullable|array',
+            'productor_ids.*' => 'exists:productores,id',
+        ]);
+
+        $productorIds = $request->input('productor_ids', []);
+
+        // Asignar los productores seleccionados a este médico
+        Productor::whereIn('id', $productorIds)->update(['medico_id' => $usuario->id]);
+
+        // Desasignar productores que ya no están en la lista (solo los que eran de este médico)
+        Productor::where('medico_id', $usuario->id)
+            ->whereNotIn('id', $productorIds)
+            ->update(['medico_id' => null]);
+
+        $count = count($productorIds);
+
+        return redirect()->route('usuarios.show', $usuario)
+            ->with('success', "Se asignaron {$count} productores a {$usuario->name} correctamente.");
+    }
+
+    /**
+     * Unassign a single productor from a medico.
+     */
+    public function desasignarProductor(User $usuario, Productor $productor)
+    {
+        if ($productor->medico_id !== $usuario->id) {
+            abort(404, 'Este productor no está asignado a este médico.');
+        }
+
+        $productor->update(['medico_id' => null]);
+
+        return redirect()->route('usuarios.show', $usuario)
+            ->with('success', "Productor {$productor->nombre} desasignado de {$usuario->name}.");
     }
 }

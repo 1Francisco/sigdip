@@ -13,6 +13,7 @@ use App\Models\Visita;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class SyncController extends Controller
 {
@@ -26,7 +27,7 @@ class SyncController extends Controller
 
         // Obtener predios con sus productores (filtrados si no es administrador)
         $prediosQuery = Predio::with('productor');
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             $prediosQuery->whereHas('productor', function ($q) use ($veterinarioId) {
                 $q->where('medico_id', $veterinarioId);
             });
@@ -73,6 +74,7 @@ class SyncController extends Controller
                         'email' => $visita->predio->productor->email,
                         'clave_cuarentena' => $visita->predio->productor->clave_cuarentena,
                         'zona' => $visita->predio->productor->zona,
+                        'medico_id' => $visita->predio->productor->medico_id,
                     ] : null,
                 ] : null,
                 'veterinario' => $visita->veterinario ? [
@@ -95,7 +97,7 @@ class SyncController extends Controller
 
         // Obtener productores (filtrados si no es administrador) y médicos para caché offline completo
         $productoresQuery = Productor::with('predios');
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             $productoresQuery->where('medico_id', $veterinarioId);
         }
         $productores = $productoresQuery->get();
@@ -143,7 +145,7 @@ class SyncController extends Controller
 
                 // Generar clave_interna si no viene en los datos
                 if (empty($data['clave_interna'])) {
-                    $predio = \App\Models\Predio::with('productor')->find($data['predio_id']);
+                    $predio = Predio::with('productor')->find($data['predio_id']);
                     if ($predio && $predio->productor) {
                         $data['clave_interna'] = generarClaveInterna($predio->productor);
                     }
@@ -274,7 +276,7 @@ class SyncController extends Controller
                         $motivoNoAplica = $item['motivo_no_aplica'] ?? null;
                         if ($edadMeses > 0 && $edadMeses < $edadMinimaPrueba) {
                             $resultado = 'No Aplica';
-                            $motivoNoAplica = "Menor a {$edadMeses} meses";
+                            $motivoNoAplica = "Menor a {$edadMinimaPrueba} meses";
                         }
 
                         $animal = Animal::firstOrCreate(
@@ -391,6 +393,88 @@ class SyncController extends Controller
             'status' => 'success',
             'procesados' => $procesados,
             'errores' => $errores,
+        ]);
+    }
+
+    /**
+     * Subida de productores creados offline.
+     */
+    public function uploadProductores(Request $request)
+    {
+        $request->validate([
+            'productores' => 'required|array',
+            'productores.*.id' => 'required|string',
+            'productores.*.nombre' => 'required|string',
+            'productores.*.apellido_paterno' => 'required|string',
+        ]);
+
+        $resultados = [];
+        foreach ($request->productores as $item) {
+            $offlineId = $item['id'];
+            $productor = null;
+
+            if (! empty($item['curp']) && ! str_starts_with($item['curp'], 'OFFLINE-')) {
+                $productor = Productor::where('curp', $item['curp'])->first();
+            }
+
+            if (! $productor) {
+                $productor = Productor::create([
+                    'nombre' => $item['nombre'],
+                    'apellido_paterno' => $item['apellido_paterno'],
+                    'apellido_materno' => $item['apellido_materno'] ?? '',
+                    'curp' => $item['curp'] ?? ('OFFLINE-'.strtoupper(Str::random(12))),
+                    'upp' => $item['upp'] ?? 'N/A',
+                    'telefono' => $item['telefono'] ?? '',
+                    'medico_id' => $request->user()->hasRole('Administrador') ? ($item['medico_id'] ?? null) : $request->user()->id,
+                ]);
+            }
+
+            $resultados[] = [
+                'offline_id' => $offlineId,
+                'new_id' => $productor->id,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'productores' => $resultados,
+        ]);
+    }
+
+    /**
+     * Subida de predios creados offline.
+     */
+    public function uploadPredios(Request $request)
+    {
+        $request->validate([
+            'predios' => 'required|array',
+            'predios.*.id' => 'required|string',
+            'predios.*.nombre_rancho' => 'required|string',
+            'predios.*.productor_id' => 'required',
+        ]);
+
+        $resultados = [];
+        foreach ($request->predios as $item) {
+            $offlineId = $item['id'];
+
+            $predio = Predio::create([
+                'nombre_rancho' => $item['nombre_rancho'],
+                'upp' => $item['upp'] ?? 'N/A',
+                'clave_unidad_produccion' => $item['clave_unidad_produccion'] ?? $item['upp'] ?? 'N/A',
+                'localidad' => $item['localidad'] ?? 'General',
+                'municipio' => $item['municipio'] ?? 'General',
+                'productor_id' => $item['productor_id'],
+            ]);
+
+            $resultados[] = [
+                'offline_id' => $offlineId,
+                'new_id' => $predio->id,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'predios' => $resultados,
         ]);
     }
 }

@@ -243,6 +243,29 @@ describe('SyncView', () => {
       cy.contains('Sincronización Completada', { timeout: 10000 }).should('be.visible')
     })
 
+    it('muestra error de subida cuando API falla con 500', () => {
+      cy.intercept('POST', '**/api/sync/inspecciones', {
+        statusCode: 500,
+        body: { message: 'Error interno del servidor' }
+      }).as('uploadFail')
+
+      cy.seedIndexedDB('inspecciones_pendientes', 'lista', [{
+        folio: 'INSP-ERR-001',
+        fecha: '2026-06-10',
+        predio_id: 1,
+        animales: [{ identificador: 'ARETE-ERR', resultado: 'Negativo', edad_meses: 24, sexo: 'M', raza: 'Cebu' }]
+      }])
+
+      const router = buildRouter()
+      router.push('/sync')
+      mount(SyncView, { global: { plugins: [router] } })
+
+      cy.contains('Subir Dictámenes Pendientes (1)', { timeout: 5000 }).click()
+      cy.wait('@uploadFail', { timeout: 10000 })
+      cy.contains('Error en Operación', { timeout: 5000 }).should('be.visible')
+      cy.getIndexedDB('inspecciones_pendientes', 'lista').should('have.length', 1)
+    })
+
     it('muestra modal de conflicto al detectar diferencias con servidor', () => {
       cy.seedIndexedDB('inspecciones_pendientes', 'lista', [{
         folio: 'INSP-CONF-001',

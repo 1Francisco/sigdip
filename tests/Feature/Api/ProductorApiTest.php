@@ -20,6 +20,7 @@ class ProductorApiTest extends TestCase
     {
         parent::setUp();
         Role::firstOrCreate(['name' => 'Administrador']);
+        Role::firstOrCreate(['name' => 'Medico_Campo']);
 
         $this->user = User::factory()->create();
         $this->user->assignRole('Administrador');
@@ -176,5 +177,23 @@ class ProductorApiTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonPath('data.id', $predio->id)
             ->assertJsonPath('data.productor.id', $productor->id);
+    }
+
+    public function test_medico_solo_ve_sus_productores_asignados()
+    {
+        Role::firstOrCreate(['name' => 'Medico_Campo']);
+        $medico = User::factory()->create();
+        $medico->assignRole('Medico_Campo');
+        Sanctum::actingAs($medico);
+
+        $asignado = Productor::factory()->create(['medico_id' => $medico->id]);
+        $otro = Productor::factory()->create(['medico_id' => null]);
+
+        $response = $this->getJson('/api/productores');
+
+        $response->assertStatus(200);
+        $ids = collect($response->json('data'))->pluck('id');
+        $this->assertContains($asignado->id, $ids);
+        $this->assertNotContains($otro->id, $ids);
     }
 }

@@ -82,4 +82,15 @@ class ReporteTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_medico_no_puede_exportar_excel()
+    {
+        Role::firstOrCreate(['name' => 'Medico_Campo']);
+        $medico = User::factory()->create();
+        $medico->assignRole('Medico_Campo');
+
+        $response = $this->actingAs($medico)->get(route('reportes.excel'));
+
+        $response->assertStatus(403);
+    }
 }

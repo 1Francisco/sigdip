@@ -228,5 +228,127 @@ describe('ProductoresView', () => {
 
       cy.contains('Maria Garcia Lopez', { timeout: 5000 }).should('be.visible')
     })
+
+    it('filtra productores por medico_id cuando carga desde db dedicada', () => {
+      const productorAsignado = {
+        id: 10, nombre: 'Mi Productor Asignado', nombreRaw: 'Mi', apellido_paterno: 'Productor', apellido_materno: 'Asignado',
+        curp: 'ASIG800101HPLRRN01', upp: 'UPP-010', telefono: '555-010', prediosCount: 1, ranchos: [],
+        medico_id: 2
+      }
+      const productorNoAsignado = {
+        id: 20, nombre: 'Otro Productor', nombreRaw: 'Otro', apellido_paterno: 'Productor', apellido_materno: '',
+        curp: 'OTRO850515HPLRRN02', upp: 'UPP-020', telefono: '555-020', prediosCount: 0, ranchos: [],
+        medico_id: null
+      }
+      cy.seedIndexedDB('catalogos', 'productores', [productorAsignado, productorNoAsignado])
+
+      const router = buildRouter()
+      router.push('/productores')
+      mount(ProductoresView, { global: { plugins: [router] } })
+
+      cy.contains('Mi Productor Asignado', { timeout: 5000 }).should('be.visible')
+      cy.contains('Otro Productor').should('not.exist')
+    })
+  })
+
+  describe('flujo offline crear productor', () => {
+    beforeEach(() => {
+      cy.setLoginState({ user: userAdmin })
+      cy.window().then(win => { cy.stub(win, 'alert').returns(true) })
+    })
+
+    it('crea productor offline sin rancho y persiste en predios + productores store', () => {
+      cy.window().then(w => { w.navigator.__defineGetter__('onLine', () => false) })
+
+      const router = buildRouter()
+      router.push('/productores')
+      mount(ProductoresView, { global: { plugins: [router] } })
+
+      cy.contains('Nuevo Productor').click()
+      cy.get('input[placeholder*="Ej: Pepito"]').type('Juan')
+      cy.get('input[placeholder*="Ej: Tejeda"]').type('Perez')
+      cy.get('input[placeholder*="18 caracteres"]').type('PEJL900101HPLRRN01')
+      cy.get('input[placeholder*="57625285"]').first().type('UPP-001')
+
+      cy.contains('Guardar Datos').click()
+
+      cy.getIndexedDB('catalogos', 'productores').should('have.length', 1)
+        .its('0.prediosCount').should('eq', 0)
+      cy.getIndexedDB('catalogos', 'predios').should('have.length', 1)
+    })
+
+    it('crea productor offline con rancho y persiste en predios + productores store', () => {
+      cy.window().then(w => { w.navigator.__defineGetter__('onLine', () => false) })
+
+      const router = buildRouter()
+      router.push('/productores')
+      mount(ProductoresView, { global: { plugins: [router] } })
+
+      cy.contains('Nuevo Productor').click()
+      cy.get('input[placeholder*="Ej: Pepito"]').type('Maria')
+      cy.get('input[placeholder*="Ej: Tejeda"]').type('Garcia')
+      cy.get('input[placeholder*="18 caracteres"]').type('GALM800101HPLRRN01')
+      cy.get('input[placeholder*="57625285"]').first().type('UPP-001')
+
+      cy.get('#registrarPredioCheck').check({ force: true })
+      cy.get('input[placeholder*="El Refugio"]').type('Rancho Nuevo')
+      cy.get('input[placeholder*="57625285"]').eq(1).type('UPP-RANCHO')
+
+      cy.contains('Guardar Datos').click()
+
+      cy.getIndexedDB('catalogos', 'productores').should('have.length', 1)
+        .its('0.prediosCount').should('eq', 1)
+      cy.getIndexedDB('catalogos', 'productores').its('0.ranchos').should('have.length', 1)
+      cy.getIndexedDB('catalogos', 'predios').should('have.length', 1)
+    })
+  })
+
+  describe('carga desde store dedicada de productores', () => {
+    beforeEach(() => {
+      cy.setLoginState({ user: userAdmin })
+    })
+
+    it('carga productores desde db.getProductores() cuando existen', () => {
+      const fakeProductores = [
+        { id: 10, nombre: 'Juan Perez Lopez', nombreRaw: 'Juan', apellido_paterno: 'Perez', apellido_materno: 'Lopez', curp: 'PELJ800101HPLRRN01', upp: 'UPP-010', telefono: '555-010', prediosCount: 2, ranchos: [] },
+        { id: 20, nombre: 'Ana Garcia Ruiz', nombreRaw: 'Ana', apellido_paterno: 'Garcia', apellido_materno: 'Ruiz', curp: 'GARA850515HPLRRN02', upp: 'UPP-020', telefono: '555-020', prediosCount: 0, ranchos: [] },
+      ]
+      cy.seedIndexedDB('catalogos', 'productores', fakeProductores)
+
+      const router = buildRouter()
+      router.push('/productores')
+      mount(ProductoresView, { global: { plugins: [router] } })
+
+      cy.contains('Juan Perez Lopez', { timeout: 5000 }).should('be.visible')
+      cy.contains('Ana Garcia Ruiz', { timeout: 5000 }).should('be.visible')
+    })
+
+    it('carga productores con prediosCount 0 desde la store dedicada', () => {
+      const productorSinPredios = [
+        { id: 99, nombre: 'Sin Ranchos Test', nombreRaw: 'Sin Ranchos', apellido_paterno: 'Test', apellido_materno: '', curp: 'TEST990101HPLRRN99', upp: 'UPP-099', telefono: '555-099', prediosCount: 0, ranchos: [] },
+      ]
+      cy.seedIndexedDB('catalogos', 'productores', productorSinPredios)
+
+      const router = buildRouter()
+      router.push('/productores')
+      mount(ProductoresView, { global: { plugins: [router] } })
+
+      cy.contains('Sin Ranchos Test', { timeout: 5000 }).should('be.visible')
+      cy.contains('0 ranchos').should('be.visible')
+    })
+
+    it('fallback a predios cuando no hay productores dedicados', () => {
+      // Only seed predios, no productores
+      seedPrediosInDB()
+
+      const router = buildRouter()
+      router.push('/productores')
+      mount(ProductoresView, { global: { plugins: [router] } })
+
+      cy.contains('Maria Garcia Lopez', { timeout: 8000 }).should('be.visible')
+      cy.contains('Jose Martinez Hernandez', { timeout: 5000 }).should('be.visible')
+      // Maria has 2 predios in the seed data
+      cy.contains('2 ranchos').should('be.visible')
+    })
   })
 })

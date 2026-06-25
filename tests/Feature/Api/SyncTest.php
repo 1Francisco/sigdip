@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
+use App\Models\Visita;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
@@ -45,5 +46,26 @@ class SyncTest extends TestCase
         $response = $this->getJson('/api/dashboard/stats');
 
         $response->assertStatus(200);
+    }
+
+    public function test_catalogos_incluye_medico_id_en_productor_de_visita()
+    {
+        $productorConMedico = Productor::factory()->create([
+            'medico_id' => $this->user->id,
+        ]);
+        $predioConVisita = Predio::factory()->create(['productor_id' => $productorConMedico->id]);
+        Visita::factory()->create([
+            'predio_id' => $predioConVisita->id,
+            'veterinario_id' => $this->user->id,
+        ]);
+
+        $response = $this->getJson('/api/sync/catalogos');
+
+        $response->assertStatus(200);
+        $visitas = $response->json('data.visitas');
+        $this->assertNotEmpty($visitas);
+        $productor = $visitas[0]['predio']['productor'];
+        $this->assertNotNull($productor);
+        $this->assertEquals($this->user->id, $productor['medico_id']);
     }
 }

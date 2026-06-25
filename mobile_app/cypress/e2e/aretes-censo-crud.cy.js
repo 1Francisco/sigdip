@@ -24,13 +24,13 @@ describe('Aretes Censo CRUD Flow (E2E)', () => {
     cy.contains('Registrar Arete del Censo', { timeout: 5000 }).should('be.visible')
   })
 
-  it('ve el sidebar con enlace a Aretes del Censo', () => {
+  it('ve el sidebar sin enlace a Aretes del Censo', () => {
     cy.interceptDashboardStats()
 
     cy.visit('/#/dashboard')
     cy.get('.header-hamburger-btn').click()
     cy.get('.sidebar').should('be.visible')
-    cy.get('.sidebar').contains('Aretes del Censo').should('be.visible')
+    cy.get('.sidebar').contains('Aretes del Censo').should('not.exist')
   })
 
   it('navega a todas las vistas de aretes', () => {

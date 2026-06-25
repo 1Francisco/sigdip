@@ -467,6 +467,7 @@ export default {
     const user = api.getCurrentUser();
     this.userName = user?.name || 'Administrador Central';
     this.isAdmin = user?.roles && user.roles.includes('Administrador');
+    this.currentUserId = user?.id;
 
     // 2. Extraer y agrupar productores locales offline-first
     await this.loadProductores();
@@ -638,7 +639,26 @@ export default {
 
           predios.push(newPredio);
           await db.savePredios(predios);
-          
+
+          // También guardar en la store dedicada de productores
+          const productores = await db.getProductores();
+          const fullNombre = [body.nombre, body.apellido_paterno, body.apellido_materno]
+            .filter(Boolean).join(' ').trim();
+          productores.push({
+            id: finalProductorId,
+            nombre: fullNombre || 'Productor Registrado',
+            nombreRaw: body.nombre || '',
+            apellido_paterno: body.apellido_paterno || '',
+            apellido_materno: body.apellido_materno || '',
+            curp: body.curp || 'N/A',
+            upp: body.upp || 'N/A',
+            telefono: body.telefono || 'N/A',
+            medico_id: this.currentUserId || null,
+            prediosCount: this.registrarPredio ? 1 : 0,
+            ranchos: this.registrarPredio ? [newPredio] : []
+          });
+          await db.saveProductores(productores);
+
           if (createdOnServer) {
             alert(newPredio.nombre !== 'Sin Rancho' 
               ? '✅ ¡Productor y su Rancho registrados con éxito en el servidor!' 
@@ -663,6 +683,22 @@ export default {
           });
 
           await db.savePredios(predios);
+
+          // También actualizar en la store dedicada de productores
+          const productores = await db.getProductores();
+          const prodIdx = productores.findIndex(p => p.id === targetId);
+          if (prodIdx >= 0) {
+            const fullNombre = [body.nombre, body.apellido_paterno, body.apellido_materno]
+              .filter(Boolean).join(' ').trim();
+            productores[prodIdx].nombre = fullNombre;
+            productores[prodIdx].nombreRaw = body.nombre;
+            productores[prodIdx].apellido_paterno = body.apellido_paterno;
+            productores[prodIdx].apellido_materno = body.apellido_materno;
+            productores[prodIdx].curp = body.curp;
+            productores[prodIdx].upp = body.upp;
+            productores[prodIdx].telefono = body.telefono;
+            await db.saveProductores(productores);
+          }
           
           if (createdOnServer) {
             alert('✅ ¡Datos del productor actualizados con éxito en el servidor y local!');
@@ -739,6 +775,16 @@ export default {
         predios.push(newPredio);
         await db.savePredios(predios);
 
+        // Actualizar prediosCount del productor en la store dedicada
+        const productoresRancho = await db.getProductores();
+        const prodRanchoIdx = productoresRancho.findIndex(p => p.id === this.activeProductor.id);
+        if (prodRanchoIdx >= 0) {
+          productoresRancho[prodRanchoIdx].prediosCount = (productoresRancho[prodRanchoIdx].prediosCount || 0) + 1;
+          if (!productoresRancho[prodRanchoIdx].ranchos) productoresRancho[prodRanchoIdx].ranchos = [];
+          productoresRancho[prodRanchoIdx].ranchos.push(newPredio);
+          await db.saveProductores(productoresRancho);
+        }
+
         if (createdOnServer) {
           alert(`✅ ¡Rancho "${body.nombre_rancho}" registrado con éxito en el servidor y local!`);
         } else {
@@ -755,65 +801,93 @@ export default {
 
     async loadProductores() {
       try {
-        let predios = await db.getPredios();
+        // 1. Intentar cargar productores desde la store dedicada (offline-first)
+        let productoresList = await db.getProductores();
+        const tieneProductoresDedicados = productoresList.length > 0;
 
+        // 2. Intentar refrescar desde el servidor
         try {
-          const live = await api.getPredios();
+          const live = await api.getProductores();
           if (live?.data && Array.isArray(live.data) && live.data.length > 0) {
-            predios = live.data;
-            await db.savePredios(predios);
+            productoresList = live.data;
+            await db.saveProductores(productoresList);
           }
         } catch (e) {
-          // Si el backend no responde, seguimos con el cache local.
-        }
-        
-        if (predios.length === 0) {
-          console.warn('Catálogo local de predios vacío. Usar Sincronizar > Descargar Catálogos.');
+          // Si el backend no responde, seguimos con cache local
         }
 
-        const productoresMap = {};
-
-        predios.forEach(predio => {
-          if (predio.productor) {
-            const prod = predio.productor;
-            const id = prod.id;
-
-            if (!productoresMap[id]) {
-              const fullNombre = [prod.nombre, prod.apellido_paterno, prod.apellido_materno]
-                .filter(Boolean)
-                .join(' ')
-                .trim();
-
-              productoresMap[id] = {
-                id: prod.id,
-                nombre: fullNombre || 'Productor Registrado',
-                nombreRaw: prod.nombre || '',
-                apellido_paterno: prod.apellido_paterno || '',
-                apellido_materno: prod.apellido_materno || '',
-                curp: prod.curp || 'N/A',
-                upp: prod.upp || 'N/A',
-                telefono: prod.telefono || 'N/A',
-                prediosCount: 0,
-                ranchos: []
-              };
+        // 3. Si no hay productores dedicados, derivar de predios (fallback)
+        if (!tieneProductoresDedicados && productoresList.length === 0) {
+          let predios = await db.getPredios();
+          try {
+            const livePredios = await api.getPredios();
+            if (livePredios?.data && Array.isArray(livePredios.data) && livePredios.data.length > 0) {
+              predios = livePredios.data;
             }
+          } catch (e) {}
 
-            const predioName = predio.nombre || predio.nombre_rancho || '';
-            if (predioName && predioName !== 'Sin Rancho') {
-              productoresMap[id].prediosCount++;
-              productoresMap[id].ranchos.push(predio);
+          const productoresMap = {};
+          predios.forEach(predio => {
+            if (predio.productor) {
+              const prod = predio.productor;
+              const id = prod.id;
+              if (!productoresMap[id]) {
+                const fullNombre = [prod.nombre, prod.apellido_paterno, prod.apellido_materno]
+                  .filter(Boolean).join(' ').trim();
+                productoresMap[id] = {
+                  id: prod.id,
+                  nombre: fullNombre || 'Productor Registrado',
+                  nombreRaw: prod.nombre || '',
+                  apellido_paterno: prod.apellido_paterno || '',
+                  apellido_materno: prod.apellido_materno || '',
+                  curp: prod.curp || 'N/A',
+                  upp: prod.upp || 'N/A',
+                  telefono: prod.telefono || 'N/A',
+                  medico_id: prod.medico_id || null,
+                  prediosCount: 0,
+                  ranchos: []
+                };
+              }
+              const predioName = predio.nombre || predio.nombre_rancho || '';
+              if (predioName && predioName !== 'Sin Rancho') {
+                productoresMap[id].prediosCount++;
+                productoresMap[id].ranchos.push(predio);
+              }
+              if ((productoresMap[id].upp === 'N/A' || !productoresMap[id].upp) && predio.upp) {
+                productoresMap[id].upp = predio.upp;
+              }
             }
+          });
+          productoresList = Object.values(productoresMap);
+        }
 
-            // Si el UPP del productor no está definido, usar el del predio
-            if ((productoresMap[id].upp === 'N/A' || !productoresMap[id].upp) && predio.upp) {
-              productoresMap[id].upp = predio.upp;
-            }
-          }
-        });
+        // 4. Calcular prediosCount desde la store de predios para los productores dedicados
+        if (tieneProductoresDedicados) {
+          const predios = await db.getPredios();
+          productoresList.forEach(prod => {
+            prod.prediosCount = 0;
+            prod.ranchos = [];
+            predios.forEach(p => {
+              if (p.productor && (p.productor.id === prod.id || p.productor_id === prod.id)) {
+                const predioName = p.nombre || p.nombre_rancho || '';
+                if (predioName && predioName !== 'Sin Rancho') {
+                  prod.prediosCount++;
+                  prod.ranchos.push(p);
+                }
+              }
+            });
+          });
+        }
 
-        this.productores = Object.values(productoresMap);
+        // 5. Filtrar por medico_id si el usuario no es administrador
+        if (!this.isAdmin && this.currentUserId) {
+          const userId = Number(this.currentUserId);
+          productoresList = productoresList.filter(p => Number(p.medico_id) === userId);
+        }
+
+        this.productores = productoresList;
       } catch (err) {
-        console.error('Error al agrupar productores locales:', err);
+        console.error('Error al cargar productores:', err);
       }
     },
     async onRefresh() {

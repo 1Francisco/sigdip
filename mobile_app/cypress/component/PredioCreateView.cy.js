@@ -51,6 +51,14 @@ describe('PredioCreateView', () => {
       cy.contains('Clave de Unidad de Producción').should('be.visible')
     })
 
+    it('muestra validacion requerida al enviar vacio', () => {
+      const router = buildRouter('/predios/nuevo')
+      mount(PredioCreateView, { global: { plugins: [router] } })
+
+      cy.get('form').submit()
+      cy.get('input:invalid').should('exist')
+    })
+
     it('carga productores desde IndexedDB como fallback', () => {
       seedPredios()
 

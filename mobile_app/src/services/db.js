@@ -171,6 +171,74 @@ export default {
     return (await catalogStore.getItem('aretes_censo')) || [];
   },
 
+  // ====== OFFLINE PENDING HELPERS ======
+  async getProductoresPendientes() {
+    const all = await this.getProductores();
+    return all.filter(p => String(p.id).startsWith('OFFLINE_PROD_'));
+  },
+
+  async getPrediosPendientes() {
+    const all = await this.getPredios();
+    return all.filter(p => String(p.id).startsWith('OFFLINE_PREDIO_'));
+  },
+
+  async remapProductorId(oldId, newId) {
+    // 1. Remapear en store de productores
+    const productores = await this.getProductores();
+    const prodIdx = productores.findIndex(p => String(p.id) === String(oldId));
+    if (prodIdx >= 0) {
+      productores[prodIdx].id = newId;
+      await this.saveProductores(productores);
+    }
+
+    // 2. Remapear en predios (productor_id)
+    const predios = await this.getPredios();
+    let changed = false;
+    predios.forEach(p => {
+      if (String(p.productor_id) === String(oldId)) {
+        p.productor_id = newId;
+        changed = true;
+      }
+      if (p.productor && String(p.productor.id) === String(oldId)) {
+        p.productor.id = newId;
+        changed = true;
+      }
+    });
+    if (changed) await this.savePredios(predios);
+  },
+
+  async remapPredioId(oldId, newId) {
+    // 1. Remapear en store de predios
+    const predios = await this.getPredios();
+    const predIdx = predios.findIndex(p => String(p.id) === String(oldId));
+    if (predIdx >= 0) {
+      predios[predIdx].id = newId;
+      await this.savePredios(predios);
+    }
+
+    // 2. Remapear en inspecciones pendientes
+    const inspecciones = await this.getInspeccionesPendientes();
+    let inspChanged = false;
+    inspecciones.forEach(i => {
+      if (String(i.predio_id) === String(oldId)) {
+        i.predio_id = newId;
+        inspChanged = true;
+      }
+    });
+    if (inspChanged) await inspeccionStore.setItem('lista', clean(inspecciones));
+
+    // 3. Remapear en visitas pendientes
+    const visitas = await this.getVisitasPendientes();
+    let visChanged = false;
+    visitas.forEach(v => {
+      if (String(v.predio_id) === String(oldId)) {
+        v.predio_id = newId;
+        visChanged = true;
+      }
+    });
+    if (visChanged) await visitaStore.setItem('lista', clean(visitas));
+  },
+
   // ====== LIMPIEZA ======
   async clearAll() {
     await catalogStore.clear();

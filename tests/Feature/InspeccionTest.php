@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Animal;
 use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\Predio;
@@ -156,7 +155,7 @@ class InspeccionTest extends TestCase
 
         $this->assertNotNull($detalle);
         $this->assertEquals('No Aplica', $detalle->resultado_prueba);
-        $this->assertEquals('Menor a 4 meses', $detalle->motivo_no_aplica);
+        $this->assertEquals('Menor a 6 meses', $detalle->motivo_no_aplica);
     }
 
     public function test_store_con_animal_mayor_6_meses_no_setea_motivo()
@@ -217,6 +216,106 @@ class InspeccionTest extends TestCase
 
         $this->assertNotNull($detalle);
         $this->assertEquals('No Aplica', $detalle->resultado_prueba);
-        $this->assertEquals('Menor a 3 meses', $detalle->motivo_no_aplica);
+        $this->assertEquals('Menor a 6 meses', $detalle->motivo_no_aplica);
+    }
+
+    public function test_store_con_productor_bd_usa_umbral_2_meses()
+    {
+        $productorBD = Productor::factory()->create(['clave_cuarentena' => 'BD-123456', 'zona' => 'B']);
+        $predioBD = Predio::factory()->create(['productor_id' => $productorBD->id]);
+
+        $response = $this->actingAs($this->admin)->post(route('inspecciones.store'), [
+            'predio_id' => $predioBD->id,
+            'fecha' => now()->format('Y-m-d'),
+            'estado' => 'borrador',
+            'animales' => [
+                [
+                    'identificador' => 'MX-ARETE-BD-001',
+                    'edad_meses' => 1,
+                    'sexo' => 'H',
+                    'raza' => 'Cebú',
+                    'resultado' => 'Pendiente',
+                ],
+            ],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $detalle = DetalleInspeccion::whereHas('animal', function ($q) {
+            $q->where('numero_arete_siniiga', 'MX-ARETE-BD-001');
+        })->first();
+
+        $this->assertNotNull($detalle);
+        $this->assertEquals('No Aplica', $detalle->resultado_prueba);
+        $this->assertEquals('Menor a 2 meses', $detalle->motivo_no_aplica);
+    }
+
+    public function test_update_con_productor_bd_usa_umbral_2_meses()
+    {
+        $productorBD = Productor::factory()->create(['clave_cuarentena' => 'BD-123456', 'zona' => 'B']);
+        $predioBD = Predio::factory()->create(['productor_id' => $productorBD->id]);
+
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $predioBD->id,
+            'veterinario_id' => $this->admin->id,
+            'estado' => 'borrador',
+        ]);
+
+        $response = $this->actingAs($this->admin)->patch(
+            route('inspecciones.update', $inspeccion), [
+                'predio_id' => $predioBD->id,
+                'fecha' => now()->format('Y-m-d'),
+                'estado' => 'borrador',
+                'animales' => [
+                    [
+                        'identificador' => 'MX-ARETE-BD-UPDATE',
+                        'edad_meses' => 1,
+                        'sexo' => 'H',
+                        'raza' => 'Cebú',
+                        'resultado' => 'Pendiente',
+                    ],
+                ],
+            ]);
+
+        $response->assertSessionHasNoErrors();
+        $detalle = DetalleInspeccion::whereHas('animal', function ($q) {
+            $q->where('numero_arete_siniiga', 'MX-ARETE-BD-UPDATE');
+        })->first();
+
+        $this->assertNotNull($detalle);
+        $this->assertEquals('No Aplica', $detalle->resultado_prueba);
+        $this->assertEquals('Menor a 2 meses', $detalle->motivo_no_aplica);
+    }
+
+    public function test_destroy_completada_rechazada_para_medico()
+    {
+        $medico = User::factory()->create();
+        $medico->assignRole('Medico_Campo');
+
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $medico->id,
+            'estado' => 'completada',
+        ]);
+
+        $response = $this->actingAs($medico)
+            ->delete(route('inspecciones.destroy', $inspeccion));
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('inspecciones', ['id' => $inspeccion->id]);
+    }
+
+    public function test_admin_puede_eliminar_completada()
+    {
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->admin->id,
+            'estado' => 'completada',
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->delete(route('inspecciones.destroy', $inspeccion));
+
+        $response->assertRedirect(route('inspecciones.index'));
+        $this->assertDatabaseMissing('inspecciones', ['id' => $inspeccion->id]);
     }
 }

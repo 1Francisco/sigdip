@@ -68,7 +68,7 @@ class InspeccionController extends Controller
     public function create(Request $request)
     {
         $user = auth()->user();
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             $productoresModel = Productor::with('predios')->where('medico_id', $user->id)->get();
         } else {
             $productoresModel = Productor::with('predios')->get();
@@ -124,9 +124,9 @@ class InspeccionController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             $predio = Predio::with('productor')->find($request->predio_id);
-            if (!$predio || !$predio->productor || $predio->productor->medico_id !== $user->id) {
+            if (! $predio || ! $predio->productor || $predio->productor->medico_id !== $user->id) {
                 return back()->withInput()->with('error', 'El predio seleccionado no pertenece a tus productores asignados.');
             }
         }
@@ -198,7 +198,7 @@ class InspeccionController extends Controller
                 $edadMeses = $item['edad_meses'] ?? 0;
                 if ($edadMeses > 0 && $edadMeses < $edadMinimaPrueba) {
                     $animales[$index]['resultado'] = 'No Aplica';
-                    $animales[$index]['motivo_no_aplica'] = "Menor a {$edadMeses} meses";
+                    $animales[$index]['motivo_no_aplica'] = "Menor a {$edadMinimaPrueba} meses";
                 } elseif (empty($item['resultado'])) {
                     $animales[$index]['resultado'] = $isDraft ? 'Pendiente' : '';
                 }
@@ -362,11 +362,11 @@ class InspeccionController extends Controller
         }
 
         $user = auth()->user();
-        if ($user && !$user->hasRole('Administrador') && $inspeccion->veterinario_id !== $user->id) {
+        if ($user && ! $user->hasRole('Administrador') && $inspeccion->veterinario_id !== $user->id) {
             abort(403, 'No tienes permiso para editar esta inspección.');
         }
 
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             $productores = Productor::with('predios')->where('medico_id', $user->id)->get();
         } else {
             $productores = Productor::with('predios')->get();
@@ -385,12 +385,12 @@ class InspeccionController extends Controller
         }
 
         $user = auth()->user();
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             if ($inspeccion->veterinario_id !== $user->id) {
                 abort(403, 'No tienes permiso para modificar esta inspección.');
             }
             $predio = Predio::with('productor')->find($request->predio_id);
-            if (!$predio || !$predio->productor || $predio->productor->medico_id !== $user->id) {
+            if (! $predio || ! $predio->productor || $predio->productor->medico_id !== $user->id) {
                 return back()->withInput()->with('error', 'El predio seleccionado no pertenece a tus productores asignados.');
             }
         }
@@ -447,7 +447,7 @@ class InspeccionController extends Controller
                 $edadMeses = $item['edad_meses'] ?? 0;
                 if ($edadMeses > 0 && $edadMeses < $edadMinimaPrueba) {
                     $animales[$index]['resultado'] = 'No Aplica';
-                    $animales[$index]['motivo_no_aplica'] = "Menor a {$edadMeses} meses";
+                    $animales[$index]['motivo_no_aplica'] = "Menor a {$edadMinimaPrueba} meses";
                 } elseif (empty($item['resultado'])) {
                     $animales[$index]['resultado'] = $isDraft ? 'Pendiente' : '';
                 }
@@ -578,7 +578,7 @@ class InspeccionController extends Controller
     public function show(Inspeccion $inspeccion)
     {
         $user = auth()->user();
-        if ($user && !$user->hasRole('Administrador') && $inspeccion->veterinario_id !== $user->id) {
+        if ($user && ! $user->hasRole('Administrador') && $inspeccion->veterinario_id !== $user->id) {
             abort(403, 'No tienes permiso para ver esta inspección.');
         }
 
@@ -597,7 +597,7 @@ class InspeccionController extends Controller
         }
 
         $user = auth()->user();
-        if ($user && !$user->hasRole('Administrador') && $inspeccion->veterinario_id !== $user->id) {
+        if ($user && ! $user->hasRole('Administrador') && $inspeccion->veterinario_id !== $user->id) {
             abort(403, 'No tienes permiso para eliminar esta inspección.');
         }
 

@@ -86,6 +86,7 @@ class Productor extends Model
                 return 2;
             }
         }
+
         return 6;
     }
 }

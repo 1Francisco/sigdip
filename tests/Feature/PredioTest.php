@@ -101,4 +101,22 @@ class PredioTest extends TestCase
         $response->assertRedirect(route('predios.index'));
         $this->assertDatabaseMissing('predios', ['id' => $predio->id]);
     }
+
+    public function test_medico_solo_ve_predios_asignados()
+    {
+        $medico = User::factory()->create();
+        $medico->assignRole('Medico_Campo');
+
+        $productorAsignado = Productor::factory()->create(['medico_id' => $medico->id]);
+        $predioAsignado = Predio::factory()->create(['productor_id' => $productorAsignado->id]);
+
+        $productorOtro = Productor::factory()->create(['medico_id' => null]);
+        $predioOtro = Predio::factory()->create(['productor_id' => $productorOtro->id]);
+
+        $response = $this->actingAs($medico)->get(route('predios.index'));
+
+        $response->assertStatus(200);
+        $response->assertSee($predioAsignado->nombre_rancho);
+        $response->assertDontSee($predioOtro->nombre_rancho);
+    }
 }

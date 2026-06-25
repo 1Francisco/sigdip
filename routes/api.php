@@ -56,6 +56,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sync/catalogos', [SyncController::class, 'catalogos']);
     Route::post('/sync/inspecciones', [SyncController::class, 'uploadInspecciones']);
     Route::post('/sync/visitas', [SyncController::class, 'uploadVisitas']);
+    Route::post('/sync/productores', [SyncController::class, 'uploadProductores']);
+    Route::post('/sync/predios', [SyncController::class, 'uploadPredios']);
     Route::get('/dashboard/stats', [DashboardApiController::class, 'getStats']);
 
     // Gestión de Productores y Predios desde la App Móvil

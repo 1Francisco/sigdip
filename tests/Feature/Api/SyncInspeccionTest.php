@@ -2,8 +2,11 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\Animal;
+use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\Predio;
+use App\Models\Productor;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -125,7 +128,39 @@ class SyncInspeccionTest extends TestCase
         $response->assertStatus(200);
         $this->assertDatabaseHas('detalles_inspeccion', [
             'resultado_prueba' => 'No Aplica',
-            'motivo_no_aplica' => 'Menor a 5 meses',
+            'motivo_no_aplica' => 'Menor a 6 meses',
+        ]);
+    }
+
+    public function test_upload_con_productor_bd_usa_umbral_2_meses()
+    {
+        $productorBD = Productor::factory()->create(['clave_cuarentena' => 'BD-123456', 'zona' => 'B']);
+        $predioBD = Predio::factory()->create(['productor_id' => $productorBD->id]);
+
+        $response = $this->postJson('/api/sync/inspecciones', [
+            'inspecciones' => [
+                [
+                    'folio' => 'SYNC-BD-001',
+                    'predio_id' => $predioBD->id,
+                    'fecha' => now()->format('Y-m-d'),
+                    'estado' => 'sincronizado',
+                    'animales' => [
+                        [
+                            'identificador' => 'MX-SYNC-BD-MENOR',
+                            'edad_meses' => 1,
+                            'sexo' => 'H',
+                            'raza' => 'Cebú',
+                            'resultado' => 'Pendiente',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('detalles_inspeccion', [
+            'resultado_prueba' => 'No Aplica',
+            'motivo_no_aplica' => 'Menor a 2 meses',
         ]);
     }
 
@@ -158,6 +193,53 @@ class SyncInspeccionTest extends TestCase
         $this->assertDatabaseHas('detalles_inspeccion', [
             'resultado_prueba' => 'No Aplica',
             'motivo_no_aplica' => 'Otra razón personalizada',
+        ]);
+    }
+
+    public function test_upload_actualiza_motivo_cuando_cambia_edad()
+    {
+        $predio = Predio::factory()->create();
+        $inspeccion = Inspeccion::factory()->create([
+            'folio' => 'SYNC-RECALC',
+            'predio_id' => $predio->id,
+            'veterinario_id' => $this->medico->id,
+            'estado' => 'borrador',
+        ]);
+        $animal = Animal::factory()->create([
+            'numero_arete_siniiga' => 'MX-RECALC-001',
+            'predio_id' => $predio->id,
+        ]);
+        DetalleInspeccion::factory()->create([
+            'inspeccion_id' => $inspeccion->id,
+            'animal_id' => $animal->id,
+            'edad_meses' => 10,
+            'resultado_prueba' => 'Negativo',
+            'motivo_no_aplica' => null,
+        ]);
+
+        $response = $this->postJson('/api/sync/inspecciones', [
+            'inspecciones' => [
+                [
+                    'folio' => 'SYNC-RECALC',
+                    'predio_id' => $predio->id,
+                    'fecha' => now()->format('Y-m-d'),
+                    'estado' => 'sincronizado',
+                    'animales' => [
+                        [
+                            'identificador' => 'MX-RECALC-001',
+                            'edad_meses' => 4,
+                            'resultado' => 'Pendiente',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('detalles_inspeccion', [
+            'animal_id' => $animal->id,
+            'resultado_prueba' => 'No Aplica',
+            'motivo_no_aplica' => 'Menor a 6 meses',
         ]);
     }
 }

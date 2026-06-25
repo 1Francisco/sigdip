@@ -62,4 +62,9 @@ class ImportExcelTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    public function test_preview_con_archivo_valido()
+    {
+        $this->markTestIncomplete('Requiere generar un archivo Excel válido con PhpSpreadsheet para probar el parseo.');
+    }
 }

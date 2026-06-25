@@ -12,10 +12,18 @@ describe('Flujo de Scan (E2E)', () => {
   })
 
   it('permite ingreso manual de arete en modo single', () => {
-    cy.window().then((win) => {
-      win.sessionStorage.setItem('scan_target_index', '0')
+    cy.visit('/#/scan', {
+      onBeforeLoad(win) {
+        win.__initialPiniaState = {
+          inspeccion: {
+            scanTargetIndex: 0,
+            scannedAnimals: [],
+            scannedSingleArete: null,
+            inspeccionDraft: null
+          }
+        }
+      }
     })
-    cy.visit('/#/scan')
     cy.get('input[type="text"]').first().type('MX-123-456-789')
     cy.contains('Confirmar Arete', { timeout: 5000 }).click()
     cy.location('hash', { timeout: 5000 }).should('include', '/inspeccion')

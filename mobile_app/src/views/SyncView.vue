@@ -631,6 +631,8 @@ export default {
       errorMsg: '',
       localInspecciones: [],
       localVisitas: [],
+      localProductoresPendientes: [],
+      localPrediosPendientes: [],
       activeTab: 'locales',
       verVisita: null,
       visitComparison: null,
@@ -700,7 +702,10 @@ export default {
       this.visitasCount = visitas.length;
       this.localInspecciones = await db.getInspeccionesPendientes();
       this.localVisitas = await db.getVisitasPendientes();
-      this.pendientes = this.localInspecciones.length + this.localVisitas.length;
+      this.localProductoresPendientes = await db.getProductoresPendientes();
+      this.localPrediosPendientes = await db.getPrediosPendientes();
+      this.pendientes = this.localInspecciones.length + this.localVisitas.length
+        + this.localProductoresPendientes.length + this.localPrediosPendientes.length;
       const sync = await db.getLastSync();
       if (sync) {
         this.lastSyncText = new Date(sync).toLocaleDateString('es-MX', {
@@ -738,8 +743,42 @@ export default {
       try {
         const inspecciones = await db.getInspeccionesPendientes();
         const visitas = await db.getVisitasPendientes();
+        const productoresPend = await db.getProductoresPendientes();
+        const prediosPend = await db.getPrediosPendientes();
         let totalSincronizados = 0;
         let totalErrores = 0;
+
+        // 1. Subir productores offline (necesitan subirse primero para tener IDs reales)
+        if (productoresPend.length > 0) {
+          try {
+            const res = await api.uploadProductores(productoresPend);
+            if (res?.success && res.productores) {
+              for (const mapping of res.productores) {
+                await db.remapProductorId(mapping.offline_id, mapping.new_id);
+                totalSincronizados++;
+              }
+            }
+          } catch (err) {
+            console.error('Error al subir productores offline:', err);
+            totalErrores += productoresPend.length;
+          }
+        }
+
+        // 2. Subir predios offline (dependen de IDs reales de productores)
+        if (prediosPend.length > 0) {
+          try {
+            const res = await api.uploadPredios(prediosPend);
+            if (res?.success && res.predios) {
+              for (const mapping of res.predios) {
+                await db.remapPredioId(mapping.offline_id, mapping.new_id);
+                totalSincronizados++;
+              }
+            }
+          } catch (err) {
+            console.error('Error al subir predios offline:', err);
+            totalErrores += prediosPend.length;
+          }
+        }
         
         for (const insp of inspecciones) {
           try {

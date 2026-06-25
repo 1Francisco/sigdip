@@ -38,6 +38,15 @@ Cypress.Commands.add('seedIndexedDB', (storeName, key, data) => {
   })
 })
 
+Cypress.Commands.add('getIndexedDB', (storeName, key) => {
+  return cy.window({ timeout: 10000 }).then(async (win) => {
+    const lf = await import('localforage')
+    const create = lf.createInstance || (lf.default || lf).createInstance
+    const instance = create({ name: 'sigdip_mobile', storeName })
+    return await instance.getItem(key)
+  })
+})
+
 Cypress.Commands.add('clearIndexedDB', () => {
   cy.window().then(async (win) => {
     const lf = await import('localforage')
@@ -117,7 +126,7 @@ Cypress.Commands.add('interceptDashboardStats', (overrides = {}) => {
 })
 
 Cypress.Commands.add('interceptEmptyInspecciones', () => {
-  cy.intercept('GET', '**/api/inspecciones', { statusCode: 200, body: { data: [] } }).as('getInspecciones')
+  cy.intercept('GET', /\/api\/inspecciones(\?.*)?$/, { statusCode: 200, body: { data: [] } }).as('getInspecciones')
 })
 
 Cypress.Commands.add('interceptEmptyMedicos', () => {

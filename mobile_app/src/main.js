@@ -11,6 +11,17 @@ if ('serviceWorker' in navigator) {
 }
 
 const app = createApp(App);
-app.use(createPinia());
+const pinia = createPinia();
+if (window.Cypress && window.__initialPiniaState) {
+  pinia.state.value = window.__initialPiniaState;
+}
+app.use(pinia);
 app.use(router);
 app.mount('#app');
+
+if (window.Cypress) {
+  window.__pinia = pinia;
+  import('./stores/inspeccion.js').then(({ useInspeccionStore }) => {
+    window.__inspeccionStore = useInspeccionStore(pinia);
+  });
+}

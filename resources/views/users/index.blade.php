@@ -5,6 +5,9 @@
 @section('header_subtitle', 'Administra el personal autorizado para realizar inspecciones')
 
 @section('content')
+@if(session('success'))
+    <div class="alert alert-success border-0 shadow-sm mb-4 rounded-4">{{ session('success') }}</div>
+@endif
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h5 class="mb-0 fw-bold"><i class="bi bi-people text-primary me-2"></i>Personal en Campo</h5>
@@ -35,6 +38,7 @@
                     <tr>
                         <th class="ps-4">Nombre Completo</th>
                         <th>Correo de Acceso</th>
+                        <th class="text-center">Productores Asignados</th>
                         <th>Fecha de Registro</th>
                         <th class="text-end pe-4">Acciones</th>
                     </tr>
@@ -54,11 +58,21 @@
                             </div>
                         </td>
                         <td>{{ $medico->email }}</td>
+                        <td class="text-center">
+                            <a href="{{ route('usuarios.show', $medico) }}" class="text-decoration-none">
+                                <span class="badge bg-info-soft text-info rounded-pill px-3 py-1">
+                                    {{ $medico->productores_count }} productores
+                                </span>
+                            </a>
+                        </td>
                         <td>{{ $medico->created_at->format('d/m/Y') }}</td>
                         <td class="text-end pe-4">
                             <div class="d-flex gap-2 justify-content-end">
                                 <a href="{{ route('usuarios.show', $medico) }}" class="btn btn-sm btn-outline-info" title="Ver Detalle">
                                     <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ route('usuarios.asignar-productores', $medico) }}" class="btn btn-sm btn-outline-primary" title="Asignar Productores">
+                                    <i class="bi bi-person-plus"></i>
                                 </a>
                                 <a href="{{ route('usuarios.edit', $medico) }}" class="btn btn-sm btn-outline-secondary" title="Editar">
                                     <i class="bi bi-pencil"></i>
@@ -75,7 +89,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="4" class="text-center py-5 text-secondary">
+                        <td colspan="5" class="text-center py-5 text-secondary">
                             <i class="bi bi-inbox fs-1 mb-3 d-block text-light"></i>
                             No hay médicos verificadores registrados en el sistema.
                         </td>

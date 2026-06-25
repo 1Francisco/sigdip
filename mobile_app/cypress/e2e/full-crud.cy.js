@@ -58,6 +58,8 @@ describe('Full CRUD Flow (E2E)', () => {
       cy.interceptDashboardStats()
       cy.interceptEmptyInspecciones()
       cy.interceptEmptyMedicos()
+      cy.intercept('GET', /\/api\/animales(\?.*)?$/, { statusCode: 200, body: { data: [] } }).as('getAnimales')
+      cy.intercept('GET', /\/api\/aretes-censo(\?.*)?$/, { statusCode: 200, body: { data: [] } }).as('getAretesCenso')
 
       cy.visit(path)
       cy.get('h2', { timeout: 5000 }).should('be.visible')

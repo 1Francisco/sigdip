@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Inspeccion;
+use App\Models\Predio;
+use App\Models\Productor;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -43,5 +46,22 @@ class DashboardTest extends TestCase
         $response = $this->get(route('admin.dashboard'));
 
         $response->assertRedirect('/login');
+    }
+
+    public function test_dashboard_muestra_estadisticas()
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('Administrador');
+
+        $productor = Productor::factory()->create();
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+        Inspeccion::factory()->count(3)->create([
+            'predio_id' => $predio->id,
+            'veterinario_id' => $admin->id,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+
+        $response->assertStatus(200);
     }
 }

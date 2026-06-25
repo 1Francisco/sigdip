@@ -283,6 +283,14 @@ export default {
     return await request('POST', '/sync/visitas', { visitas });
   },
 
+  async uploadProductores(productores) {
+    return await request('POST', '/sync/productores', { productores });
+  },
+
+  async uploadPredios(predios) {
+    return await request('POST', '/sync/predios', { predios });
+  },
+
   async getDashboardStats() {
     return await request('GET', '/dashboard/stats');
   },

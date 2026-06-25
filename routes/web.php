@@ -37,6 +37,9 @@ Route::middleware(['auth'])->group(function () {
     // Gestión de Usuarios (Médicos) - SOLO ADMINISTRADORES
     Route::middleware('role:Administrador')->group(function () {
         Route::resource('usuarios', UserController::class);
+        Route::get('/usuarios/{usuario}/asignar-productores', [UserController::class, 'asignarProductores'])->name('usuarios.asignar-productores');
+        Route::post('/usuarios/{usuario}/asignar-productores', [UserController::class, 'guardarAsignacion'])->name('usuarios.guardar-asignacion');
+        Route::post('/usuarios/{usuario}/desasignar-productor/{productor}', [UserController::class, 'desasignarProductor'])->name('usuarios.desasignar-productor');
     });
 
     // Inspecciones

@@ -79,13 +79,8 @@
                         @if(auth()->user()->hasRole('Administrador'))
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Clave de Cuarentena</label>
-                            <select name="clave_cuarentena" id="clave_cuarentena" class="form-select rounded-3">
-                                <option value="">-- Sin Clave --</option>
-                                <option value="AD" {{ old('clave_cuarentena', $productor->clave_cuarentena) == 'AD' ? 'selected' : '' }}>AD (Zona A - Definitiva - 2 Meses)</option>
-                                <option value="AP" {{ old('clave_cuarentena', $productor->clave_cuarentena) == 'AP' ? 'selected' : '' }}>AP (Zona A - Provisional - 6 Meses)</option>
-                                <option value="BD" {{ old('clave_cuarentena', $productor->clave_cuarentena) == 'BD' ? 'selected' : '' }}>BD (Zona B - Definitiva - 2 Meses)</option>
-                                <option value="BP" {{ old('clave_cuarentena', $productor->clave_cuarentena) == 'BP' ? 'selected' : '' }}>BP (Zona B - Provisional - 6 Meses)</option>
-                            </select>
+                            <input type="text" name="clave_cuarentena" id="clave_cuarentena" class="form-control text-uppercase rounded-3" placeholder="Ej. BD-123421" value="{{ old('clave_cuarentena', $productor->clave_cuarentena) }}">
+                            <div class="form-text small text-muted">Debe iniciar con AD, AP, BD o BP. Ej. BD-123421</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Zona / Sector</label>
@@ -130,11 +125,11 @@
     const claveSelect = document.getElementById('clave_cuarentena');
     const zonaSelect = document.getElementById('zona');
     if (claveSelect && zonaSelect) {
-        claveSelect.addEventListener('change', function() {
-            const val = this.value;
-            if (val.startsWith('A')) {
+        claveSelect.addEventListener('input', function() {
+            const val = this.value.toUpperCase();
+            if (val.startsWith('AD') || val.startsWith('AP')) {
                 zonaSelect.value = 'A';
-            } else if (val.startsWith('B')) {
+            } else if (val.startsWith('BD') || val.startsWith('BP')) {
                 zonaSelect.value = 'B';
             }
         });

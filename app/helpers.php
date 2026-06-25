@@ -3,7 +3,7 @@
 use App\Models\Productor;
 use Illuminate\Support\Str;
 
-if (!function_exists('generarClaveInterna')) {
+if (! function_exists('generarClaveInterna')) {
     function generarClaveInterna(?Productor $productor): string
     {
         $iniciales = '';
@@ -33,6 +33,6 @@ if (!function_exists('generarClaveInterna')) {
         $random = strtoupper(Str::random(5));
         $fecha = now()->format('dmY');
 
-        return $iniciales . '-' . $random . '-' . $fecha;
+        return $iniciales.'-'.$random.'-'.$fecha;
     }
 }

@@ -23,11 +23,12 @@ describe('Role-based Navigation (E2E)', () => {
       cy.get('.sidebar').contains('Inspecciones').should('be.visible')
       cy.get('.sidebar').contains('Agenda / Visitas').should('be.visible')
       cy.get('.sidebar').contains('Médicos').should('be.visible')
-      cy.get('.sidebar').contains('Animales').should('be.visible')
-      cy.get('.sidebar').contains('Aretes del Censo').should('be.visible')
-      cy.get('.sidebar').contains('Importar Excel').should('be.visible')
       cy.get('.sidebar').contains('Descargas').should('be.visible')
       cy.get('.sidebar').contains('Sábana Excel').should('be.visible')
+
+      cy.get('.sidebar').contains('Animales').should('not.exist')
+      cy.get('.sidebar').contains('Aretes del Censo').should('not.exist')
+      cy.get('.sidebar').contains('Importar Excel').should('not.exist')
     })
 
     it('ve menu de Medicos en sidebar', () => {

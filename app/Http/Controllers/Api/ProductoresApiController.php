@@ -18,7 +18,7 @@ class ProductoresApiController extends Controller
         $user = $request->user();
         $query = Productor::withCount('predios')->latest();
 
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             $query->where('medico_id', $user->id);
         }
 
@@ -45,10 +45,10 @@ class ProductoresApiController extends Controller
         $user = $request->user();
         $productor = Productor::with(['predios.inspecciones', 'medico'])->withCount('predios')->findOrFail($id);
 
-        if ($user && !$user->hasRole('Administrador') && $productor->medico_id !== $user->id) {
+        if ($user && ! $user->hasRole('Administrador') && $productor->medico_id !== $user->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'No tienes permiso para ver este productor.'
+                'message' => 'No tienes permiso para ver este productor.',
             ], 403);
         }
 
@@ -63,7 +63,7 @@ class ProductoresApiController extends Controller
         $user = $request->user();
         $query = Predio::with('productor')->latest();
 
-        if ($user && !$user->hasRole('Administrador')) {
+        if ($user && ! $user->hasRole('Administrador')) {
             $query->whereHas('productor', function ($q) use ($user) {
                 $q->where('medico_id', $user->id);
             });
@@ -125,10 +125,10 @@ class ProductoresApiController extends Controller
         $user = $request->user();
         $predio = Predio::with(['productor', 'animales'])->findOrFail($id);
 
-        if ($user && !$user->hasRole('Administrador') && (!$predio->productor || $predio->productor->medico_id !== $user->id)) {
+        if ($user && ! $user->hasRole('Administrador') && (! $predio->productor || $predio->productor->medico_id !== $user->id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'No tienes permiso para ver este predio.'
+                'message' => 'No tienes permiso para ver este predio.',
             ], 403);
         }
 
@@ -191,7 +191,7 @@ class ProductoresApiController extends Controller
                 'estado' => 'nullable|string',
                 'email' => 'nullable|email',
                 'medico_id' => 'nullable|exists:users,id',
-                'clave_cuarentena' => 'nullable|string|in:AD,AP,BD,BP',
+                'clave_cuarentena' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP)/i'],
                 'zona' => 'nullable|string|in:A,B',
 
                 // Validaciones para el predio opcional (copia exacta de la web)
@@ -205,7 +205,7 @@ class ProductoresApiController extends Controller
             return DB::transaction(function () use ($validated, $request) {
                 $user = $request->user();
                 $medicoId = $validated['medico_id'] ?? null;
-                if ($user && !$user->hasRole('Administrador')) {
+                if ($user && ! $user->hasRole('Administrador')) {
                     $medicoId = $user->id;
                     unset($validated['clave_cuarentena'], $validated['zona']);
                 }
@@ -274,10 +274,10 @@ class ProductoresApiController extends Controller
             $user = request()->user();
             $productor = Productor::findOrFail($id);
 
-            if ($user && !$user->hasRole('Administrador') && $productor->medico_id !== $user->id) {
+            if ($user && ! $user->hasRole('Administrador') && $productor->medico_id !== $user->id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No tienes permiso para eliminar este productor.'
+                    'message' => 'No tienes permiso para eliminar este productor.',
                 ], 403);
             }
 
@@ -301,10 +301,10 @@ class ProductoresApiController extends Controller
             $user = $request->user();
             $predio = Predio::with('productor')->findOrFail($id);
 
-            if ($user && !$user->hasRole('Administrador') && (!$predio->productor || $predio->productor->medico_id !== $user->id)) {
+            if ($user && ! $user->hasRole('Administrador') && (! $predio->productor || $predio->productor->medico_id !== $user->id)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No tienes permiso para modificar este predio.'
+                    'message' => 'No tienes permiso para modificar este predio.',
                 ], 403);
             }
 
@@ -340,10 +340,10 @@ class ProductoresApiController extends Controller
             $user = request()->user();
             $predio = Predio::with('productor')->findOrFail($id);
 
-            if ($user && !$user->hasRole('Administrador') && (!$predio->productor || $predio->productor->medico_id !== $user->id)) {
+            if ($user && ! $user->hasRole('Administrador') && (! $predio->productor || $predio->productor->medico_id !== $user->id)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No tienes permiso para eliminar este predio.'
+                    'message' => 'No tienes permiso para eliminar este predio.',
                 ], 403);
             }
 
@@ -370,10 +370,10 @@ class ProductoresApiController extends Controller
             $user = $request->user();
             $productor = Productor::findOrFail($id);
 
-            if ($user && !$user->hasRole('Administrador') && $productor->medico_id !== $user->id) {
+            if ($user && ! $user->hasRole('Administrador') && $productor->medico_id !== $user->id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No tienes permiso para actualizar este productor.'
+                    'message' => 'No tienes permiso para actualizar este productor.',
                 ], 403);
             }
 
@@ -390,12 +390,12 @@ class ProductoresApiController extends Controller
                 'estado' => 'nullable|string',
                 'email' => 'nullable|email',
                 'medico_id' => 'nullable|exists:users,id',
-                'clave_cuarentena' => 'nullable|string|in:AD,AP,BD,BP',
+                'clave_cuarentena' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP)/i'],
                 'zona' => 'nullable|string|in:A,B',
             ]);
 
             $medicoId = $validated['medico_id'] ?? $productor->medico_id;
-            if ($user && !$user->hasRole('Administrador')) {
+            if ($user && ! $user->hasRole('Administrador')) {
                 $medicoId = $user->id;
                 unset($validated['clave_cuarentena'], $validated['zona']);
             }
@@ -441,14 +441,14 @@ class ProductoresApiController extends Controller
     {
         try {
             $user = $request->user();
-            if ($user && !$user->hasRole('Administrador')) {
+            if ($user && ! $user->hasRole('Administrador')) {
                 $productorExists = Productor::where('id', $request->productor_id)
                     ->where('medico_id', $user->id)
                     ->exists();
-                if (!$productorExists) {
+                if (! $productorExists) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'El productor seleccionado no está asignado a tu usuario.'
+                        'message' => 'El productor seleccionado no está asignado a tu usuario.',
                     ], 403);
                 }
             }
@@ -509,20 +509,20 @@ class ProductoresApiController extends Controller
             $user = $request->user();
             $predio = Predio::with('productor')->findOrFail($id);
 
-            if ($user && !$user->hasRole('Administrador')) {
-                if (!$predio->productor || $predio->productor->medico_id !== $user->id) {
+            if ($user && ! $user->hasRole('Administrador')) {
+                if (! $predio->productor || $predio->productor->medico_id !== $user->id) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'No tienes permiso para modificar este predio.'
+                        'message' => 'No tienes permiso para modificar este predio.',
                     ], 403);
                 }
                 $productorExists = Productor::where('id', $request->productor_id)
                     ->where('medico_id', $user->id)
                     ->exists();
-                if (!$productorExists) {
+                if (! $productorExists) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'El productor seleccionado no está asignado a tu usuario.'
+                        'message' => 'El productor seleccionado no está asignado a tu usuario.',
                     ], 403);
                 }
             }

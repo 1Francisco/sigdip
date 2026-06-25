@@ -15,7 +15,9 @@ class ProductorAssignmentTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $medico1;
+
     private User $medico2;
 
     protected function setUp(): void
@@ -119,11 +121,11 @@ class ProductorAssignmentTest extends TestCase
         $response->assertStatus(200);
 
         $data = $response->json('data');
-        
+
         // Assert catalog contains only prod1 and predio1
         $this->assertCount(1, $data['productores']);
         $this->assertEquals($prod1->id, $data['productores'][0]['id']);
-        
+
         $this->assertCount(1, $data['predios']);
         $this->assertEquals($predio1->id, $data['predios'][0]['id']);
     }
@@ -153,7 +155,7 @@ class ProductorAssignmentTest extends TestCase
             'apellido_paterno' => 'Productor',
             'curp' => 'KEY890101HSL00001X',
             'upp' => 'UPP-KEY-1',
-            'clave_cuarentena' => 'BD',
+            'clave_cuarentena' => 'BD-123421',
             'zona' => 'B',
             'medico_id' => $this->medico2->id,
         ]);
@@ -161,7 +163,7 @@ class ProductorAssignmentTest extends TestCase
         $response->assertSessionHasNoErrors();
         $this->assertDatabaseHas('productores', [
             'curp' => 'KEY890101HSL00001X',
-            'clave_cuarentena' => 'BD',
+            'clave_cuarentena' => 'BD-123421',
             'zona' => 'B',
         ]);
     }
@@ -173,7 +175,7 @@ class ProductorAssignmentTest extends TestCase
             'apellido_paterno' => 'Productor',
             'curp' => 'KEY890101HSL00002X',
             'upp' => 'UPP-KEY-2',
-            'clave_cuarentena' => 'BD',
+            'clave_cuarentena' => 'BD-123421',
             'zona' => 'B',
         ]);
 
@@ -187,8 +189,8 @@ class ProductorAssignmentTest extends TestCase
 
     public function test_inspeccion_dynamic_age_limit_validation()
     {
-        // 1. Productor with key BP (Provisional - 6 months limit)
-        $prodBP = Productor::factory()->create(['medico_id' => $this->medico1->id, 'clave_cuarentena' => 'BP', 'zona' => 'B']);
+        // 1. Productor with key BP-98765 (Provisional - 6 months limit)
+        $prodBP = Productor::factory()->create(['medico_id' => $this->medico1->id, 'clave_cuarentena' => 'BP-98765', 'zona' => 'B']);
         $predioBP = Predio::factory()->create(['productor_id' => $prodBP->id]);
 
         $responseBP = $this->actingAs($this->medico1)->post(route('inspecciones.store'), [
@@ -203,19 +205,19 @@ class ProductorAssignmentTest extends TestCase
                     'edad_meses' => 3,
                     'sexo' => 'M',
                     'resultado' => '',
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $responseBP->assertSessionHasNoErrors();
         // Since limit is 6 and animal is 3 months, result must be forced to 'No Aplica'
         $this->assertDatabaseHas('detalles_inspeccion', [
             'resultado_prueba' => 'No Aplica',
-            'motivo_no_aplica' => 'Menor a 3 meses',
+            'motivo_no_aplica' => 'Menor a 6 meses',
         ]);
 
-        // 2. Productor with key BD (Definitive - 2 months limit)
-        $prodBD = Productor::factory()->create(['medico_id' => $this->medico1->id, 'clave_cuarentena' => 'BD', 'zona' => 'B']);
+        // 2. Productor with key BD-123421 (Definitive - 2 months limit)
+        $prodBD = Productor::factory()->create(['medico_id' => $this->medico1->id, 'clave_cuarentena' => 'BD-123421', 'zona' => 'B']);
         $predioBD = Predio::factory()->create(['productor_id' => $prodBD->id]);
 
         $responseBD = $this->actingAs($this->medico1)->post(route('inspecciones.store'), [
@@ -230,8 +232,8 @@ class ProductorAssignmentTest extends TestCase
                     'edad_meses' => 3, // older than 2 months!
                     'sexo' => 'M',
                     'resultado' => 'Negativo',
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $responseBD->assertSessionHasNoErrors();
@@ -242,4 +244,3 @@ class ProductorAssignmentTest extends TestCase
         ]);
     }
 }
-

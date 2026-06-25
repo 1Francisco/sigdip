@@ -7,12 +7,12 @@ describe('Detalle de Inspección (E2E)', () => {
   })
 
   it('navega al detalle desde la lista de inspecciones', () => {
-    cy.intercept('GET', '**/api/inspecciones', {
+    cy.intercept('GET', /\/api\/inspecciones(\?.*)?$/, {
       statusCode: 200,
       body: {
         data: [
           {
-            id: 1, folio: 'FOL-001', fecha: '2025-06-01', estado: 'finalizado',
+            id: 1, folio: 'FOL-001', clave_interna: 'FOL-001', fecha: '2025-06-01', estado: 'finalizado',
             predio: { id: 1, nombre_rancho: 'Rancho Test', productor: { id: 1, nombre: 'Juan', apellido_paterno: 'Pérez' } },
             veterinario: { id: 2, name: 'Dr. López' },
           },
@@ -33,7 +33,7 @@ describe('Detalle de Inspección (E2E)', () => {
       statusCode: 200,
       body: {
         data: {
-          id: 1, folio: 'FOL-001', fecha: '2025-06-01', estado: 'finalizado',
+          id: 1, folio: 'FOL-001', clave_interna: 'FOL-001', fecha: '2025-06-01', estado: 'finalizado',
           tipo_prueba: 'Tuberculina', motivo_prueba: 'Rastreo', funcion_zootecnica: 'Engorda',
           fecha_inyeccion: '2025-06-01', hora_inyeccion: '08:00',
           fecha_lectura: '2025-06-04', hora_lectura: '08:00',
