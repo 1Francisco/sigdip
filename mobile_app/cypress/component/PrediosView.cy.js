@@ -93,6 +93,20 @@ describe('PrediosView', () => {
       cy.contains('Rancho San Jose').should('be.visible')
     })
 
+    it('muestra error cuando falla carga de predios', () => {
+      cy.intercept('GET', '**/api/predios', {
+        statusCode: 500,
+        body: { message: 'Error' },
+      }).as('getPrediosError')
+
+      const router = buildRouter()
+      router.push('/predios')
+      mount(PrediosView, { global: { plugins: [router] } })
+
+      cy.wait('@getPrediosError', { timeout: 10000 })
+      cy.get('.alert.alert-danger', { timeout: 5000 }).should('be.visible')
+    })
+
     it('filtra predios por nombre en busqueda', () => {
       const router = buildRouter()
       router.push('/predios')
@@ -129,6 +143,21 @@ describe('PrediosView', () => {
       mount(PrediosView, { global: { plugins: [router] } })
 
       cy.get('.connectivity-badge', { timeout: 5000 }).should('be.visible')
+    })
+
+    it('carga predios desde cache offline cuando API falla', () => {
+      cy.seedIndexedDB('catalogos', 'predios', fakePredios)
+      cy.intercept('GET', '**/api/predios', {
+        statusCode: 500,
+        body: { message: 'Error' },
+      }).as('getPrediosError')
+
+      const router = buildRouter()
+      router.push('/predios')
+      mount(PrediosView, { global: { plugins: [router] } })
+
+      cy.wait('@getPrediosError', { timeout: 10000 })
+      cy.contains('Rancho El Paraiso', { timeout: 5000 }).should('be.visible')
     })
 
     it('navega entre paginas de predios', () => {

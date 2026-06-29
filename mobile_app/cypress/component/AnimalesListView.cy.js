@@ -54,6 +54,20 @@ describe('AnimalesListView', () => {
       cy.contains('MX-001-002').should('be.visible')
     })
 
+    it('muestra error cuando falla carga de animales', () => {
+      cy.intercept('GET', '**/api/animales', {
+        statusCode: 500,
+        body: { message: 'Error' },
+      }).as('getAnimalesError')
+
+      const router = buildRouter()
+      router.push('/animales')
+      mount(AnimalesListView, { global: { plugins: [router] } })
+
+      cy.wait('@getAnimalesError', { timeout: 10000 })
+      cy.get('.alert.alert-danger', { timeout: 5000 }).should('be.visible')
+    })
+
     it('muestra boton Nuevo Animal', () => {
       cy.intercept('GET', '**/api/animales', {
         statusCode: 200,

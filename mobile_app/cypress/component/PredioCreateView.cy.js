@@ -124,6 +124,27 @@ describe('PredioCreateView', () => {
       cy.wait('@storeRancho', { timeout: 10000 })
       cy.contains('registrado con éxito', { timeout: 5000 }).should('be.visible')
     })
+
+    it('muestra error cuando falla guardado de predio', () => {
+      seedPredios()
+
+      cy.intercept('POST', '**/api/predios', {
+        statusCode: 500,
+        body: { message: 'Error del servidor' },
+      }).as('storeRanchoError')
+
+      const router = buildRouter('/predios/nuevo')
+      mount(PredioCreateView, { global: { plugins: [router] } })
+
+      cy.get('input').first().type('Rancho Nuevo')
+      cy.get('select').first().select('1')
+      cy.get('input').eq(1).type('UPP-001')
+      cy.get('input').last().type('Localidad Test')
+      cy.get('form').submit()
+
+      cy.wait('@storeRanchoError', { timeout: 10000 })
+      cy.get('.alert.alert-danger', { timeout: 5000 }).should('be.visible')
+    })
   })
 
   describe('modal nuevo productor', () => {

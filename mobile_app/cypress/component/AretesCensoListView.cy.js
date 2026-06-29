@@ -54,6 +54,20 @@ describe('AretesCensoListView', () => {
       cy.contains('MX-001-002').should('be.visible')
     })
 
+    it('muestra error cuando falla carga de aretes', () => {
+      cy.intercept('GET', '**/api/aretes-censo', {
+        statusCode: 500,
+        body: { message: 'Error' },
+      }).as('getAretesError')
+
+      const router = buildRouter()
+      router.push('/aretes-censo')
+      mount(AretesCensoListView, { global: { plugins: [router] } })
+
+      cy.wait('@getAretesError', { timeout: 10000 })
+      cy.get('.alert.alert-danger', { timeout: 5000 }).should('be.visible')
+    })
+
     it('muestra boton Nuevo Arete', () => {
       cy.intercept('GET', '**/api/aretes-censo', {
         statusCode: 200,

@@ -62,6 +62,20 @@ describe('MedicosView', () => {
       cy.contains('Dr. Carlos Martinez Ruiz').should('be.visible')
     })
 
+    it('muestra error cuando falla carga de medicos', () => {
+      cy.intercept('GET', '**/api/medicos', {
+        statusCode: 500,
+        body: { message: 'Error' },
+      }).as('getMedicosError')
+
+      const router = buildRouter()
+      router.push('/medicos')
+      mount(MedicosView, { global: { plugins: [router] } })
+
+      cy.wait('@getMedicosError', { timeout: 10000 })
+      cy.get('.alert.alert-danger', { timeout: 5000 }).should('be.visible')
+    })
+
     it('muestra boton Nuevo Medico', () => {
       cy.intercept('GET', '**/api/medicos', {
         statusCode: 200,
@@ -189,6 +203,21 @@ describe('MedicosView', () => {
 
       cy.wait('@getMedicos', { timeout: 10000 })
       cy.get('.connectivity-badge', { timeout: 5000 }).should('be.visible')
+    })
+
+    it('carga medicos desde cache offline cuando API falla', () => {
+      cy.seedIndexedDB('catalogos', 'medicos', fakeMedicos)
+      cy.intercept('GET', '**/api/medicos', {
+        statusCode: 500,
+        body: { message: 'Error' },
+      }).as('getMedicosError')
+
+      const router = buildRouter()
+      router.push('/medicos')
+      mount(MedicosView, { global: { plugins: [router] } })
+
+      cy.wait('@getMedicosError', { timeout: 10000 })
+      cy.contains('Dr. Juan Perez Lopez', { timeout: 5000 }).should('be.visible')
     })
 
     it('filtra medicos por busqueda de nombre', () => {

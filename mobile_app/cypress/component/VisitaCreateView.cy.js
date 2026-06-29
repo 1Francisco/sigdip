@@ -148,6 +148,31 @@ describe('VisitaCreateView', () => {
       cy.wait('@createVisita', { timeout: 10000 })
       cy.contains('Visita programada con éxito', { timeout: 5000 }).should('be.visible')
     })
+
+    it('muestra error cuando falla guardado de visita', () => {
+      cy.intercept('POST', '**/api/visitas', {
+        statusCode: 500,
+        body: { message: 'Error del servidor' },
+      }).as('createVisitaError')
+
+      cy.window().then((win) => {
+        cy.stub(win, 'alert').returns(undefined)
+      })
+
+      const router = buildVisitaRouter()
+      router.push('/visitas/nuevo')
+      mount(VisitaCreateView, { global: { plugins: [router] } })
+
+      cy.contains('.form-label-custom', 'Productor', { timeout: 5000 }).should('be.visible')
+      cy.get('select').first().select('1')
+      cy.get('select').eq(1).select('1')
+      cy.get('select').eq(2).select('2')
+      cy.get('input[type="date"]').first().invoke('val', '2030-06-20').trigger('input')
+
+      cy.get('form').submit()
+      cy.wait('@createVisitaError', { timeout: 10000 })
+      cy.get('.alert.alert-danger', { timeout: 5000 }).should('be.visible')
+    })
   })
 
   describe('como Medico', () => {

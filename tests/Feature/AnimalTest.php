@@ -19,7 +19,7 @@ class AnimalTest extends TestCase
     {
         parent::setUp();
         Role::firstOrCreate(['name' => 'Administrador']);
-        Role::firstOrCreate(['name' => 'Medico_Campo']);
+        Role::firstOrCreate(['name' => 'Medico_Campo']);        
 
         $this->admin = User::factory()->create();
         $this->admin->assignRole('Administrador');

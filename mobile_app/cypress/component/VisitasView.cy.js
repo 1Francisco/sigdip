@@ -109,6 +109,20 @@ describe('VisitasView', () => {
       cy.contains('V-TEST-002').should('be.visible')
     })
 
+    it('muestra error cuando falla carga de visitas', () => {
+      cy.intercept('GET', '**/api/visitas*', {
+        statusCode: 500,
+        body: { message: 'Error' },
+      }).as('getVisitasError')
+
+      const router = buildRouter()
+      router.push('/visitas')
+      mount(VisitasView, { global: { plugins: [router] } })
+
+      cy.wait('@getVisitasError', { timeout: 10000 })
+      cy.get('.alert.alert-danger', { timeout: 5000 }).should('be.visible')
+    })
+
     it('navega a programar visita al hacer click en boton', () => {
       const router = buildRouter()
       router.push('/visitas')
