@@ -153,7 +153,7 @@ describe('SyncView', () => {
     })
 
     it('descarga catalogos al hacer click', () => {
-      cy.intercept('GET', '**/api/sync/catalogos', {
+      cy.intercept('GET', '**/api/sync/catalogos*', {
         statusCode: 200,
         body: {
           data: {
@@ -176,7 +176,7 @@ describe('SyncView', () => {
     })
 
     it('muestra error de descarga cuando falla API', () => {
-      cy.intercept('GET', '**/api/sync/catalogos', {
+      cy.intercept('GET', '**/api/sync/catalogos*', {
         statusCode: 500,
         body: { message: 'Error del servidor' }
       }).as('downloadFail')

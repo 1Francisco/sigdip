@@ -76,6 +76,7 @@
             <i class="bi bi-cloud-arrow-down-fill"></i> Descargar Catálogos del Día
           </span>
         </button>
+        <div v-if="downloading && progressMsg" class="text-primary small text-center mt-1 fw-semibold">{{ progressMsg }}</div>
 
         <!-- Botón subir -->
         <button 
@@ -626,6 +627,7 @@ export default {
       pendientes: 0,
       lastSyncText: 'Nunca',
       downloading: false,
+      progressMsg: '',
       uploading: false,
       resultado: '',
       errorMsg: '',
@@ -716,23 +718,89 @@ export default {
 
     async downloadData() {
       this.downloading = true;
+      this.progressMsg = 'Iniciando descarga...';
       this.resultado = '';
       this.errorMsg = '';
       try {
-        const res = await api.downloadCatalogos();
-        await db.savePredios(res.data.predios);
-        await db.saveProductores(res.data.productores || []);
-        await db.saveMedicos(res.data.medicos || []);
-        await db.saveVisitas(res.data.visitas);
+        const lastSync = await db.getLastSync();
+        const isIncremental = !!lastSync;
+
+        if (isIncremental) {
+          this.progressMsg = 'Buscando cambios desde la última sincronización...';
+        }
+
+        let allPredios = [];
+        let allProductores = [];
+        let allVisitas = [];
+        let medicos = [];
+        let page = 1;
+
+        while (true) {
+          const params = { page, per_page: 500 };
+          if (isIncremental) {
+            params.since = lastSync;
+            delete params.per_page; // incremental no necesita paginación
+            delete params.page;
+          }
+          this.progressMsg = isIncremental
+            ? 'Sincronizando cambios...'
+            : `Descargando página ${page}...`;
+
+          const res = await api.downloadCatalogos(params);
+
+          allPredios.push(...(res.data.predios || []));
+          allProductores.push(...(res.data.productores || []));
+          allVisitas.push(...(res.data.visitas || []));
+          if (page === 1 || !lastSync) {
+            medicos = res.data.medicos || [];
+          }
+
+          const pag = res.pagination;
+          if (!pag) break;
+
+          const prediosDone = !pag.predios || page >= pag.predios.last_page;
+          const productoresDone = !pag.productores || page >= pag.productores.last_page;
+          const visitasDone = !pag.visitas || page >= pag.visitas.last_page;
+
+          if (prediosDone && productoresDone && visitasDone) break;
+          page++;
+        }
+
+        if (isIncremental) {
+          await db.upsertPredios(allPredios);
+          await db.upsertProductores(allProductores);
+          await db.upsertVisitas(allVisitas);
+          if (medicos.length > 0) {
+            await db.saveMedicos(medicos);
+          }
+        } else {
+          await db.savePredios(allPredios);
+          await db.saveProductores(allProductores);
+          await db.saveMedicos(medicos);
+          await db.saveVisitas(allVisitas);
+        }
+
         await db.setLastSync();
-        const prodCount = res.data.productores?.length || 0;
-        const medCount = res.data.medicos?.length || 0;
-        this.resultado = `Descargados ${res.data.predios.length} ranchos, ${prodCount} productores, ${medCount} médicos y ${res.data.visitas.length} visitas.`;
+
+        if (isIncremental) {
+          const partes = [];
+          if (allPredios.length > 0) partes.push(`${allPredios.length} ranchos`);
+          if (allProductores.length > 0) partes.push(`${allProductores.length} productores`);
+          if (allVisitas.length > 0) partes.push(`${allVisitas.length} visitas`);
+          if (partes.length === 0) {
+            this.resultado = 'Sin cambios nuevos. Todos tus datos locales están actualizados.';
+          } else {
+            this.resultado = `Cambios sincronizados: ${partes.join(', ')}.`;
+          }
+        } else {
+          this.resultado = `Descargados ${allPredios.length} ranchos, ${allProductores.length} productores, ${medicos.length} médicos y ${allVisitas.length} visitas.`;
+        }
         await this.refreshStats();
       } catch (err) {
         this.errorMsg = err.message || 'No se pudo establecer conexión con el servidor de CEFPPENAY.';
       } finally {
         this.downloading = false;
+        this.progressMsg = '';
       }
     },
 

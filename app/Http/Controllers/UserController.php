@@ -179,4 +179,107 @@ class UserController extends Controller
         return redirect()->route('usuarios.show', $usuario)
             ->with('success', "Productor {$productor->nombre} desasignado de {$usuario->name}.");
     }
+
+    // ========== API METHODS FOR MOBILE APP ==========
+
+    /**
+     * API: Get assignable productores for a medico (asignados + disponibles).
+     */
+    public function productoresAsignablesApi(Request $request, User $usuario)
+    {
+        if ($request->user() && ! $request->user()->hasRole('Administrador')) {
+            return response()->json(['success' => false, 'message' => 'No autorizado.'], 403);
+        }
+
+        $asignados = Productor::where('medico_id', $usuario->id)
+            ->withCount('predios')
+            ->orderBy('nombre')
+            ->get()
+            ->map(fn ($p) => [
+                'id' => $p->id,
+                'nombre' => $p->nombre,
+                'apellido_paterno' => $p->apellido_paterno,
+                'apellido_materno' => $p->apellido_materno,
+                'curp' => $p->curp,
+                'upp' => $p->upp,
+                'predios_count' => $p->predios_count,
+            ]);
+
+        $disponibles = Productor::whereNull('medico_id')
+            ->orWhere('medico_id', '!=', $usuario->id)
+            ->withCount('predios')
+            ->orderBy('nombre')
+            ->get()
+            ->map(fn ($p) => [
+                'id' => $p->id,
+                'nombre' => $p->nombre,
+                'apellido_paterno' => $p->apellido_paterno,
+                'apellido_materno' => $p->apellido_materno,
+                'curp' => $p->curp,
+                'upp' => $p->upp,
+                'predios_count' => $p->predios_count,
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'medico' => ['id' => $usuario->id, 'name' => $usuario->name, 'email' => $usuario->email],
+            'asignados' => $asignados,
+            'disponibles' => $disponibles,
+        ]);
+    }
+
+    /**
+     * API: Save productores assignment to a medico.
+     */
+    public function guardarAsignacionApi(Request $request, User $usuario)
+    {
+        if ($request->user() && ! $request->user()->hasRole('Administrador')) {
+            return response()->json(['success' => false, 'message' => 'No autorizado.'], 403);
+        }
+
+        $request->validate([
+            'productor_ids' => 'nullable|array',
+            'productor_ids.*' => 'exists:productores,id',
+        ]);
+
+        $productorIds = $request->input('productor_ids', []);
+
+        Productor::whereIn('id', $productorIds)->update(['medico_id' => $usuario->id]);
+
+        Productor::where('medico_id', $usuario->id)
+            ->whereNotIn('id', $productorIds)
+            ->update(['medico_id' => null]);
+
+        $count = count($productorIds);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Se asignaron {$count} productores a {$usuario->name} correctamente.",
+            'asignados_count' => $count,
+        ]);
+    }
+
+    /**
+     * API: Unassign a single productor from a medico.
+     */
+    public function desasignarProductorApi(Request $request, User $usuario, Productor $productor)
+    {
+        if ($request->user() && ! $request->user()->hasRole('Administrador')) {
+            return response()->json(['success' => false, 'message' => 'No autorizado.'], 403);
+        }
+
+        if ($productor->medico_id !== $usuario->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este productor no está asignado a este médico.',
+            ], 404);
+        }
+
+        $productor->update(['medico_id' => null]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Productor {$productor->nombre} desasignado de {$usuario->name}.",
+        ]);
+    }
 }

@@ -73,6 +73,40 @@ export default {
     await catalogStore.setItem('last_sync', new Date().toISOString());
   },
 
+  /**
+   * Incremental upsert: merge incoming records into existing array.
+   * New records are appended; existing records (matched by id) are updated.
+   */
+  async upsertPredios(incoming) {
+    if (!incoming || incoming.length === 0) return;
+    const existing = await this.getPredios();
+    const map = new Map(existing.map(p => [String(p.id), p]));
+    for (const item of incoming) {
+      map.set(String(item.id), item);
+    }
+    await this.savePredios(Array.from(map.values()));
+  },
+
+  async upsertProductores(incoming) {
+    if (!incoming || incoming.length === 0) return;
+    const existing = await this.getProductores();
+    const map = new Map(existing.map(p => [String(p.id), p]));
+    for (const item of incoming) {
+      map.set(String(item.id), item);
+    }
+    await this.saveProductores(Array.from(map.values()));
+  },
+
+  async upsertVisitas(incoming) {
+    if (!incoming || incoming.length === 0) return;
+    const existing = await this.getVisitas();
+    const map = new Map(existing.map(v => [String(v.id), v]));
+    for (const item of incoming) {
+      map.set(String(item.id), item);
+    }
+    await this.saveVisitas(Array.from(map.values()));
+  },
+
   // ====== INSPECCIONES OFFLINE ======
   async saveInspeccion(inspeccion) {
     const lista = await this.getInspeccionesPendientes();

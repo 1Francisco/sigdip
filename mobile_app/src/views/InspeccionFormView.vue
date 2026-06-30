@@ -435,7 +435,7 @@
                         </div>
                       </td>
                       <td>
-                        <select v-model="animal.resultado" class="form-select form-control-sm fw-bold" :class="getResultadoClass(animal.resultado)">
+                        <select v-model="animal.resultado" class="form-select form-control-sm fw-bold" :class="getResultadoClass(animal.resultado)" @change="onResultadoChange(animal)">
                           <option value="Pendiente" class="text-secondary">Pendiente</option>
                           <option value="No Aplica" class="text-secondary">No Aplica</option>
                           <option value="Negativo" class="text-success">Negativo</option>
@@ -466,7 +466,7 @@
                   <div class="d-flex flex-wrap gap-2">
                     <span v-for="animal in animalesSinInyeccion" :key="animal" class="badge bg-secondary text-white small px-2 py-1">
                       <i class="bi bi-slash-circle me-1"></i>
-                      #{{ getOriginalAnimalIndex(animal) + 1 }}
+                      #{{ animalIndexMap.get(animal) + 1 }}
                       {{ animal.identificador || 'SIN ARETE' }}
                       ({{ animal.edad_meses || '?' }} meses){{ animal.motivo_no_aplica ? ' - ' + animal.motivo_no_aplica : '' }}
                     </span>
@@ -565,7 +565,7 @@
                 >
                   <!-- Línea 1: Número + Arete + Cámara -->
                   <div class="lectura-line1">
-                    <span class="lectura-num-badge">{{ getOriginalAnimalIndex(animal) + 1 }}</span>
+                    <span class="lectura-num-badge">{{ animalIndexMap.get(animal) + 1 }}</span>
                     <span v-if="animal.agregado_en_lectura" class="badge bg-warning text-dark flex-shrink-0" style="font-size: 0.65rem; padding: 2px 6px; line-height: 1;" title="Agregado el día de la lectura">+</span>
                     <input 
                       type="text" 
@@ -584,7 +584,7 @@
 
                   <!-- Línea 2: Resultado + Observaciones + Eliminar -->
                   <div class="lectura-line2">
-                    <select v-model="animal.resultado" class="form-select form-select-sm fw-bold lectura-select-result" :class="getResultadoClass(animal.resultado)">
+                    <select v-model="animal.resultado" class="form-select form-select-sm fw-bold lectura-select-result" :class="getResultadoClass(animal.resultado)" @change="onResultadoChange(animal)">
                       <option value="Pendiente">Pendiente</option>
                       <option value="No Aplica">No Aplica</option>
                       <option value="Negativo">Negativo</option>
@@ -615,11 +615,11 @@
                   <div v-if="showSinInyeccion">
                     <div v-for="(animal, localIdx) in animalesSinInyeccion" :key="animal" class="lectura-table-row" :class="{ 'lectura-row-zebra': localIdx % 2 === 1 }">
                       <div class="lectura-line1">
-                        <span class="lectura-num-badge">{{ getOriginalAnimalIndex(animal) + 1 }}</span>
+                        <span class="lectura-num-badge">{{ animalIndexMap.get(animal) + 1 }}</span>
                         <input type="text" v-model="animal.identificador" class="form-control form-control-sm text-uppercase lectura-input-arete flex-grow-1" placeholder="SINIIGA o SA" required :readonly="!animal.agregado_en_lectura" :style="{ background: animal.agregado_en_lectura ? '#fff' : '#f1f5f9' }" @change="onIdentificadorChange(animal)" />
                       </div>
                       <div class="lectura-line2">
-                        <select v-model="animal.resultado" class="form-select form-select-sm fw-bold lectura-select-result" :class="getResultadoClass(animal.resultado)">
+                        <select v-model="animal.resultado" class="form-select form-select-sm fw-bold lectura-select-result" :class="getResultadoClass(animal.resultado)" @change="onResultadoChange(animal)">
                           <option value="No Aplica">No Aplica</option>
                           <option value="Pendiente">Pendiente</option>
                           <option value="Negativo">Negativo</option>
@@ -652,7 +652,7 @@
                 >
                   <!-- Card Header: Animal Number & Delete -->
                   <div class="card-header-custom d-flex justify-content-between align-items-center mb-2.5 pb-2 border-bottom">
-                    <span class="fw-bold text-slate-700 fs-7-5">ANIMAL #{{ getOriginalAnimalIndex(animal) + 1 }}</span>
+                    <span class="fw-bold text-slate-700 fs-7-5">ANIMAL #{{ animalIndexMap.get(animal) + 1 }}</span>
                     <button type="button" class="btn btn-link text-danger p-0 d-flex align-items-center gap-1 text-decoration-none fs-7-5" @click="removeAnimal(animal)">
                       <i class="bi bi-trash"></i> Eliminar
                     </button>
@@ -878,6 +878,9 @@ export default {
     },
     animalesSinInyeccion() {
       return this.form.animales.filter(a => a.resultado === 'No Aplica');
+    },
+    animalIndexMap() {
+      return new Map(this.form.animales.map((a, i) => [a, i]));
     },
     hasMoreAnimals() {
       const q = this.animalSearchQuery.trim().toUpperCase();
@@ -1419,12 +1422,37 @@ export default {
         this.form.animales.splice(index, 1);
       }
     },
+    onResultadoChange(animal) {
+      if (animal.resultado === 'No Aplica') {
+        const motivo = prompt('Indique el motivo por el cual No Aplica:');
+        if (motivo && motivo.trim()) {
+          animal.motivo_no_aplica = motivo.trim();
+        } else {
+          animal.motivo_no_aplica = 'Sin motivo especificado';
+        }
+      }
+    },
     onEdadChange(animal) {
       const edad = parseInt(animal.edad_meses) || 0;
       if (edad > 0 && edad < this.edadMinimaPrueba) {
+        if (animal.resultado && animal.resultado !== 'Pendiente' && animal.resultado !== 'No Aplica') {
+          const ok = confirm(`Al cambiar la edad a ${edad} meses (menor a ${this.edadMinimaPrueba} meses de edad mínima), el resultado "${animal.resultado}" se reiniciará a "No Aplica". ¿Continuar?`);
+          if (!ok) {
+            animal.edad_meses = null;
+            return;
+          }
+        }
         animal.resultado = 'No Aplica';
         animal.motivo_no_aplica = `Menor a ${this.edadMinimaPrueba} meses`;
       } else if (animal.resultado === 'No Aplica') {
+        const motivo = animal.motivo_no_aplica || '';
+        if (!motivo.startsWith('Menor a')) {
+          const ok = confirm(`Al cambiar la edad a ${edad} meses, el estado "No Aplica" se reiniciará a "Pendiente". ¿Continuar?`);
+          if (!ok) {
+            animal.edad_meses = null;
+            return;
+          }
+        }
         animal.resultado = 'Pendiente';
         animal.motivo_no_aplica = '';
       }
@@ -1457,9 +1485,6 @@ export default {
     },
     loadMoreAnimals() {
       this.visibleAnimalsLimit += 30;
-    },
-    getOriginalAnimalIndex(animal) {
-      return this.form.animales.indexOf(animal);
     },
     onScannerScanned(decodedText) {
       if (this.activeScanIndex !== -1 && this.form.animales[this.activeScanIndex]) {

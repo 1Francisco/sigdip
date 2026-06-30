@@ -1,4 +1,4 @@
-<?php
+es  <?php
 
 use App\Http\Controllers\Api\AnimalesApiController;
 use App\Http\Controllers\Api\AreteCensoApiController;
@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\SyncController;
 use App\Http\Controllers\Api\VisitasApiController;
 use App\Http\Controllers\InspeccionController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -100,6 +101,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/medicos', [MedicosApiController::class, 'store']);
     Route::put('/medicos/{id}', [MedicosApiController::class, 'update']);
     Route::delete('/medicos/{id}', [MedicosApiController::class, 'destroy']);
+
+    // Asignación de Productores a Médicos (Solo Administradores)
+    Route::get('/usuarios/{usuario}/productores-asignables', [UserController::class, 'productoresAsignablesApi']);
+    Route::post('/usuarios/{usuario}/asignar-productores', [UserController::class, 'guardarAsignacionApi']);
+    Route::post('/usuarios/{usuario}/desasignar-productor/{productor}', [UserController::class, 'desasignarProductorApi']);
 
     // Animales desde la App Móvil
     Route::get('/animales', [AnimalesApiController::class, 'index']);

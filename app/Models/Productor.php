@@ -31,6 +31,16 @@ class Productor extends Model
         'clave_cuarentena',
     ];
 
+    protected static function booted()
+    {
+        static::saving(function ($productor) {
+            if ($productor->clave_cuarentena && ! $productor->zona) {
+                $first = strtoupper($productor->clave_cuarentena)[0] ?? '';
+                $productor->zona = in_array($first, ['A', 'B'], true) ? $first : null;
+            }
+        });
+    }
+
     /**
      * Get all predios for the productor.
      */

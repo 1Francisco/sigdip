@@ -62,9 +62,11 @@ class SyncTest extends TestCase
         $response = $this->getJson('/api/sync/catalogos');
 
         $response->assertStatus(200);
-        $visitas = $response->json('data.visitas');
-        $this->assertNotEmpty($visitas);
-        $productor = $visitas[0]['predio']['productor'];
+        $predios = $response->json('data.predios');
+        $this->assertNotEmpty($predios);
+        $predio = collect($predios)->firstWhere('id', $predioConVisita->id);
+        $this->assertNotNull($predio);
+        $productor = $predio['productor'];
         $this->assertNotNull($productor);
         $this->assertEquals($this->user->id, $productor['medico_id']);
     }

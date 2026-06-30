@@ -137,6 +137,33 @@
                     <input v-model="form.email" type="email" class="form-control-custom" placeholder="Ej: ejemplo@correo.com">
                   </div>
                 </div>
+
+                <!-- Clave de Cuarentena | Zona / Sector (Solo Administradores) -->
+                <template v-if="isAdmin">
+                  <div class="col-12 col-md-6">
+                    <div class="form-group-custom">
+                      <label class="form-label-custom">Clave de Cuarentena</label>
+                      <input 
+                        v-model="form.clave_cuarentena" 
+                        type="text" 
+                        class="form-control-custom text-uppercase" 
+                        placeholder="Ej. BD-123421"
+                        @input="autoSelectZona"
+                      >
+                      <div class="small text-muted mt-1" style="font-size: 0.72rem;">Debe iniciar con AD, AP, BD o BP.</div>
+                    </div>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <div class="form-group-custom">
+                      <label class="form-label-custom">Zona / Sector</label>
+                      <select v-model="form.zona" class="form-select form-control-custom">
+                        <option value="">-- Sin Zona --</option>
+                        <option value="A">Sector A</option>
+                        <option value="B">Sector B</option>
+                      </select>
+                    </div>
+                  </div>
+                </template>
               </div>
 
               <!-- Action Buttons Paso 1 -->
@@ -289,6 +316,8 @@ export default {
         estado: 'Nayarit',
         telefono: '',
         email: '',
+        clave_cuarentena: '',
+        zona: '',
 
         // Predio optional data
         nombre_rancho: '',
@@ -360,6 +389,8 @@ export default {
           this.form.estado = prod.estado || 'Nayarit';
           this.form.telefono = prod.telefono || '';
           this.form.email = prod.email || '';
+          this.form.clave_cuarentena = prod.clave_cuarentena || '';
+          this.form.zona = prod.zona || '';
 
           // Si es edición, también permitimos editar su predio directamente
           this.form.nombre_rancho = predioAsociado.nombre !== 'Sin Rancho' ? predioAsociado.nombre : '';
@@ -424,6 +455,12 @@ export default {
       this.$router.push('/productores');
     },
 
+    autoSelectZona() {
+      if (!this.form.clave_cuarentena) return;
+      const first = this.form.clave_cuarentena.toUpperCase()[0];
+      this.form.zona = (first === 'A' || first === 'B') ? first : '';
+    },
+
     // Guardar con Rancho asociado
     async saveWithPredio() {
       if (!this.form.nombre_rancho.trim() || !this.form.clave_unidad_produccion.trim()) {
@@ -454,6 +491,8 @@ export default {
         estado: this.form.estado.trim(),
         telefono: this.form.telefono.trim(),
         email: this.form.email.trim(),
+        clave_cuarentena: this.isAdmin ? (this.form.clave_cuarentena || '').toUpperCase().trim() : null,
+        zona: this.isAdmin ? (this.form.zona || null) : null,
 
         // Banderas en 2 pasos de la web
         registrar_predio: this.mode === 'create' && this.registrarPredio ? 1 : 0,
@@ -553,7 +592,9 @@ export default {
                 municipio: body.municipio,
                 localidad: body.localidad,
                 estado: body.estado,
-                email: body.email
+                email: body.email,
+                clave_cuarentena: body.clave_cuarentena,
+                zona: body.zona
               }
             };
           } else {
@@ -578,7 +619,9 @@ export default {
                 municipio: body.municipio,
                 localidad: body.localidad,
                 estado: body.estado,
-                email: body.email
+                email: body.email,
+                clave_cuarentena: body.clave_cuarentena,
+                zona: body.zona
               }
             };
           }
@@ -607,6 +650,8 @@ export default {
               p.productor.estado = body.estado;
               p.productor.telefono = body.telefono;
               p.productor.email = body.email;
+              p.productor.clave_cuarentena = body.clave_cuarentena;
+              p.productor.zona = body.zona;
 
               // Si actualiza los campos del predio existente
               if (p.nombre !== 'Sin Rancho' && this.form.nombre_rancho.trim()) {

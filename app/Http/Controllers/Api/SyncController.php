@@ -24,22 +24,34 @@ class SyncController extends Controller
     {
         $user = $request->user();
         $veterinarioId = $user->id ?? auth()->id() ?? 1;
+        $since = $request->query('since');
+        $page = (int) $request->query('page', 1);
+        $perPage = (int) $request->query('per_page', 500);
+        $isAdmin = $user && $user->hasRole('Administrador');
+        $paginate = !$since && $isAdmin && $perPage > 0;
 
-        // Obtener predios con sus productores (filtrados si no es administrador)
+        // ---- PREDIOS ----
         $prediosQuery = Predio::with('productor');
-        if ($user && ! $user->hasRole('Administrador')) {
+        if (!$isAdmin) {
             $prediosQuery->whereHas('productor', function ($q) use ($veterinarioId) {
                 $q->where('medico_id', $veterinarioId);
             });
         }
-        $predios = $prediosQuery->get();
-
-        // Obtener todas las visitas asignadas a este veterinario (o todas si es Administrador) con relaciones completas
-        $query = Visita::with(['predio.productor', 'veterinario', 'inspeccion']);
-        if ($user && ! $user->hasRole('Administrador')) {
-            $query->where('veterinario_id', $veterinarioId);
+        if ($since) {
+            $prediosQuery->where('updated_at', '>', $since);
         }
-        $visitas = $query->orderByDesc('id')->get()->map(function ($visita) {
+        $predios = $paginate ? $prediosQuery->paginate($perPage, ['*'], 'predios_page', $page) : $prediosQuery->get();
+
+        // ---- VISITAS ----
+        $visitasQuery = Visita::with(['veterinario', 'inspeccion']);
+        if (!$isAdmin) {
+            $visitasQuery->where('veterinario_id', $veterinarioId);
+        }
+        if ($since) {
+            $visitasQuery->where('updated_at', '>', $since);
+        }
+        $visitasCollection = $paginate ? $visitasQuery->orderByDesc('id')->paginate($perPage, ['*'], 'visitas_page', $page) : $visitasQuery->orderByDesc('id')->get();
+        $visitas = $visitasCollection->map(function ($visita) {
             return [
                 'id' => $visita->id,
                 'codigo' => $visita->codigo,
@@ -49,34 +61,6 @@ class SyncController extends Controller
                 'estado' => $visita->estado,
                 'inyeccion' => (bool) $visita->inyeccion,
                 'observaciones' => $visita->observaciones,
-                'predio' => $visita->predio ? [
-                    'id' => $visita->predio->id,
-                    'nombre' => $visita->predio->nombre_rancho,
-                    'nombre_rancho' => $visita->predio->nombre_rancho,
-                    'clave_unidad_produccion' => $visita->predio->clave_unidad_produccion,
-                    'latitud' => $visita->predio->latitud,
-                    'longitud' => $visita->predio->longitud,
-                    'domicilio' => $visita->predio->domicilio,
-                    'municipio' => $visita->predio->municipio,
-                    'localidad' => $visita->predio->localidad,
-                    'productor' => $visita->predio->productor ? [
-                        'id' => $visita->predio->productor->id,
-                        'nombre' => $visita->predio->productor->nombre,
-                        'apellido_paterno' => $visita->predio->productor->apellido_paterno,
-                        'apellido_materno' => $visita->predio->productor->apellido_materno,
-                        'curp' => $visita->predio->productor->curp,
-                        'upp' => $visita->predio->productor->upp,
-                        'telefono' => $visita->predio->productor->telefono,
-                        'domicilio' => $visita->predio->productor->domicilio,
-                        'municipio' => $visita->predio->productor->municipio,
-                        'localidad' => $visita->predio->productor->localidad,
-                        'estado' => $visita->predio->productor->estado,
-                        'email' => $visita->predio->productor->email,
-                        'clave_cuarentena' => $visita->predio->productor->clave_cuarentena,
-                        'zona' => $visita->predio->productor->zona,
-                        'medico_id' => $visita->predio->productor->medico_id,
-                    ] : null,
-                ] : null,
                 'veterinario' => $visita->veterinario ? [
                     'id' => $visita->veterinario->id,
                     'name' => $visita->veterinario->name,
@@ -95,26 +79,56 @@ class SyncController extends Controller
             ];
         });
 
-        // Obtener productores (filtrados si no es administrador) y médicos para caché offline completo
+        // ---- PRODUCTORES ----
         $productoresQuery = Productor::with('predios');
-        if ($user && ! $user->hasRole('Administrador')) {
+        if (!$isAdmin) {
             $productoresQuery->where('medico_id', $veterinarioId);
         }
-        $productores = $productoresQuery->get();
+        if ($since) {
+            $productoresQuery->where('updated_at', '>', $since);
+        }
+        $productores = $paginate ? $productoresQuery->paginate($perPage, ['*'], 'productores_page', $page) : $productoresQuery->get();
+
+        // ---- MÉDICOS (sin paginación, siempre completo) ----
         $medicos = User::role('Medico_Campo')
             ->select('id', 'name', 'email')
             ->orderBy('name')
             ->get();
 
-        return response()->json([
+        $response = [
             'status' => 'success',
             'data' => [
-                'predios' => $predios,
-                'productores' => $productores,
+                'predios' => $paginate ? $predios->items() : $predios,
+                'productores' => $paginate ? $productores->items() : $productores,
                 'medicos' => $medicos,
                 'visitas' => $visitas,
             ],
-        ]);
+        ];
+
+        if ($paginate) {
+            $response['pagination'] = [
+                'predios' => [
+                    'current_page' => $predios->currentPage(),
+                    'per_page' => $predios->perPage(),
+                    'total' => $predios->total(),
+                    'last_page' => $predios->lastPage(),
+                ],
+                'productores' => [
+                    'current_page' => $productores->currentPage(),
+                    'per_page' => $productores->perPage(),
+                    'total' => $productores->total(),
+                    'last_page' => $productores->lastPage(),
+                ],
+                'visitas' => [
+                    'current_page' => $visitasCollection->currentPage(),
+                    'per_page' => $visitasCollection->perPage(),
+                    'total' => $visitasCollection->total(),
+                    'last_page' => $visitasCollection->lastPage(),
+                ],
+            ];
+        }
+
+        return response()->json($response);
     }
 
     /**
@@ -406,6 +420,8 @@ class SyncController extends Controller
             'productores.*.id' => 'required|string',
             'productores.*.nombre' => 'required|string',
             'productores.*.apellido_paterno' => 'required|string',
+            'productores.*.clave_cuarentena' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP)/i'],
+            'productores.*.zona' => 'nullable|string|in:A,B',
         ]);
 
         $resultados = [];
@@ -426,6 +442,8 @@ class SyncController extends Controller
                     'upp' => $item['upp'] ?? 'N/A',
                     'telefono' => $item['telefono'] ?? '',
                     'medico_id' => $request->user()->hasRole('Administrador') ? ($item['medico_id'] ?? null) : $request->user()->id,
+                    'clave_cuarentena' => $request->user()->hasRole('Administrador') ? ($item['clave_cuarentena'] ?? null) : null,
+                    'zona' => $request->user()->hasRole('Administrador') ? ($item['zona'] ?? null) : null,
                 ]);
             }
 

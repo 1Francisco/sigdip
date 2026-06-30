@@ -2,6 +2,7 @@ import { mount } from 'cypress/vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import ProductoresFormView from '../../src/views/ProductoresFormView.vue'
 import userAdmin from '../fixtures/user-admin.json'
+import userMedico from '../fixtures/user-medico.json'
 
 const EmptyView = { template: '<div>Other</div>' }
 
@@ -169,5 +170,125 @@ describe('ProductoresFormView', () => {
 
     cy.contains('Cancelar').click()
     cy.location('hash', { timeout: 5000 }).should('include', '/productores')
+  })
+
+  // ---- Clave de Cuarentena ----
+
+  it('Admin ve campo Clave de Cuarentena y Zona', () => {
+    const router = buildRouter('/productores/nuevo')
+    mount(ProductoresFormView, { global: { plugins: [router] } })
+
+    cy.contains('Clave de Cuarentena').should('be.visible')
+    cy.get('input[placeholder*="BD-123421"]').should('be.visible')
+    cy.contains('Zona / Sector').should('be.visible')
+    cy.get('select').should('be.visible')
+    cy.contains('option', 'Sector A').should('be.visible')
+    cy.contains('option', 'Sector B').should('be.visible')
+  })
+
+  it('Medico NO ve campo Clave de Cuarentena', () => {
+    cy.setLoginState({ user: userMedico })
+
+    const router = buildRouter('/productores/nuevo')
+    mount(ProductoresFormView, { global: { plugins: [router] } })
+
+    cy.contains('Clave de Cuarentena').should('not.exist')
+    cy.get('input[placeholder*="BD-123421"]').should('not.exist')
+    cy.contains('Zona / Sector').should('not.exist')
+  })
+
+  it('autoSelectZona asigna A para clave que empieza con A', () => {
+    const router = buildRouter('/productores/nuevo')
+    mount(ProductoresFormView, { global: { plugins: [router] } })
+
+    cy.get('input[placeholder*="BD-123421"]').type('AD-123')
+    cy.get('select').should('have.value', 'A')
+  })
+
+  it('autoSelectZona asigna B para clave que empieza con B', () => {
+    const router = buildRouter('/productores/nuevo')
+    mount(ProductoresFormView, { global: { plugins: [router] } })
+
+    cy.get('input[placeholder*="BD-123421"]').type('BP-456')
+    cy.get('select').should('have.value', 'B')
+  })
+
+  it('payload incluye clave_cuarentena para Admin', () => {
+    cy.seedIndexedDB('catalogos', 'predios', [])
+
+    cy.intercept('POST', '**/api/productores', {
+      statusCode: 200,
+      body: { success: true, productor: { id: 200, nombre: 'Juan', apellido_paterno: 'Perez', curp: 'JUAP841212HDFRRN01' } },
+    }).as('storeProductor')
+
+    const router = buildRouter('/productores/nuevo')
+    mount(ProductoresFormView, { global: { plugins: [router] } })
+
+    cy.get('input[placeholder*="Pepito"]').type('Juan')
+    cy.get('input[placeholder*="Tejeda"]').type('Perez')
+    cy.get('input[maxlength="18"]').first().type('JUAP841212HDFRRN01')
+    cy.get('input[placeholder*="57625285"]').type('UPP-001')
+    cy.get('input[placeholder*="BD-123421"]').type('AD-999')
+    cy.get('form').submit()
+
+    cy.contains('No tiene predio (Solo Productor)').click()
+    cy.wait('@storeProductor').then((interception) => {
+      expect(interception.request.body.clave_cuarentena).to.eq('AD-999')
+      expect(interception.request.body.zona).to.eq('A')
+    })
+  })
+
+  it('payload NO incluye clave_cuarentena para Medico', () => {
+    cy.setLoginState({ user: userMedico })
+    cy.seedIndexedDB('catalogos', 'predios', [])
+
+    cy.intercept('POST', '**/api/productores', {
+      statusCode: 200,
+      body: { success: true, productor: { id: 200, nombre: 'Juan', apellido_paterno: 'Perez', curp: 'JUAP841212HDFRRN01' } },
+    }).as('storeProductor')
+
+    const router = buildRouter('/productores/nuevo')
+    mount(ProductoresFormView, { global: { plugins: [router] } })
+
+    cy.get('input[placeholder*="Pepito"]').type('Juan')
+    cy.get('input[placeholder*="Tejeda"]').type('Perez')
+    cy.get('input[maxlength="18"]').first().type('JUAP841212HDFRRN01')
+    cy.get('input[placeholder*="57625285"]').type('UPP-001')
+    cy.get('form').submit()
+
+    cy.contains('No tiene predio (Solo Productor)').click()
+    cy.wait('@storeProductor').then((interception) => {
+      expect(interception.request.body.clave_cuarentena).to.be.null
+      expect(interception.request.body.zona).to.be.null
+    })
+  })
+
+  it('clave_cuarentena se guarda en IndexedDB', () => {
+    cy.seedIndexedDB('catalogos', 'predios', [])
+
+    cy.intercept('POST', '**/api/productores', {
+      statusCode: 200,
+      body: { success: true, productor: { id: 300, nombre: 'Maria', apellido_paterno: 'Lopez', curp: 'MALO850101HPLRRN01' } },
+    }).as('storeProductor')
+
+    const router = buildRouter('/productores/nuevo')
+    mount(ProductoresFormView, { global: { plugins: [router] } })
+
+    cy.get('input[placeholder*="Pepito"]').type('Maria')
+    cy.get('input[placeholder*="Tejeda"]').type('Lopez')
+    cy.get('input[maxlength="18"]').first().type('MALO850101HPLRRN01')
+    cy.get('input[placeholder*="57625285"]').type('UPP-002')
+    cy.get('input[placeholder*="BD-123421"]').type('BD-789')
+    cy.get('form').submit()
+
+    cy.contains('No tiene predio (Solo Productor)').click()
+    cy.wait('@storeProductor', { timeout: 10000 })
+
+    cy.getIndexedDB('catalogos', 'predios').then((predios) => {
+      const saved = predios.find(p => p.productor?.curp === 'MALO850101HPLRRN01')
+      expect(saved).to.exist
+      expect(saved.productor.clave_cuarentena).to.eq('BD-789')
+      expect(saved.productor.zona).to.eq('B')
+    })
   })
 })

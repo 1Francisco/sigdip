@@ -112,6 +112,33 @@
                   <input v-model="form.email" type="email" class="form-control-custom" placeholder="ejemplo@correo.com">
                 </div>
               </div>
+
+              <!-- Clave de Cuarentena | Zona / Sector (Solo Administradores) -->
+              <template v-if="isAdmin">
+                <div class="col-12 col-md-6">
+                  <div class="form-group-custom">
+                    <label class="form-label-custom">Clave de Cuarentena</label>
+                    <input 
+                      v-model="form.clave_cuarentena" 
+                      type="text" 
+                      class="form-control-custom text-uppercase" 
+                      placeholder="Ej. BD-123421"
+                      @input="autoSelectZona"
+                    >
+                    <div class="small text-muted mt-1" style="font-size: 0.72rem;">Debe iniciar con AD, AP, BD o BP.</div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="form-group-custom">
+                    <label class="form-label-custom">Zona / Sector</label>
+                    <select v-model="form.zona" class="form-select form-control-custom">
+                      <option value="">-- Sin Zona --</option>
+                      <option value="A">Sector A</option>
+                      <option value="B">Sector B</option>
+                    </select>
+                  </div>
+                </div>
+              </template>
             </div>
 
             <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top border-slate-100">
@@ -138,6 +165,7 @@ export default {
     return {
       userName: '',
       isOnline: true,
+      isAdmin: false,
       networkListener: null,
       saving: false,
       errorMsg: '',
@@ -154,6 +182,8 @@ export default {
         estado: 'Nayarit',
         telefono: '',
         email: '',
+        clave_cuarentena: '',
+        zona: '',
         nombre_rancho: '',
         clave_unidad_produccion: '',
         predio_localidad: '',
@@ -167,6 +197,7 @@ export default {
   async mounted() {
     const user = api.getCurrentUser();
     this.userName = user?.name || 'Administrador Central';
+    this.isAdmin = user?.roles && user.roles.includes('Administrador');
     this.productorId = this.$route.params.id;
 
     await this.loadProductorDataForEdit();
@@ -205,6 +236,8 @@ export default {
         this.form.estado = productor.estado || 'Nayarit';
         this.form.telefono = productor.telefono || '';
         this.form.email = productor.email || '';
+        this.form.clave_cuarentena = productor.clave_cuarentena || '';
+        this.form.zona = productor.zona || '';
         this.form.nombre_rancho = predio?.nombre_rancho || predio?.nombre || '';
         this.form.clave_unidad_produccion = predio?.clave_unidad_produccion || predio?.upp || '';
         this.form.predio_localidad = predio?.localidad || '';
@@ -228,6 +261,8 @@ export default {
           this.form.estado = prod.estado || 'Nayarit';
           this.form.telefono = prod.telefono || '';
           this.form.email = prod.email || '';
+          this.form.clave_cuarentena = prod.clave_cuarentena || '';
+          this.form.zona = prod.zona || '';
           this.form.nombre_rancho = predioAsociado.nombre || predioAsociado.nombre_rancho || '';
           this.form.clave_unidad_produccion = predioAsociado.upp || predioAsociado.clave_unidad_produccion || '';
           this.form.predio_localidad = predioAsociado.localidad || '';
@@ -242,6 +277,11 @@ export default {
     },
     handleCancel() {
       this.$router.push('/productores');
+    },
+    autoSelectZona() {
+      if (!this.form.clave_cuarentena) return;
+      const first = this.form.clave_cuarentena.toUpperCase()[0];
+      this.form.zona = (first === 'A' || first === 'B') ? first : '';
     },
     async processFinalSave() {
       this.saving = true;
@@ -258,7 +298,9 @@ export default {
         localidad: this.form.localidad.trim(),
         estado: this.form.estado.trim(),
         telefono: this.form.telefono.trim(),
-        email: this.form.email.trim()
+        email: this.form.email.trim(),
+        clave_cuarentena: this.isAdmin ? (this.form.clave_cuarentena || '').toUpperCase().trim() : null,
+        zona: this.isAdmin ? (this.form.zona || null) : null
       };
 
       try {
@@ -280,6 +322,8 @@ export default {
             p.productor.estado = body.estado;
             p.productor.telefono = body.telefono;
             p.productor.email = body.email;
+            p.productor.clave_cuarentena = body.clave_cuarentena;
+            p.productor.zona = body.zona;
 
             if (p.nombre !== 'Sin Rancho' && this.form.nombre_rancho.trim()) {
               p.nombre = this.form.nombre_rancho.trim();

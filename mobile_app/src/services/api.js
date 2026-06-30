@@ -271,8 +271,9 @@ export default {
   },
 
   // Sincronización
-  async downloadCatalogos() {
-    return await request('GET', '/sync/catalogos');
+  async downloadCatalogos(params = {}) {
+    const query = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
+    return await request('GET', '/sync/catalogos' + query);
   },
 
   async uploadInspecciones(inspecciones) {
@@ -430,6 +431,19 @@ export default {
 
   async deleteMedico(id) {
     return await request('DELETE', `/medicos/${id}`);
+  },
+
+  // Asignación de Productores a Médicos
+  async getProductoresAsignables(usuarioId) {
+    return await request('GET', `/usuarios/${usuarioId}/productores-asignables`);
+  },
+
+  async asignarProductores(usuarioId, productorIds) {
+    return await request('POST', `/usuarios/${usuarioId}/asignar-productores`, { productor_ids: productorIds });
+  },
+
+  async desasignarProductor(usuarioId, productorId) {
+    return await request('POST', `/usuarios/${usuarioId}/desasignar-productor/${productorId}`);
   },
 
   async getAnimales(params = {}) {

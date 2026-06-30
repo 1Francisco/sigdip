@@ -200,9 +200,9 @@
                 class="list-group-item p-3 d-flex justify-content-between align-items-center list-item-cloned"
               >
                 <div class="text-start">
-                  <div class="fw-bold list-item-name text-dark">{{ visita.predio?.productor?.nombre || 'Sin Productor' }}</div>
+                  <div class="fw-bold list-item-name text-dark">{{ getPredioProductorNombre(visita.predio_id) }}</div>
                   <small class="text-secondary d-block mb-1 list-item-desc">
-                    <i class="bi bi-pin-map"></i> {{ visita.predio?.nombre || 'Rancho ' + visita.predio_id }} ({{ visita.predio?.localidad || 'Localidad' }})
+                    <i class="bi bi-pin-map"></i> {{ getPredioNombre(visita.predio_id) }} ({{ getPredioLocalidad(visita.predio_id) }})
                   </small>
                   <small class="text-muted list-item-date font-mono"><i class="bi bi-calendar3"></i> {{ formatDate(visita.fecha_programada) }}</small>
                 </div>
@@ -360,8 +360,17 @@ export default {
       }
     },
     getPredioNombre(id) {
-      const pred = this.prediosList.find(p => p.id === id);
-      return pred ? pred.nombre : 'Rancho ' + id;
+      const pred = this.prediosList.find(p => Number(p.id) === Number(id));
+      return pred ? (pred.nombre_rancho || pred.nombre || 'Rancho') : 'Rancho ' + id;
+    },
+    getPredioProductorNombre(predioId) {
+      const pred = this.prediosList.find(p => Number(p.id) === Number(predioId));
+      if (!pred || !pred.productor) return 'Sin Productor';
+      return [pred.productor.nombre, pred.productor.apellido_paterno].filter(Boolean).join(' ') || 'Sin Productor';
+    },
+    getPredioLocalidad(predioId) {
+      const pred = this.prediosList.find(p => Number(p.id) === Number(predioId));
+      return pred?.localidad || 'Localidad';
     },
     startInspeccion(visita) {
       this.$router.push(`/inspeccion/${visita.predio_id}?visita_id=${visita.id}`);

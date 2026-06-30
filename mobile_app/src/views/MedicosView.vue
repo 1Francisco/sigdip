@@ -93,6 +93,13 @@
                     <td>
                       <div class="d-flex justify-content-center gap-2">
                         <button 
+                          @click="$router.push('/medicos/asignar/' + medico.id)" 
+                          class="btn btn-sm btn-outline-success d-flex align-items-center justify-content-center gap-1.5 px-3 py-1-5 bg-transparent border-success text-success rounded-3" 
+                          title="Asignar productores a este médico"
+                        >
+                          <i class="bi bi-person-plus"></i> Asignar
+                        </button>
+                        <button 
                           @click="$router.push('/medicos/editar/' + medico.id)" 
                           class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center gap-1.5 px-3 py-1-5 bg-transparent border-primary text-primary rounded-3" 
                           title="Editar médico"
@@ -135,9 +142,16 @@
                     </div>
                   </div>
 
-                  <div class="medico-mobile-footer">
+                    <div class="medico-mobile-footer">
                     <span class="footer-actions-label">Acciones</span>
                     <div class="d-flex gap-2">
+                      <button 
+                        @click="$router.push('/medicos/asignar/' + medico.id)" 
+                        class="btn-icon-square-green" 
+                        title="Asignar productores"
+                      >
+                        <i class="bi bi-person-plus"></i>
+                      </button>
                       <button 
                         @click="$router.push('/medicos/editar/' + medico.id)" 
                         class="btn-icon-square-blue" 
@@ -835,6 +849,27 @@ export default {
 
   .btn-icon-square-blue:active {
     background-color: #eff6ff;
+    transform: scale(0.95);
+  }
+
+  .btn-icon-square-green {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1.5px solid #16a34a;
+    background-color: #ffffff;
+    color: #16a34a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+  }
+
+  .btn-icon-square-green:active {
+    background-color: #f0fdf4;
     transform: scale(0.95);
   }
 }

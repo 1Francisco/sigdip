@@ -145,6 +145,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/medicos/asignar/:id',
+    name: 'AsignarProductores',
+    component: () => import('../views/AsignarProductoresView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/animales',
     name: 'Animales',
     component: () => import('../views/AnimalesListView.vue'),
