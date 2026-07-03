@@ -15,6 +15,7 @@ class MedicosApiController extends Controller
         abort_unless($user->hasRole('Administrador'), 403, 'Solo administradores pueden gestionar médicos.');
 
         $medicos = User::role('Medico_Campo')
+            ->withCount('productores')
             ->orderByDesc('id')
             ->get()
             ->map(fn (User $u) => [
@@ -22,6 +23,7 @@ class MedicosApiController extends Controller
                 'name' => $u->name,
                 'email' => $u->email,
                 'created_at' => $u->created_at->format('d/m/Y'),
+                'productores_count' => $u->productores_count,
             ]);
 
         return response()->json([

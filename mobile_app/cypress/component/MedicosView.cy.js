@@ -27,9 +27,9 @@ function buildRouter() {
 }
 
 const fakeMedicos = [
-  { id: 1, name: 'Dr. Juan Perez Lopez', email: 'juan.perez@sigdip.com', created_at: '01/01/2026' },
-  { id: 2, name: 'Dra. Maria Garcia Hernandez', email: 'maria.garcia@sigdip.com', created_at: '15/02/2026' },
-  { id: 3, name: 'Dr. Carlos Martinez Ruiz', email: 'carlos.martinez@sigdip.com', created_at: '20/03/2026' },
+  { id: 1, name: 'Dr. Juan Perez Lopez', email: 'juan.perez@sigdip.com', created_at: '01/01/2026', productores_count: 5 },
+  { id: 2, name: 'Dra. Maria Garcia Hernandez', email: 'maria.garcia@sigdip.com', created_at: '15/02/2026', productores_count: 0 },
+  { id: 3, name: 'Dr. Carlos Martinez Ruiz', email: 'carlos.martinez@sigdip.com', created_at: '20/03/2026', productores_count: 12 },
 ]
 
 describe('MedicosView', () => {
@@ -60,6 +60,20 @@ describe('MedicosView', () => {
       cy.contains('Dr. Juan Perez Lopez').should('be.visible')
       cy.contains('Dra. Maria Garcia Hernandez').should('be.visible')
       cy.contains('Dr. Carlos Martinez Ruiz').should('be.visible')
+    })
+
+    it('muestra spinner de carga mientras obtiene datos', () => {
+      cy.intercept('GET', '**/api/medicos', {
+        statusCode: 200,
+        body: { data: fakeMedicos },
+        delayMs: 500,
+      }).as('getMedicosSlow')
+
+      const router = buildRouter()
+      router.push('/medicos')
+      mount(MedicosView, { global: { plugins: [router] } })
+
+      cy.contains('Cargando médicos verificadores', { timeout: 3000 }).should('be.visible')
     })
 
     it('muestra error cuando falla carga de medicos', () => {
@@ -103,8 +117,24 @@ describe('MedicosView', () => {
       cy.wait('@getMedicos', { timeout: 10000 })
       cy.contains('Nombre Completo').should('be.visible')
       cy.contains('Correo de Acceso').should('be.visible')
+      cy.contains('Productores').should('be.visible')
       cy.contains('Fecha Regist').should('be.visible')
       cy.contains('Acciones').should('be.visible')
+    })
+
+    it('muestra conteo de productores asignados en tabla', () => {
+      cy.intercept('GET', '**/api/medicos', {
+        statusCode: 200,
+        body: { data: fakeMedicos },
+      }).as('getMedicos')
+
+      const router = buildRouter()
+      router.push('/medicos')
+      mount(MedicosView, { global: { plugins: [router] } })
+
+      cy.wait('@getMedicos', { timeout: 10000 })
+      cy.contains('5').should('be.visible')
+      cy.contains('12').should('be.visible')
     })
 
     it('muestra informacion de paginacion', () => {
@@ -189,6 +219,28 @@ describe('MedicosView', () => {
 
       cy.wait('@getMedicosEmpty', { timeout: 10000 })
       cy.contains('No hay médicos registrados', { timeout: 5000 }).should('be.visible')
+    })
+
+    it('muestra mensaje cuando busqueda no encuentra resultados', () => {
+      cy.intercept('GET', '**/api/medicos', {
+        statusCode: 200,
+        body: { data: fakeMedicos },
+      }).as('getMedicos')
+
+      const router = buildRouter()
+      router.push('/medicos')
+      mount(MedicosView, { global: { plugins: [router] } })
+
+      cy.wait('@getMedicos', { timeout: 10000 })
+
+      cy.window().then(() => {
+        const el = document.querySelector('input[placeholder*="Buscar"]')
+        if (el) {
+          el.value = 'ZZZZ'
+          el.dispatchEvent(new Event('input'))
+        }
+      })
+      cy.contains('No se encontraron médicos con el criterio buscado.', { timeout: 5000 }).should('be.visible')
     })
 
     it('muestra badge de conectividad', () => {

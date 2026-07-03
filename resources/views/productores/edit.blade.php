@@ -84,11 +84,12 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Zona / Sector</label>
-                            <select name="zona" id="zona" class="form-select rounded-3">
+                            <select id="zona_select" class="form-select rounded-3 bg-light" disabled>
                                 <option value="">-- Sin Zona --</option>
                                 <option value="A" {{ old('zona', $productor->zona) == 'A' ? 'selected' : '' }}>Sector A</option>
                                 <option value="B" {{ old('zona', $productor->zona) == 'B' ? 'selected' : '' }}>Sector B</option>
                             </select>
+                            <input type="hidden" name="zona" id="zona" value="{{ old('zona', $productor->zona) }}">
                         </div>
 
                         <div class="col-md-12">
@@ -123,15 +124,19 @@
 <script>
     // Auto-update zona based on clave_cuarentena selection
     const claveSelect = document.getElementById('clave_cuarentena');
-    const zonaSelect = document.getElementById('zona');
-    if (claveSelect && zonaSelect) {
+    const zonaSelect = document.getElementById('zona_select');
+    const zonaHidden = document.getElementById('zona');
+    if (claveSelect && (zonaSelect || zonaHidden)) {
         claveSelect.addEventListener('input', function() {
             const val = this.value.toUpperCase();
+            let finalZona = '';
             if (val.startsWith('AD') || val.startsWith('AP')) {
-                zonaSelect.value = 'A';
+                finalZona = 'A';
             } else if (val.startsWith('BD') || val.startsWith('BP')) {
-                zonaSelect.value = 'B';
+                finalZona = 'B';
             }
+            if (zonaSelect) zonaSelect.value = finalZona;
+            if (zonaHidden) zonaHidden.value = finalZona;
         });
     }
 </script>

@@ -9,7 +9,7 @@
         </div>
         
         <!-- Web Badges -->
-        <div class="d-none d-md-flex align-items-center gap-2">
+        <div class="d-none d-lg-flex align-items-center gap-2">
           <span class="web-connectivity-pill">
             <span class="dot" :class="isOnline ? 'bg-success' : 'bg-danger'"></span>
             {{ isOnline ? 'Conectado' : 'Desconectado' }}
@@ -55,11 +55,25 @@
         </div>
 
         <div class="card-body p-0 text-start">
-          
-          <!-- Empty State when filtered results are 0 -->
-          <div v-if="!loading && medicos.length === 0" class="text-center p-5 text-muted">
+
+          <!-- Loading state -->
+          <div v-if="loading && medicos.length === 0" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="text-muted small mt-2 mb-0">Cargando médicos verificadores...</p>
+          </div>
+
+          <!-- Empty state (no data at all) -->
+          <div v-else-if="!loading && medicos.length === 0" class="text-center p-5 text-muted">
             <i class="bi bi-people display-6 d-block mb-2 text-muted"></i>
             <p class="mb-0 small text-secondary">No hay médicos registrados en el sistema</p>
+          </div>
+
+          <!-- Empty search results -->
+          <div v-else-if="!loading && filteredMedicos.length === 0 && search" class="text-center p-5 text-muted">
+            <i class="bi bi-search display-6 d-block mb-2 text-muted"></i>
+            <p class="mb-0 small text-secondary">No se encontraron médicos con el criterio buscado.</p>
           </div>
 
           <div v-else>
@@ -70,6 +84,7 @@
                   <tr>
                     <th class="ps-4 text-secondary fw-bold text-uppercase fs-7 tracking-wider">Nombre Completo</th>
                     <th class="text-secondary fw-bold text-uppercase fs-7 tracking-wider">Correo de Acceso</th>
+                    <th class="text-center text-secondary fw-bold text-uppercase fs-7 tracking-wider">Productores</th>
                     <th class="text-secondary fw-bold text-uppercase fs-7 tracking-wider">Fecha Regist.</th>
                     <th class="text-center text-secondary fw-bold text-uppercase fs-7 tracking-wider">Acciones</th>
                   </tr>
@@ -89,6 +104,11 @@
                       </div>
                     </td>
                     <td class="text-dark">{{ medico.email }}</td>
+                    <td class="text-center">
+                      <span class="badge bg-primary-soft text-primary rounded-pill px-3 py-1 fw-bold">
+                        {{ medico.productores_count ?? 0 }}
+                      </span>
+                    </td>
                     <td class="text-dark">{{ medico.created_at }}</td>
                     <td>
                       <div class="d-flex justify-content-center gap-2">
@@ -134,6 +154,11 @@
                     <div class="field-block">
                       <span class="field-label">CORREO DE ACCESO</span>
                       <span class="field-value text-dark" style="word-break: break-all;">{{ medico.email }}</span>
+                    </div>
+
+                    <div class="field-block">
+                      <span class="field-label">PRODUCTORES ASIGNADOS</span>
+                      <span class="field-value text-dark">{{ medico.productores_count ?? 0 }} productores</span>
                     </div>
 
                     <div class="field-block">

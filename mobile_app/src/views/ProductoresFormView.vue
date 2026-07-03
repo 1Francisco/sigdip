@@ -156,7 +156,7 @@
                   <div class="col-12 col-md-6">
                     <div class="form-group-custom">
                       <label class="form-label-custom">Zona / Sector</label>
-                      <select v-model="form.zona" class="form-select form-control-custom">
+                      <select v-model="form.zona" class="form-select form-control-custom bg-light" disabled>
                         <option value="">-- Sin Zona --</option>
                         <option value="A">Sector A</option>
                         <option value="B">Sector B</option>
