@@ -28,11 +28,11 @@ class SyncController extends Controller
         $page = (int) $request->query('page', 1);
         $perPage = (int) $request->query('per_page', 500);
         $isAdmin = $user && $user->hasRole('Administrador');
-        $paginate = !$since && $isAdmin && $perPage > 0;
+        $paginate = ! $since && $isAdmin && $perPage > 0;
 
         // ---- PREDIOS ----
         $prediosQuery = Predio::with('productor');
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $prediosQuery->whereHas('productor', function ($q) use ($veterinarioId) {
                 $q->where('medico_id', $veterinarioId);
             });
@@ -44,7 +44,7 @@ class SyncController extends Controller
 
         // ---- VISITAS ----
         $visitasQuery = Visita::with(['veterinario', 'inspeccion']);
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $visitasQuery->where('veterinario_id', $veterinarioId);
         }
         if ($since) {
@@ -81,7 +81,7 @@ class SyncController extends Controller
 
         // ---- PRODUCTORES ----
         $productoresQuery = Productor::with('predios');
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $productoresQuery->where('medico_id', $veterinarioId);
         }
         if ($since) {
@@ -148,14 +148,14 @@ class SyncController extends Controller
 
         try {
             foreach ($request->inspecciones as $data) {
+                $isDraft = ($data['estado'] ?? 'sincronizado') === 'borrador';
+
                 // Validación básica de cada objeto
-                if (! isset($data['folio']) || ! isset($data['predio_id'])) {
+                if (! isset($data['predio_id']) || (! $isDraft && ! isset($data['folio']))) {
                     $errores[] = ['folio' => $data['folio'] ?? 'Desconocido', 'error' => 'Faltan datos requeridos (folio o predio_id)'];
 
                     continue;
                 }
-
-                $isDraft = ($data['estado'] ?? 'sincronizado') === 'borrador';
 
                 // Generar clave_interna si no viene en los datos
                 if (empty($data['clave_interna'])) {
@@ -197,8 +197,9 @@ class SyncController extends Controller
                         ]);
                         $inspeccion = $existingByClave;
                     } else {
+                        $folioSearch = ! empty($data['folio']) ? ['folio' => $data['folio']] : ['clave_interna' => $data['clave_interna']];
                         $inspeccion = Inspeccion::updateOrCreate(
-                            ['folio' => $data['folio']],
+                            $folioSearch,
                             [
                                 'predio_id' => $data['predio_id'],
                                 'veterinario_id' => $veterinarioId,
@@ -224,8 +225,9 @@ class SyncController extends Controller
                         );
                     }
                 } else {
+                    $folioSearch = ! empty($data['folio']) ? ['folio' => $data['folio']] : [];
                     $inspeccion = Inspeccion::updateOrCreate(
-                        ['folio' => $data['folio']],
+                        $folioSearch,
                         [
                             'predio_id' => $data['predio_id'],
                             'veterinario_id' => $veterinarioId,
@@ -336,7 +338,7 @@ class SyncController extends Controller
                     }
                 }
 
-                $inspeccionesProcesadas[] = $data['folio'];
+                $inspeccionesProcesadas[] = $data['folio'] ?: $data['clave_interna'];
             }
 
             DB::commit();

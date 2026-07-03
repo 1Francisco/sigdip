@@ -12,7 +12,6 @@ use App\Models\Visita;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class InspeccionController extends Controller
 {
@@ -204,12 +203,6 @@ class InspeccionController extends Controller
                 }
             }
             $request->merge(['animales' => $animales]);
-        }
-
-        if (empty($request->folio)) {
-            $request->merge([
-                'folio' => $request->clave_interna ?: ('D-'.now()->format('Ymd').'-'.strtoupper(Str::random(6))),
-            ]);
         }
 
         if ($request->has('fecha_inyeccion') && $request->fecha_inyeccion) {
@@ -453,12 +446,6 @@ class InspeccionController extends Controller
                 }
             }
             $request->merge(['animales' => $animales]);
-        }
-
-        if (empty($request->folio)) {
-            $request->merge([
-                'folio' => $request->clave_interna ?: ('D-'.now()->format('Ymd').'-'.strtoupper(Str::random(6))),
-            ]);
         }
 
         if ($request->has('fecha_inyeccion') && $request->fecha_inyeccion) {

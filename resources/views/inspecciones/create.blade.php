@@ -481,15 +481,18 @@
                                              <td data-label="Fierro" class="text-center">
                                                  <input type="checkbox" name="animales[0][fierro]" value="Si" class="form-check-input">
                                              </td>
-                                             <td data-label="Resultado">
-                                                 <select name="animales[0][resultado_disabled]" class="form-select form-select-sm fw-bold text-center" disabled style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-color: #f8f9fa; opacity: 0.8;">
-                                                     <option value="Pendiente" class="text-secondary" selected>Pendiente</option>
-                                                     <option value="Negativo" class="text-success">Negativo</option>
-                                                     <option value="Positivo" class="text-danger">Positivo</option>
-                                                     <option value="Sospechoso" class="text-warning">Sospechoso</option>
-                                                 </select>
-                                                 <input type="hidden" name="animales[0][resultado]" value="Pendiente">
-                                             </td>
+                                              <td data-label="Resultado">
+                                                  <select name="animales[0][resultado_disabled]" class="form-select form-select-sm fw-bold text-center" disabled style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-color: #f8f9fa; opacity: 0.8;">
+                                                      <option value="Pendiente" class="text-secondary" selected>Pendiente</option>
+                                                      <option value="Negativo" class="text-success">Negativo</option>
+                                                      <option value="Positivo" class="text-danger">Positivo</option>
+                                                      <option value="Sospechoso" class="text-warning">Sospechoso</option>
+                                                  </select>
+                                                  <input type="hidden" name="animales[0][resultado]" value="Pendiente">
+                                                  <div class="mt-1 motivo-no-aplica-wrapper" style="display: none;">
+                                                      <input type="text" name="animales[0][motivo_no_aplica]" class="form-control form-control-sm motivo-no-aplica-input" placeholder="Motivo de No Aplica" readonly style="background-color: #f8f9fa;">
+                                                  </div>
+                                              </td>
                                              <td data-label="Obs"><input type="text" name="animales[0][observaciones]" class="form-control form-control-sm"></td>
                                              <td class="text-center">
                                                  <i class="bi bi-lock text-muted"></i>
@@ -1009,10 +1012,16 @@
                         const row = e.target.closest('tr');
                         const edadVal = parseInt(e.target.value) || 0;
                         const resHidden = row.querySelector('input[type="hidden"][name*="[resultado]"]');
+                        const motivoWrapper = row.querySelector('.motivo-no-aplica-wrapper');
+                        const motivoInput = row.querySelector('.motivo-no-aplica-input');
                         if (edadVal > 0 && edadVal < 6 && resHidden) {
                             resHidden.value = 'No Aplica';
+                            if (motivoWrapper) motivoWrapper.style.display = '';
+                            if (motivoInput) motivoInput.value = 'Menor a 6 meses';
                         } else if (resHidden && resHidden.value === 'No Aplica') {
                             resHidden.value = 'Pendiente';
+                            if (motivoWrapper) motivoWrapper.style.display = 'none';
+                            if (motivoInput) motivoInput.value = '';
                         }
                     }
                     actualizarCenso();
@@ -1024,10 +1033,16 @@
                         const row = e.target.closest('tr');
                         const edadVal = parseInt(e.target.value) || 0;
                         const resHidden = row.querySelector('input[type="hidden"][name*="[resultado]"]');
+                        const motivoWrapper = row.querySelector('.motivo-no-aplica-wrapper');
+                        const motivoInput = row.querySelector('.motivo-no-aplica-input');
                         if (edadVal > 0 && edadVal < 6 && resHidden) {
                             resHidden.value = 'No Aplica';
+                            if (motivoWrapper) motivoWrapper.style.display = '';
+                            if (motivoInput) motivoInput.value = 'Menor a 6 meses';
                         } else if (resHidden && resHidden.value === 'No Aplica') {
                             resHidden.value = 'Pendiente';
+                            if (motivoWrapper) motivoWrapper.style.display = 'none';
+                            if (motivoInput) motivoInput.value = '';
                         }
                     }
                     actualizarCenso();
@@ -1091,15 +1106,18 @@
                  <td data-label="Fierro" class="text-center">
                      <input type="checkbox" name="animales[${animalCount}][fierro]" value="Si" class="form-check-input">
                  </td>
-                 <td data-label="Resultado">
-                      <select name="animales[${animalCount}][resultado_disabled]" class="form-select form-select-sm fw-bold text-center" disabled style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-color: #f8f9fa; opacity: 0.8;">
-                          <option value="Pendiente" class="text-secondary" selected>Pendiente</option>
-                          <option value="Negativo" class="text-success">Negativo</option>
-                          <option value="Positivo" class="text-danger">Positivo</option>
-                          <option value="Sospechoso" class="text-warning">Sospechoso</option>
-                      </select>
-                      <input type="hidden" name="animales[${animalCount}][resultado]" value="Pendiente">
-                 </td>
+                  <td data-label="Resultado">
+                       <select name="animales[${animalCount}][resultado_disabled]" class="form-select form-select-sm fw-bold text-center" disabled style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-color: #f8f9fa; opacity: 0.8;">
+                           <option value="Pendiente" class="text-secondary" selected>Pendiente</option>
+                           <option value="Negativo" class="text-success">Negativo</option>
+                           <option value="Positivo" class="text-danger">Positivo</option>
+                           <option value="Sospechoso" class="text-warning">Sospechoso</option>
+                       </select>
+                       <input type="hidden" name="animales[${animalCount}][resultado]" value="Pendiente">
+                       <div class="mt-1 motivo-no-aplica-wrapper" style="display: none;">
+                           <input type="text" name="animales[${animalCount}][motivo_no_aplica]" class="form-control form-control-sm motivo-no-aplica-input" placeholder="Motivo de No Aplica" readonly style="background-color: #f8f9fa;">
+                       </div>
+                  </td>
                  <td data-label="Obs"><input type="text" name="animales[${animalCount}][observaciones]" class="form-control form-control-sm"></td>
                  <td class="text-center" data-label="Quitar">
                      <button type="button" class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove(); actualizarCenso(); validateSections();">
@@ -1264,13 +1282,21 @@
                               edadMeses = Math.max(0, months);
                           }
                       }
-                      if (edadMeses !== null && edadMeses !== undefined) {
-                          edadInput.value = edadMeses;
-                          const resHidden = row.querySelector('input[type="hidden"][name*="[resultado]"]');
-                          if (edadMeses > 0 && edadMeses < 6 && resHidden) {
-                              resHidden.value = 'No Aplica';
-                          }
-                      }
+                    if (edadMeses !== null && edadMeses !== undefined) {
+                        edadInput.value = edadMeses;
+                        const resHidden = row.querySelector('input[type="hidden"][name*="[resultado]"]');
+                        const motivoWrapper = row.querySelector('.motivo-no-aplica-wrapper');
+                        const motivoInput = row.querySelector('.motivo-no-aplica-input');
+                        if (edadMeses > 0 && edadMeses < 6 && resHidden) {
+                            resHidden.value = 'No Aplica';
+                            if (motivoWrapper) motivoWrapper.style.display = '';
+                            if (motivoInput) motivoInput.value = 'Menor a 6 meses';
+                        } else if (resHidden && resHidden.value === 'No Aplica') {
+                            resHidden.value = 'Pendiente';
+                            if (motivoWrapper) motivoWrapper.style.display = 'none';
+                            if (motivoInput) motivoInput.value = '';
+                        }
+                    }
                       if (data.raza) razaInput.value = data.raza;
                       if (data.sexo) {
                           const s = data.sexo.charAt(0).toUpperCase();

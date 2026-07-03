@@ -1,4 +1,4 @@
-es  <?php
+<?php
 
 use App\Http\Controllers\Api\AnimalesApiController;
 use App\Http\Controllers\Api\AreteCensoApiController;

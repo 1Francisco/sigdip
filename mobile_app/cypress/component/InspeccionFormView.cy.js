@@ -716,6 +716,9 @@ describe('InspeccionFormView', () => {
 
     cy.get('select').first().select('1', { force: true })
 
+    // Establecer un folio para que se ejecute la detección de conflicto
+    cy.get('input[placeholder*="Opcional (Ej. TB-2026-1234)"]').type('TEMP-CONFLICT-999')
+
     cy.contains('III: DATOS DE LA PRUEBA').click()
     cy.contains('TIPO DE PRUEBA REALIZADA').parent().find('select').select('PPC')
     cy.get('input[type="date"]').eq(1).invoke('val', '2026-06-25').trigger('input')

@@ -76,4 +76,69 @@ describe('CRUD de Medicos (E2E)', () => {
     cy.wait('@createMedicoFail', { timeout: 10000 })
     cy.location('hash').should('include', '/medicos/nuevo')
   })
+
+  it('navega a editar medico desde la lista', () => {
+    cy.intercept('GET', '**/api/medicos', {
+      statusCode: 200,
+      body: {
+        data: [
+          { id: 2, name: 'Dr. Juan', email: 'juan@test.com', created_at: '2025-01-01' },
+        ],
+      },
+    }).as('getMedicos')
+
+    cy.intercept('GET', '**/api/medicos/2', {
+      statusCode: 200,
+      body: { data: { id: 2, name: 'Dr. Juan', email: 'juan@test.com' } },
+    }).as('getMedico')
+
+    cy.visit('/#/medicos')
+    cy.wait('@getMedicos', { timeout: 10000 })
+    cy.get('button[title="Editar médico"]').click()
+    cy.wait('@getMedico', { timeout: 10000 })
+    cy.location('hash', { timeout: 5000 }).should('eq', '#/medicos/editar/2')
+    cy.contains('Editar Médico Verificador', { timeout: 5000 }).should('be.visible')
+  })
+
+  it('edita un medico exitosamente', () => {
+    cy.intercept('GET', '**/api/medicos/2', {
+      statusCode: 200,
+      body: { data: { id: 2, name: 'Dr. Juan', email: 'juan@test.com' } },
+    }).as('getMedico')
+
+    cy.intercept('PUT', '**/api/medicos/2', {
+      statusCode: 200,
+      body: { data: { id: 2, name: 'Dr. Juan Modificado', email: 'juan.modificado@test.com' } },
+    }).as('updateMedico')
+
+    cy.visit('/#/medicos/editar/2')
+    cy.wait('@getMedico', { timeout: 10000 })
+
+    cy.get('input').first().clear().type('Dr. Juan Modificado')
+    cy.get('input[type="email"]').clear().type('juan.modificado@test.com')
+
+    cy.get('button[type="submit"]').click()
+    cy.wait('@updateMedico', { timeout: 10000 })
+    cy.contains('actualizado correctamente', { timeout: 5000 }).should('be.visible')
+  })
+
+  it('muestra error si la API falla al editar medico', () => {
+    cy.intercept('GET', '**/api/medicos/2', {
+      statusCode: 200,
+      body: { data: { id: 2, name: 'Dr. Juan', email: 'juan@test.com' } },
+    }).as('getMedico')
+
+    cy.intercept('PUT', '**/api/medicos/2', {
+      statusCode: 500,
+      body: { message: 'Error al actualizar médico' },
+    }).as('updateMedicoFail')
+
+    cy.visit('/#/medicos/editar/2')
+    cy.wait('@getMedico', { timeout: 10000 })
+
+    cy.get('button[type="submit"]').click()
+    cy.wait('@updateMedicoFail', { timeout: 10000 })
+    cy.contains('No se pudo actualizar al médico', { timeout: 5000 }).should('be.visible')
+  })
 })
+

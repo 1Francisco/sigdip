@@ -108,14 +108,17 @@ export default {
   },
 
   // ====== INSPECCIONES OFFLINE ======
+  _inspeccionKey(inspeccion) {
+    return inspeccion.clave_interna || inspeccion.folio || `temp_${Date.now()}`;
+  },
   async saveInspeccion(inspeccion) {
     const lista = await this.getInspeccionesPendientes();
-    // Usar el folio como ID único
-    const idx = lista.findIndex(i => i.folio === inspeccion.folio);
+    const key = this._inspeccionKey(inspeccion);
+    const idx = lista.findIndex(i => this._inspeccionKey(i) === key);
     if (idx >= 0) {
-      lista[idx] = clean(inspeccion); // Actualizar existente
+      lista[idx] = clean(inspeccion);
     } else {
-      lista.push(clean(inspeccion)); // Agregar nueva
+      lista.push(clean(inspeccion));
     }
     await inspeccionStore.setItem('lista', lista);
   },
@@ -124,15 +127,15 @@ export default {
     return (await inspeccionStore.getItem('lista')) || [];
   },
 
-  async removeInspeccion(folio) {
+  async removeInspeccion(key) {
     const lista = await this.getInspeccionesPendientes();
-    const filtrado = lista.filter(i => i.folio !== folio);
+    const filtrado = lista.filter(i => this._inspeccionKey(i) !== key);
     await inspeccionStore.setItem('lista', filtrado);
   },
 
-  async clearInspeccionesSincronizadas(foliosSincronizados) {
+  async clearInspeccionesSincronizadas(keysSincronizados) {
     const lista = await this.getInspeccionesPendientes();
-    const restantes = lista.filter(i => !foliosSincronizados.includes(i.folio));
+    const restantes = lista.filter(i => !keysSincronizados.includes(this._inspeccionKey(i)));
     await inspeccionStore.setItem('lista', restantes);
   },
 

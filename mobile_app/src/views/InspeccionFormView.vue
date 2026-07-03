@@ -442,6 +442,7 @@
                           <option value="Positivo" class="text-danger">Positivo</option>
                           <option value="Sospechoso" class="text-warning">Sospechoso</option>
                         </select>
+                        <input v-if="animal.resultado === 'No Aplica'" type="text" v-model="animal.motivo_no_aplica" class="form-control form-control-sm mt-1" placeholder="Motivo de No Aplica" />
                       </td>
                       <td>
                         <input type="text" v-model="animal.observaciones" class="form-control form-control-sm" placeholder="Detalles..." />
@@ -591,6 +592,7 @@
                       <option value="Positivo">Positivo</option>
                       <option value="Sospechoso">Sospechoso</option>
                     </select>
+                    <input v-if="animal.resultado === 'No Aplica'" type="text" v-model="animal.motivo_no_aplica" class="form-control form-control-sm mt-1" placeholder="Motivo de No Aplica" />
                     <input type="text" v-model="animal.observaciones" class="form-control form-control-sm lectura-input-obs flex-grow-1" placeholder="Observaciones..." />
                     <button type="button" class="btn btn-outline-danger btn-sm lectura-btn-delete" @click="removeAnimal(animal)" title="Eliminar">
                       <i class="bi bi-trash"></i>
@@ -626,6 +628,7 @@
                           <option value="Positivo">Positivo</option>
                           <option value="Sospechoso">Sospechoso</option>
                         </select>
+                        <input v-if="animal.resultado === 'No Aplica'" type="text" v-model="animal.motivo_no_aplica" class="form-control form-control-sm mt-1" placeholder="Motivo de No Aplica" />
                         <input type="text" v-model="animal.observaciones" class="form-control form-control-sm lectura-input-obs flex-grow-1" placeholder="Observaciones..." />
                         <button type="button" class="btn btn-outline-danger btn-sm lectura-btn-delete" @click="removeAnimal(animal)" title="Eliminar">
                           <i class="bi bi-trash"></i>
@@ -973,12 +976,7 @@ export default {
       },
       set(val) {
         if (!val || !val.trim()) {
-          // Si el usuario borra el folio, restaurar la clave interna si era el valor original
-          if (this.originalFolio && this.originalFolio === this.form.clave_interna) {
-            this.form.folio = this.originalFolio;
-          } else {
-            this.form.folio = '';
-          }
+          this.form.folio = '';
         } else {
           this.form.folio = val;
         }
@@ -1295,10 +1293,9 @@ export default {
           }
           alert('💾 Se detectó un borrador existente para este productor hoy. Se ha cargado automáticamente para evitar duplicados.');
         } else {
-          // Usar clave_interna como folio inicial (oculto del usuario)
-          if (!this.form.folio || this.form.folio === this.form.clave_interna || this.form.folio === '') {
-            this.form.folio = this.form.clave_interna;
-            this.originalFolio = this.form.folio;
+          // No pre-llenar folio con clave_interna; queda vacío para que el médico ingrese el real
+          if (!this.form.folio || this.form.folio === '') {
+            this.originalFolio = '';
           }
         }
       }
@@ -1424,12 +1421,7 @@ export default {
     },
     onResultadoChange(animal) {
       if (animal.resultado === 'No Aplica') {
-        const motivo = prompt('Indique el motivo por el cual No Aplica:');
-        if (motivo && motivo.trim()) {
-          animal.motivo_no_aplica = motivo.trim();
-        } else {
-          animal.motivo_no_aplica = 'Sin motivo especificado';
-        }
+        animal.motivo_no_aplica = '';
       }
     },
     onEdadChange(animal) {
@@ -1670,13 +1662,8 @@ export default {
         }
       }
 
-      // Generar folio automático si quedó vacío al guardar
-      if (!this.form.folio || !this.form.folio.trim()) {
-        this.form.folio = this.form.clave_interna || `TEMP-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
-      }
-
       let conflictFound = false;
-      if (this.isOnline && (saveEstado === 'sincronizado' || (estado === 'sincronizado' && saveEstado === 'borrador'))) {
+      if (this.isOnline && this.form.folio && this.form.folio.trim() && (saveEstado === 'sincronizado' || (estado === 'sincronizado' && saveEstado === 'borrador'))) {
         try {
           const checkRes = await api.getInspecciones({ folio: this.form.folio });
           if (checkRes.success && checkRes.data && checkRes.data.length > 0) {

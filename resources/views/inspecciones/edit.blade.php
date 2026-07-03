@@ -2,7 +2,7 @@
 
 @section('title', 'Continuar Dictamen')
 @section('header_title', 'Finalizar Dictamen')
-@section('header_subtitle', empty($inspeccion->folio) || $inspeccion->folio === $inspeccion->clave_interna ? ($inspeccion->clave_interna ?: 'Sin Folio') : 'Folio: ' . $inspeccion->folio)
+@section('header_subtitle', $inspeccion->folio ? 'Folio: ' . $inspeccion->folio : 'Sin Folio')
 @section('back_url', route('inspecciones.index'))
 
 @section('styles')
@@ -215,8 +215,8 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-semibold">Folio Dictamen</label>
-                                    @php $currentFolio = (empty($inspeccion->folio) || $inspeccion->folio === $inspeccion->clave_interna) ? $inspeccion->clave_interna : $inspeccion->folio; @endphp
-                                    <input type="text" name="folio" class="form-control fw-bold text-primary" placeholder="Se generará automáticamente si se deja en blanco" value="{{ old('folio', $currentFolio) }}">
+                                    @php $currentFolio = (!empty($inspeccion->folio) && $inspeccion->folio !== $inspeccion->clave_interna) ? $inspeccion->folio : ''; @endphp
+                                    <input type="text" name="folio" class="form-control fw-bold text-primary" placeholder="Ingrese el folio real del dictamen" value="{{ old('folio', $currentFolio) }}">
                                 </div>
                             </div>
                         </div>
@@ -528,25 +528,31 @@
                                              <td data-label="Fierro" class="text-center">
                                                  <input type="checkbox" name="animales[{{ $index }}][fierro]" value="Si" class="form-check-input" {{ $detalle->fierro == 'Si' ? 'checked' : '' }}>
                                              </td>
-                                             <td data-label="Resultado" class="resultado-cell">
-                                                   @if($detalle->resultado_prueba === 'No Aplica')
-                                                       <span class="badge bg-secondary rounded-pill px-3 resultado-text">No Aplica</span>
-                                                       <input type="hidden" name="animales[{{ $index }}][resultado]" class="resultado-hidden" value="No Aplica" {{ $esDiaDeLectura ? 'disabled' : '' }}>
-                                                   @else
-                                                       <select name="animales[{{ $index }}][resultado]" class="form-select form-select-sm fw-bold resultado-select" required {{ !$esDiaDeLectura ? 'disabled' : '' }}>
-                                                           @if(empty($detalle->resultado_prueba) || $detalle->resultado_prueba == 'Pendiente')
-                                                               <option value="" disabled selected>-- Seleccione --</option>
-                                                           @endif
-                                                           @if($esDiaDeLectura)
-                                                               <option value="No Aplica" class="text-secondary">No Aplica</option>
-                                                           @endif
-                                                           <option value="Negativo" class="text-success" {{ $detalle->resultado_prueba == 'Negativo' ? 'selected' : '' }}>Negativo</option>
-                                                           <option value="Positivo" class="text-danger" {{ $detalle->resultado_prueba == 'Positivo' ? 'selected' : '' }}>Positivo</option>
-                                                           <option value="Sospechoso" class="text-warning" {{ $detalle->resultado_prueba == 'Sospechoso' ? 'selected' : '' }}>Sospechoso</option>
-                                                       </select>
-                                                       <input type="hidden" name="animales[{{ $index }}][resultado]" class="resultado-hidden" value="{{ $detalle->resultado_prueba ?? 'Pendiente' }}" {{ $esDiaDeLectura ? 'disabled' : '' }}>
-                                                   @endif
-                                              </td>
+                                              <td data-label="Resultado" class="resultado-cell">
+                                                    @if($detalle->resultado_prueba === 'No Aplica')
+                                                        <span class="badge bg-secondary rounded-pill px-3 resultado-text">No Aplica</span>
+                                                        <input type="hidden" name="animales[{{ $index }}][resultado]" class="resultado-hidden" value="No Aplica" {{ $esDiaDeLectura ? 'disabled' : '' }}>
+                                                        <div class="mt-1 motivo-no-aplica-wrapper">
+                                                            <input type="text" name="animales[{{ $index }}][motivo_no_aplica]" class="form-control form-control-sm motivo-no-aplica-input" placeholder="Motivo de No Aplica" value="{{ $detalle->motivo_no_aplica }}">
+                                                        </div>
+                                                    @else
+                                                        <select name="animales[{{ $index }}][resultado]" class="form-select form-select-sm fw-bold resultado-select" required {{ !$esDiaDeLectura ? 'disabled' : '' }}>
+                                                            @if(empty($detalle->resultado_prueba) || $detalle->resultado_prueba == 'Pendiente')
+                                                                <option value="" disabled selected>-- Seleccione --</option>
+                                                            @endif
+                                                            @if($esDiaDeLectura)
+                                                                <option value="No Aplica" class="text-secondary">No Aplica</option>
+                                                            @endif
+                                                            <option value="Negativo" class="text-success" {{ $detalle->resultado_prueba == 'Negativo' ? 'selected' : '' }}>Negativo</option>
+                                                            <option value="Positivo" class="text-danger" {{ $detalle->resultado_prueba == 'Positivo' ? 'selected' : '' }}>Positivo</option>
+                                                            <option value="Sospechoso" class="text-warning" {{ $detalle->resultado_prueba == 'Sospechoso' ? 'selected' : '' }}>Sospechoso</option>
+                                                        </select>
+                                                        <input type="hidden" name="animales[{{ $index }}][resultado]" class="resultado-hidden" value="{{ $detalle->resultado_prueba ?? 'Pendiente' }}" {{ $esDiaDeLectura ? 'disabled' : '' }}>
+                                                        <div class="mt-1 motivo-no-aplica-wrapper" style="display: none;">
+                                                            <input type="text" name="animales[{{ $index }}][motivo_no_aplica]" class="form-control form-control-sm motivo-no-aplica-input" placeholder="Motivo de No Aplica">
+                                                        </div>
+                                                    @endif
+                                               </td>
                                             <td data-label="Obs"><input type="text" name="animales[{{ $index }}][observaciones]" class="form-control form-control-sm" value="{{ $detalle->observaciones_animal }}"></td>
                                             <td class="text-center" data-label="Quitar">
                                                 <button type="button" class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove(); actualizarCenso(); actualizarSinInyeccion(); validateSections();">
@@ -583,15 +589,18 @@
                                              <td data-label="Fierro" class="text-center">
                                                  <input type="checkbox" name="animales[0][fierro]" value="Si" class="form-check-input">
                                              </td>
-                                             <td data-label="Resultado" class="resultado-cell">
-                                                 <select name="animales[0][resultado]" class="form-select form-select-sm fw-bold resultado-select" required {{ !$esDiaDeLectura ? 'disabled' : '' }}>
-                                                     <option value="" disabled selected>-- Seleccione --</option>
-                                                     <option value="Negativo" class="text-success">Negativo</option>
-                                                     <option value="Positivo" class="text-danger">Positivo</option>
-                                                     <option value="Sospechoso" class="text-warning">Sospechoso</option>
-                                                 </select>
-                                                 <input type="hidden" name="animales[0][resultado]" class="resultado-hidden" value="Pendiente" {{ $esDiaDeLectura ? 'disabled' : '' }}>
-                                             </td>
+                                              <td data-label="Resultado" class="resultado-cell">
+                                                  <select name="animales[0][resultado]" class="form-select form-select-sm fw-bold resultado-select" required {{ !$esDiaDeLectura ? 'disabled' : '' }}>
+                                                      <option value="" disabled selected>-- Seleccione --</option>
+                                                      <option value="Negativo" class="text-success">Negativo</option>
+                                                      <option value="Positivo" class="text-danger">Positivo</option>
+                                                      <option value="Sospechoso" class="text-warning">Sospechoso</option>
+                                                  </select>
+                                                  <input type="hidden" name="animales[0][resultado]" class="resultado-hidden" value="Pendiente" {{ $esDiaDeLectura ? 'disabled' : '' }}>
+                                                  <div class="mt-1 motivo-no-aplica-wrapper" style="display: none;">
+                                                      <input type="text" name="animales[0][motivo_no_aplica]" class="form-control form-control-sm motivo-no-aplica-input" placeholder="Motivo de No Aplica">
+                                                  </div>
+                                              </td>
                                             <td data-label="Obs"><input type="text" name="animales[0][observaciones]" class="form-control form-control-sm"></td>
                                             <td class="text-center">
                                                 <i class="bi bi-lock text-muted"></i>
@@ -991,11 +1000,13 @@
             if (hiddenEl && hiddenEl.value === 'No Aplica') {
                 const areteInput = row.querySelector('.arete-input');
                 const edadInput = row.querySelector('input[name*="[edad_meses]"]');
+                const motivoInput = row.querySelector('.motivo-no-aplica-input');
                 const idx = Array.from(row.parentNode.children).indexOf(row);
                 sinInyeccion.push({
                     index: idx + 1,
                     arete: areteInput ? areteInput.value : 'SIN ARETE',
-                    edad: edadInput ? edadInput.value || '?' : '?'
+                    edad: edadInput ? edadInput.value || '?' : '?',
+                    motivo: motivoInput ? motivoInput.value : ''
                 });
             }
         });
@@ -1004,9 +1015,10 @@
             section.classList.remove('d-none');
             countEl.textContent = sinInyeccion.length;
             textEl.textContent = sinInyeccion.length === 1 ? 'animal no recibi\u00f3 inyecci\u00f3n' : 'animales no recibieron inyecci\u00f3n';
-            const badges = sinInyeccion.map(a =>
-                `<span class="badge bg-secondary text-white small px-2 py-1"><i class="bi bi-slash-circle me-1"></i>#${a.index} ${a.arete} (${a.edad} meses)</span>`
-            ).join('');
+            const badges = sinInyeccion.map(a => {
+                const motivoPart = a.motivo ? ` - ${a.motivo}` : '';
+                return `<span class="badge bg-secondary text-white small px-2 py-1"><i class="bi bi-slash-circle me-1"></i>#${a.index} ${a.arete} (${a.edad} meses)${motivoPart}</span>`;
+            }).join('');
             listEl.innerHTML = badges;
         } else {
             section.classList.add('d-none');
@@ -1347,6 +1359,9 @@
                         <option value="Sospechoso" class="text-warning">Sospechoso</option>
                     </select>
                     <input type="hidden" name="animales[${animalCount}][resultado]" class="resultado-hidden" value="Pendiente" ${isHiddenDisabled}>
+                    <div class="mt-1 motivo-no-aplica-wrapper" style="display: none;">
+                        <input type="text" name="animales[${animalCount}][motivo_no_aplica]" class="form-control form-control-sm motivo-no-aplica-input" placeholder="Motivo de No Aplica">
+                    </div>
                 </td>
                 <td data-label="Obs"><input type="text" name="animales[${animalCount}][observaciones]" class="form-control form-control-sm"></td>
                 <td class="text-center" data-label="Quitar">
@@ -1759,11 +1774,18 @@
                         const row = e.target.closest('tr');
                         const edadVal = parseInt(e.target.value) || 0;
                         const resHidden = row.querySelector('.resultado-hidden');
+                        const motivoInput = row.querySelector('.motivo-no-aplica-input');
                         if (edadVal > 0 && edadVal < 6 && resHidden) {
                             resHidden.value = 'No Aplica';
+                            if (motivoInput) {
+                                motivoInput.value = 'Menor a 6 meses';
+                            }
                             checkLecturaDate();
                         } else if (resHidden && resHidden.value === 'No Aplica') {
                             resHidden.value = 'Pendiente';
+                            if (motivoInput) {
+                                motivoInput.value = '';
+                            }
                             checkLecturaDate();
                         }
                     }
@@ -1777,12 +1799,35 @@
                         const row = e.target.closest('tr');
                         const edadVal = parseInt(e.target.value) || 0;
                         const resHidden = row.querySelector('.resultado-hidden');
+                        const motivoInput = row.querySelector('.motivo-no-aplica-input');
                         if (edadVal > 0 && edadVal < 6 && resHidden) {
                             resHidden.value = 'No Aplica';
+                            if (motivoInput) {
+                                motivoInput.value = 'Menor a 6 meses';
+                            }
                             checkLecturaDate();
                         } else if (resHidden && resHidden.value === 'No Aplica') {
                             resHidden.value = 'Pendiente';
+                            if (motivoInput) {
+                                motivoInput.value = '';
+                            }
                             checkLecturaDate();
+                        }
+                    } else if (e.target.name.includes('[resultado]') && e.target.tagName === 'SELECT') {
+                        const row = e.target.closest('tr');
+                        const resHidden = row.querySelector('.resultado-hidden');
+                        const motivoWrapper = row.querySelector('.motivo-no-aplica-wrapper');
+                        const motivoInput = row.querySelector('.motivo-no-aplica-input');
+                        if (resHidden) {
+                            resHidden.value = e.target.value;
+                        }
+                        if (motivoWrapper) {
+                            if (e.target.value === 'No Aplica') {
+                                motivoWrapper.style.display = '';
+                            } else {
+                                motivoWrapper.style.display = 'none';
+                                if (motivoInput) motivoInput.value = '';
+                            }
                         }
                     }
                     actualizarCenso();
