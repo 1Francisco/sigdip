@@ -196,3 +196,18 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+@media (max-width: 991.98px) {
+  .main-content {
+    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+@media (min-width: 992px) {
+  .main-content {
+    margin-left: 270px;
+    padding: 2.5rem !important;
+  }
+}
+</style>

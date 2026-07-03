@@ -1,7 +1,6 @@
 <template>
-  <AppLayout>
-    <div class="app-container bg-light-page">
-      <header class="form-view-header shadow-sm">
+  <div class="app-container bg-light-page">
+    <header class="form-view-header shadow-sm">
         <div class="d-flex align-items-center gap-2 gap-sm-3 header-left-container">
           <button class="btn-back-circle shadow-sm" @click="$router.push('/medicos')">
             <i class="bi bi-arrow-left fs-5"></i>
@@ -22,7 +21,7 @@
         </div>
       </header>
 
-      <main class="app-content p-3 p-md-4">
+      <main class="app-content main-content p-4">
         <div v-if="loading" class="text-center py-5">
           <div class="spinner-border text-primary mb-3" role="status"></div>
           <p class="text-muted">Cargando productores...</p>
@@ -140,17 +139,14 @@
         </template>
       </main>
     </div>
-  </AppLayout>
 </template>
 
 <script>
-import AppLayout from '../components/AppLayout.vue';
 import api from '../services/api.js';
 import db from '../services/db.js';
 
 export default {
   name: 'AsignarProductoresView',
-  components: { AppLayout },
   data() {
     return {
       medicoName: '',
@@ -324,6 +320,19 @@ export default {
 @media (min-width: 576px) {
   .header-title {
     font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .form-view-header {
+    padding: 12px 14px;
+  }
+  .btn-back-circle {
+    width: 34px !important;
+    height: 34px !important;
+  }
+  .btn-back-circle i {
+    font-size: 0.95rem !important;
   }
 }
 

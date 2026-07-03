@@ -27,30 +27,27 @@
 
       <!-- Card Container for Medicos List -->
       <div class="card border-0 shadow-sm p-0 overflow-hidden card-outer-mobile-flat bg-white rounded-4">
-        <div class="card-header bg-white p-3 p-md-4 border-bottom border-slate-100">
-          <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 w-100">
-            <h5 class="mb-0 fw-bold fs-5 text-dark text-center text-md-start w-100 w-md-auto">
-              <i class="bi bi-people text-primary me-2"></i>Personal en Campo
-            </h5>
-            <div class="w-100 w-md-auto">
-              <button @click="$router.push('/medicos/nuevo')" class="btn btn-primary btn-sm-custom d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 bg-primary text-white border-0 rounded-3 w-100 w-md-auto">
-                <i class="bi bi-plus-lg"></i> Nuevo Médico
-              </button>
-            </div>
-          </div>
-          <!-- Search bar -->
-          <div class="mt-3">
-            <div class="input-group">
-              <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-              <input
-                v-model="search"
-                type="text"
-                class="form-control border-start-0 px-2 py-2 fs-6-5"
-                placeholder="Buscar por nombre o correo..."
-                style="outline: none; box-shadow: none; border-color: #dee2e6;"
-                @input="currentPage = 1"
-              >
-            </div>
+        <div class="card-header bg-white d-flex justify-content-between align-items-center p-3 p-md-4 border-bottom border-slate-100">
+          <h5 class="mb-0 fw-bold fs-6 text-dark">
+            <i class="bi bi-people text-primary me-2"></i>Personal en Campo
+          </h5>
+          <button @click="$router.push('/medicos/nuevo')" class="btn btn-primary btn-sm-custom d-flex align-items-center gap-1-5 px-3 py-2">
+            <i class="bi bi-plus-lg"></i> Nuevo Médico
+          </button>
+        </div>
+
+        <!-- Search bar -->
+        <div class="p-3 bg-light-subtle border-bottom border-slate-100">
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+            <input
+              v-model="search"
+              type="text"
+              class="form-control border-start-0 px-2 py-2 fs-6-5"
+              placeholder="Buscar por nombre o correo..."
+              style="outline: none; box-shadow: none; border-color: #dee2e6;"
+              @input="currentPage = 1"
+            >
           </div>
         </div>
 
@@ -745,6 +742,14 @@ export default {
     margin-bottom: 16px !important;
   }
 
+  .card-outer-mobile-flat .bg-light-subtle {
+    border-radius: 12px !important;
+    margin-bottom: 16px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: var(--shadow-sm) !important;
+    background-color: #ffffff !important;
+  }
+
   .pagination-footer-custom {
     background: white !important;
     border-radius: 16px !important;
@@ -897,5 +902,51 @@ export default {
     background-color: #f0fdf4;
     transform: scale(0.95);
   }
+}
+
+/* Search input style (matching ProductoresView) */
+.input-group {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+.input-group-text {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #6c757d;
+  text-align: center;
+  white-space: nowrap;
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #212529;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #dee2e6;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+  box-shadow: none !important;
+}
+
+.form-control:focus {
+  border-color: var(--color-primary) !important;
+}
+
+.fs-6-5 {
+  font-size: 0.92rem !important;
 }
 </style>

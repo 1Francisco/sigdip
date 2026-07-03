@@ -525,13 +525,6 @@ export default {
 </script>
 
 <style scoped>
-.app-container {
-  min-height: 100dvh;
-}
-.bg-light-page {
-  background-color: var(--bg-primary);
-}
-
 /* ===== Stats Cards ===== */
 .dl-stat-card {
   background: #fff;
@@ -893,10 +886,6 @@ export default {
 
 /* ===== Responsive Mobile ===== */
 @media (max-width: 991.98px) {
-  .main-content {
-    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
   .dl-stat-card {
     padding: 12px 8px;
   }
@@ -919,12 +908,8 @@ export default {
   }
 }
 
-/* Desktop sidebar offset */
+/* Desktop */
 @media (min-width: 992px) {
-  .main-content {
-    margin-left: 270px;
-    padding: 2.5rem !important;
-  }
   .welcome-header {
     padding: 0;
   }
