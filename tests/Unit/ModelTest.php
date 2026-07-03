@@ -10,6 +10,7 @@ use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
 use App\Models\Visita;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -120,5 +121,183 @@ class ModelTest extends TestCase
             'id' => $detalle->id,
             'motivo_no_aplica' => 'Menor a 6 meses',
         ]);
+    }
+
+    // --- Auto-zona desde clave_cuarentena ---
+
+    public function test_auto_deriva_zona_A_desde_clave_AD()
+    {
+        $productor = Productor::create([
+            'nombre' => 'Test',
+            'apellido_paterno' => 'Zona',
+            'clave_cuarentena' => 'AD-12345',
+            'curp' => 'ZONA890101HSL00001',
+            'upp' => 'UPP-ZONA-1',
+        ]);
+
+        $this->assertEquals('A', $productor->zona);
+    }
+
+    public function test_auto_deriva_zona_B_desde_clave_BD()
+    {
+        $productor = Productor::create([
+            'nombre' => 'Test',
+            'apellido_paterno' => 'Zona',
+            'clave_cuarentena' => 'BD-12345',
+            'curp' => 'ZONA890101HSL00002',
+            'upp' => 'UPP-ZONA-2',
+        ]);
+
+        $this->assertEquals('B', $productor->zona);
+    }
+
+    public function test_auto_deriva_zona_con_minusculas()
+    {
+        $productor = Productor::create([
+            'nombre' => 'Test',
+            'apellido_paterno' => 'Zona',
+            'clave_cuarentena' => 'ad-12345',
+            'curp' => 'ZONA890101HSL00003',
+            'upp' => 'UPP-ZONA-3',
+        ]);
+
+        $this->assertEquals('A', $productor->zona);
+    }
+
+    public function test_no_sobrescribe_zona_existente()
+    {
+        $productor = Productor::create([
+            'nombre' => 'Test',
+            'apellido_paterno' => 'Zona',
+            'clave_cuarentena' => 'AD-12345',
+            'zona' => 'B',
+            'curp' => 'ZONA890101HSL00004',
+            'upp' => 'UPP-ZONA-4',
+        ]);
+
+        $this->assertEquals('B', $productor->zona);
+    }
+
+    public function test_sin_clave_no_deriva_zona()
+    {
+        $productor = Productor::factory()->create(['clave_cuarentena' => null, 'zona' => null]);
+
+        $this->assertNull($productor->zona);
+    }
+
+    public function test_clave_invalida_no_asigna_zona()
+    {
+        $productor = Productor::create([
+            'nombre' => 'Test',
+            'apellido_paterno' => 'Zona',
+            'clave_cuarentena' => 'XD-12345',
+            'curp' => 'ZONA890101HSL00005',
+            'upp' => 'UPP-ZONA-5',
+        ]);
+
+        $this->assertNull($productor->zona);
+    }
+
+    // --- buildPdfFilename ---
+
+    public function test_build_pdf_filename_con_productor()
+    {
+        $productor = Productor::factory()->create([
+            'nombre' => 'Juan',
+            'apellido_paterno' => 'Pérez',
+        ]);
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $predio->id,
+            'fecha_inyeccion' => '2026-06-15',
+        ]);
+
+        $filename = $inspeccion->buildPdfFilename();
+
+        $this->assertEquals('DICTAMEN_PEREZ_JUAN_15-06-2026.pdf', $filename);
+    }
+
+    public function test_build_pdf_filename_sin_productor_usando_make()
+    {
+        $predio = Predio::factory()->create();
+        $inspeccion = Inspeccion::factory()->make([
+            'predio_id' => $predio->id,
+            'fecha_inyeccion' => null,
+        ]);
+        $inspeccion->predio->productor = null;
+
+        $filename = $inspeccion->buildPdfFilename();
+
+        $hoy = now()->format('d-m-Y');
+        $this->assertStringEndsWith("_{$hoy}.pdf", $filename);
+    }
+
+    public function test_build_pdf_filename_sin_fecha_inyeccion_usa_now()
+    {
+        $productor = Productor::factory()->create([
+            'nombre' => 'Ana',
+            'apellido_paterno' => 'Luz',
+        ]);
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $predio->id,
+            'fecha_inyeccion' => null,
+        ]);
+
+        $filename = $inspeccion->buildPdfFilename();
+
+        $hoy = now()->format('d-m-Y');
+        $this->assertStringEndsWith("_{$hoy}.pdf", $filename);
+    }
+
+    public function test_build_pdf_filename_caracteres_especiales()
+    {
+        $productor = Productor::factory()->create([
+            'nombre' => 'José María',
+            'apellido_paterno' => 'Pérez',
+        ]);
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $predio->id,
+            'fecha_inyeccion' => '2026-07-03',
+        ]);
+
+        $filename = $inspeccion->buildPdfFilename();
+
+        $this->assertEquals('DICTAMEN_PEREZ_JOSE_MARIA_03-07-2026.pdf', $filename);
+    }
+
+    public function test_build_pdf_filename_formato_regex()
+    {
+        $productor = Productor::factory()->create([
+            'nombre' => 'Carlos',
+            'apellido_paterno' => 'Ramírez',
+        ]);
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $predio->id,
+            'fecha_inyeccion' => '2026-01-01',
+        ]);
+
+        $filename = $inspeccion->buildPdfFilename();
+
+        $this->assertMatchesRegularExpression(
+            '/^DICTAMEN_[A-Z_]+_\d{2}-\d{2}-\d{4}\.pdf$/',
+            $filename
+        );
+    }
+
+    public function test_build_pdf_filename_sin_productor_default()
+    {
+        $predio = Predio::factory()->create();
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $predio->id,
+            'fecha_inyeccion' => '2026-06-15',
+        ]);
+
+        $filename = $inspeccion->buildPdfFilename();
+
+        $this->assertStringContainsString('DICTAMEN_', $filename);
+        $this->assertStringEndsWith('.pdf', $filename);
     }
 }

@@ -65,4 +65,14 @@ class AuthTest extends TestCase
         $response = $this->get('/admin/dashboard');
         $response->assertRedirect('/login');
     }
+
+    public function test_admin_ve_dashboard()
+    {
+        $user = User::factory()->create();
+        $user->assignRole('Administrador');
+
+        $response = $this->actingAs($user)->get('/admin/dashboard');
+
+        $response->assertStatus(200);
+    }
 }

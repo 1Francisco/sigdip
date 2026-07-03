@@ -19,16 +19,22 @@ class InspeccionApiTest extends TestCase
 
     private User $user;
 
+    private User $medico;
+
     private Predio $predio;
 
     protected function setUp(): void
     {
         parent::setUp();
         Role::firstOrCreate(['name' => 'Administrador']);
+        Role::firstOrCreate(['name' => 'Medico_Campo']);
 
         $this->user = User::factory()->create();
         $this->user->assignRole('Administrador');
         Sanctum::actingAs($this->user);
+
+        $this->medico = User::factory()->create();
+        $this->medico->assignRole('Medico_Campo');
 
         $productor = Productor::factory()->create();
         $this->predio = Predio::factory()->create(['productor_id' => $productor->id]);
@@ -182,6 +188,56 @@ class InspeccionApiTest extends TestCase
             'resultado_prueba' => 'No Aplica',
             'motivo_no_aplica' => 'Menor a 4 meses',
         ]);
+    }
+
+    public function test_ver_pdf_retorna_pdf()
+    {
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->user->id,
+        ]);
+
+        $response = $this->getJson("/api/inspecciones/{$inspeccion->id}/ver");
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    public function test_ver_pdf_autorizacion_medico()
+    {
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->medico->id,
+        ]);
+
+        Sanctum::actingAs($this->medico);
+        $response = $this->getJson("/api/inspecciones/{$inspeccion->id}/ver");
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    public function test_ver_pdf_medico_no_ve_ajeno()
+    {
+        $otroMedico = User::factory()->create();
+        $otroMedico->assignRole('Medico_Campo');
+
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $otroMedico->id,
+        ]);
+
+        Sanctum::actingAs($this->medico);
+        $response = $this->getJson("/api/inspecciones/{$inspeccion->id}/ver");
+
+        $response->assertStatus(403);
+    }
+
+    public function test_ver_pdf_404()
+    {
+        $response = $this->getJson('/api/inspecciones/99999/ver');
+
+        $response->assertStatus(404);
     }
 
     public function test_sync_detalles_con_motivo_se_conserva()

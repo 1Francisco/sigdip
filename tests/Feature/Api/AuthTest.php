@@ -75,4 +75,20 @@ class AuthTest extends TestCase
 
         $response->assertStatus(401);
     }
+
+    public function test_health_returns_ok()
+    {
+        $response = $this->getJson('/api/health');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('status', 'ok');
+    }
+
+    public function test_health_publico_sin_token()
+    {
+        $response = $this->getJson('/api/health');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['status', 'time']);
+    }
 }

@@ -14,6 +14,8 @@ class ProductorTest extends TestCase
 
     private User $admin;
 
+    private User $medico;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -22,6 +24,9 @@ class ProductorTest extends TestCase
 
         $this->admin = User::factory()->create();
         $this->admin->assignRole('Administrador');
+
+        $this->medico = User::factory()->create();
+        $this->medico->assignRole('Medico_Campo');
     }
 
     public function test_index()
@@ -106,5 +111,99 @@ class ProductorTest extends TestCase
 
         $response->assertRedirect(route('productores.index'));
         $this->assertDatabaseMissing('productores', ['id' => $productor->id]);
+    }
+
+    // --- storeAjax ---
+
+    public function test_admin_store_ajax_crea_productor()
+    {
+        $response = $this->actingAs($this->admin)->post('/productores/ajax', [
+            'nombre' => 'Juan',
+            'apellido_paterno' => 'Pérez',
+            'apellido_materno' => 'López',
+            'curp' => 'JUPE890101HSL00100',
+            'upp' => 'UPP-AJAX-001',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('nombre', 'Juan');
+        $this->assertDatabaseHas('productores', ['curp' => 'JUPE890101HSL00100']);
+    }
+
+    public function test_medico_store_ajax_crea_productor_autoasignado()
+    {
+        $response = $this->actingAs($this->medico)->post('/productores/ajax', [
+            'nombre' => 'Medico',
+            'apellido_paterno' => 'Ajax',
+            'curp' => 'MEDX890101HSL00100',
+            'upp' => 'UPP-AJAX-002',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('productores', [
+            'curp' => 'MEDX890101HSL00100',
+            'medico_id' => $this->medico->id,
+        ]);
+    }
+
+    public function test_store_ajax_valida_campos_requeridos()
+    {
+        $response = $this->actingAs($this->admin)->post('/productores/ajax', [
+            'apellido_paterno' => 'Solo Apellido',
+        ]);
+
+        $response->assertSessionHasErrors(['nombre']);
+    }
+
+    public function test_store_ajax_admin_asigna_clave_cuarentena()
+    {
+        $response = $this->actingAs($this->admin)->post('/productores/ajax', [
+            'nombre' => 'Admin',
+            'apellido_paterno' => 'Key',
+            'curp' => 'KEYX890101HSL00100',
+            'upp' => 'UPP-AJAX-003',
+            'clave_cuarentena' => 'AD-99999',
+            'zona' => 'A',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('productores', [
+            'curp' => 'KEYX890101HSL00100',
+            'clave_cuarentena' => 'AD-99999',
+            'zona' => 'A',
+        ]);
+    }
+
+    public function test_store_ajax_medico_no_asigna_clave_cuarentena()
+    {
+        $response = $this->actingAs($this->medico)->post('/productores/ajax', [
+            'nombre' => 'Medico',
+            'apellido_paterno' => 'NoKey',
+            'curp' => 'NOKX890101HSL00100',
+            'upp' => 'UPP-AJAX-004',
+            'clave_cuarentena' => 'AD-88888',
+            'zona' => 'A',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('productores', [
+            'curp' => 'NOKX890101HSL00100',
+            'clave_cuarentena' => null,
+            'zona' => null,
+        ]);
+    }
+
+    public function test_store_ajax_curp_unico()
+    {
+        Productor::factory()->create(['curp' => 'DUPX890101HSL00100']);
+
+        $response = $this->actingAs($this->admin)->post('/productores/ajax', [
+            'nombre' => 'Duplicado',
+            'apellido_paterno' => 'CURP',
+            'curp' => 'DUPX890101HSL00100',
+            'upp' => 'UPP-AJAX-005',
+        ]);
+
+        $response->assertSessionHasErrors(['curp']);
     }
 }

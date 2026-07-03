@@ -252,4 +252,56 @@ class ProductorApiTest extends TestCase
             'zona' => 'A',
         ]);
     }
+
+    // --- updateCoordenadas API ---
+
+    public function test_api_actualiza_coordenadas()
+    {
+        $productor = Productor::factory()->create();
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+
+        $response = $this->postJson("/api/predios/{$predio->id}/coordenadas", [
+            'latitud' => 25.5,
+            'longitud' => -108.0,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true);
+        $this->assertDatabaseHas('predios', [
+            'id' => $predio->id,
+            'latitud' => 25.5,
+            'longitud' => -108.0,
+        ]);
+    }
+
+    public function test_api_medico_no_actualiza_coordenadas_ajenas()
+    {
+        Role::firstOrCreate(['name' => 'Medico_Campo']);
+        $medico = User::factory()->create();
+        $medico->assignRole('Medico_Campo');
+        Sanctum::actingAs($medico);
+
+        $productor = Productor::factory()->create(['medico_id' => null]);
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+
+        $response = $this->postJson("/api/predios/{$predio->id}/coordenadas", [
+            'latitud' => 25.0,
+            'longitud' => -108.0,
+        ]);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_api_coordenadas_invalidas()
+    {
+        $productor = Productor::factory()->create();
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+
+        $response = $this->postJson("/api/predios/{$predio->id}/coordenadas", [
+            'latitud' => 999,
+            'longitud' => -108.0,
+        ]);
+
+        $response->assertStatus(422);
+    }
 }
