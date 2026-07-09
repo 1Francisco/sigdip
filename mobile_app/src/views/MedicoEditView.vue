@@ -188,7 +188,7 @@ export default {
           this.$router.push('/medicos');
         }, 1500);
       } catch (e) {
-        this.errorMsg = e.message || 'No se pudo actualizar al médico.';
+        this.errorMsg = e.response?.data?.message || e.message || 'No se pudo actualizar al médico.';
         this.saving = false;
       }
     }

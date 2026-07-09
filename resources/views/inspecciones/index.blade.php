@@ -29,11 +29,11 @@
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0 fw-bold">Dictámenes Registrados</h5>
         <div class="d-flex gap-2">
-            @role('Administrador')
+            @hasanyrole('Administrador|Medico_Campo')
             <a href="{{ route('reportes.excel') }}" class="btn btn-outline-success">
                 <i class="bi bi-file-earmark-excel"></i> Descargar Sábana
             </a>
-            @endrole
+            @endhasanyrole
             <a href="{{ route('inspecciones.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-lg"></i> Nuevo Dictamen
             </a>

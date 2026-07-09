@@ -464,12 +464,15 @@
             <a class="nav-link {{ request()->routeIs('import.excel.*') ? 'active' : '' }}" href="{{ route('import.excel.index') }}">
                 <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
             </a>
+            <a class="nav-link {{ request()->routeIs('reportes.rendimiento') ? 'active' : '' }}" href="{{ route('reportes.rendimiento') }}">
+                <i class="bi bi-bar-chart-fill"></i> Rendimiento
+            </a>
             @endrole
-            @role('Administrador')
+            @hasanyrole('Administrador|Medico_Campo')
             <a class="nav-link" href="{{ route('reportes.excel') }}">
                 <i class="bi bi-file-earmark-excel"></i> Sábana Excel
             </a>
-            @endrole
+            @endhasanyrole
 
             <hr class="mx-3 text-slate-200">
             <a class="nav-link text-primary fw-semibold" href="{{ route('descargar.apk') }}">

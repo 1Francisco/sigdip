@@ -60,6 +60,9 @@
           <a class="nav-link" :class="{ active: isActive('/descargas') }" @click.prevent="navigate('/descargas')">
             <i class="bi bi-download"></i> Descargas
           </a>
+          <a class="nav-link" @click.prevent="navigate('/inspecciones?downloadExcel=true')">
+            <i class="bi bi-file-earmark-excel"></i> Sábana Excel
+          </a>
           <a class="nav-link" :class="{ active: isActive('/sync') }" @click.prevent="navigate('/sync')">
             <i class="bi bi-arrow-repeat"></i> Sincronizar
           </a>

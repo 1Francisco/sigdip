@@ -94,7 +94,7 @@ describe('CRUD de Medicos (E2E)', () => {
 
     cy.visit('/#/medicos')
     cy.wait('@getMedicos', { timeout: 10000 })
-    cy.get('button[title="Editar médico"]').click()
+    cy.get('button[title="Editar médico"]').first().click({ force: true })
     cy.wait('@getMedico', { timeout: 10000 })
     cy.location('hash', { timeout: 5000 }).should('eq', '#/medicos/editar/2')
     cy.contains('Editar Médico Verificador', { timeout: 5000 }).should('be.visible')
@@ -138,7 +138,7 @@ describe('CRUD de Medicos (E2E)', () => {
 
     cy.get('button[type="submit"]').click()
     cy.wait('@updateMedicoFail', { timeout: 10000 })
-    cy.contains('No se pudo actualizar al médico', { timeout: 5000 }).should('be.visible')
+    cy.contains('Error al actualizar médico', { timeout: 5000 }).should('be.visible')
   })
 })
 

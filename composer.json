@@ -13,6 +13,8 @@
         "laravel/tinker": "^2.8",
         "maatwebsite/excel": "^3.1",
         "phpoffice/phpspreadsheet": "^1.30",
+        "setasign/fpdf": "^1.9",
+        "setasign/fpdi": "^2.6",
         "spatie/laravel-permission": "^6.25"
     },
     "require-dev": {

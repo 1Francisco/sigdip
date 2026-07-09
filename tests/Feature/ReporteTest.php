@@ -83,14 +83,22 @@ class ReporteTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_medico_no_puede_exportar_excel()
+    public function test_medico_puede_exportar_excel_propios()
     {
         Role::firstOrCreate(['name' => 'Medico_Campo']);
         $medico = User::factory()->create();
         $medico->assignRole('Medico_Campo');
 
+        $productor = Productor::factory()->create();
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+        $inspeccionPropia = Inspeccion::factory()->create([
+            'predio_id' => $predio->id,
+            'veterinario_id' => $medico->id,
+        ]);
+
         $response = $this->actingAs($medico)->get(route('reportes.excel'));
 
-        $response->assertStatus(403);
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }
 }

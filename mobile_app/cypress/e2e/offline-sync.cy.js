@@ -108,7 +108,7 @@ describe('Offline Sync Flow (E2E)', () => {
       user: { id: 1, name: 'Admin', email: 'admin@test.com', roles: ['Administrador'] },
     })
 
-    cy.intercept('GET', '**/api/sync/catalogos', {
+    cy.intercept('GET', /\/api\/sync\/catalogos/, {
       statusCode: 200,
       body: {
         data: {
@@ -121,7 +121,7 @@ describe('Offline Sync Flow (E2E)', () => {
     }).as('getCatalogos')
 
     cy.visit('/#/sync')
-    cy.contains('Descargar Catálogos del Día', { timeout: 5000 }).click()
+    cy.contains('Descargar Catálogos del Día', { timeout: 5000 }).should('not.be.disabled').click()
     cy.wait('@getCatalogos', { timeout: 10000 })
     cy.contains('Sincronización Completada', { timeout: 5000 }).should('be.visible')
   })

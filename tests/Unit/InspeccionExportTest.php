@@ -8,7 +8,6 @@ use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\Predio;
 use App\Models\Productor;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -43,6 +42,7 @@ class InspeccionExportTest extends TestCase
         $this->inspeccion = Inspeccion::factory()->create([
             'predio_id' => $this->predio->id,
             'folio' => 'EXP-001',
+            'fecha' => '2026-06-15',
             'fecha_inyeccion' => '2026-06-15',
             'fecha_lectura' => '2026-06-18',
             'funcion_zootecnica' => 'Carne',
@@ -55,14 +55,15 @@ class InspeccionExportTest extends TestCase
         ]);
     }
 
-    public function test_headings_24_columnas()
+    public function test_headings_formato_nuevo()
     {
         $export = new InspeccionExport;
         $headings = $export->headings();
 
-        $this->assertCount(24, $headings);
-        $this->assertContains('CLAVE (FOLIO)', $headings);
-        $this->assertContains('REACTORES (POSITIVOS)', $headings);
+        $this->assertCount(3, $headings);
+        $this->assertCount(15, $headings[0]);
+        $this->assertContains('CLAVE', $headings[0]);
+        $this->assertContains('REACTORES', $headings[2]);
     }
 
     public function test_map_columnas_principales()
@@ -70,12 +71,14 @@ class InspeccionExportTest extends TestCase
         $export = new InspeccionExport;
         $row = $export->map($this->inspeccion);
 
-        $this->assertEquals($this->inspeccion->id, $row[0]);
-        $this->assertEquals('DEFINITIVA', $row[1]);
-        $this->assertEquals('EXP-001', $row[2]);
-        $this->assertEquals('Rancho Export', $row[3]);
-        $this->assertEquals('CUP-EXPORT', $row[4]);
-        $this->assertEquals('Juan Pérez López', $row[5]);
+        $this->assertEquals('EXP-001', $row[0]);
+        $this->assertEquals('Rancho Export', $row[1]);
+        $this->assertEquals('CUP-EXPORT', $row[2]);
+        $this->assertEquals('Juan Pérez López', $row[3]);
+        $this->assertEquals('Culiacán', $row[4]);
+        $this->assertEquals('Badiraguato', $row[5]);
+        $this->assertEquals('Carne', $row[6]);
+        $this->assertEquals('15/06/2026', $row[7]);
     }
 
     public function test_map_cuenta_resultados()
@@ -103,10 +106,9 @@ class InspeccionExportTest extends TestCase
         $export = new InspeccionExport;
         $row = $export->map($this->inspeccion);
 
-        $this->assertEquals(3, $row[17]); // Animales probados
-        $this->assertEquals(1, $row[18]); // Negativos
-        $this->assertEquals(1, $row[19]); // Sospechosos
-        $this->assertEquals(1, $row[20]); // Positivos
+        $this->assertEquals(3, $row[8]);
+        $this->assertEquals(1, $row[9]);
+        $this->assertEquals(2, $row[10]);
     }
 
     public function test_map_sin_detalles()
@@ -114,10 +116,9 @@ class InspeccionExportTest extends TestCase
         $export = new InspeccionExport;
         $row = $export->map($this->inspeccion);
 
-        $this->assertEquals(0, $row[17]);
-        $this->assertEquals(0, $row[18]);
-        $this->assertEquals(0, $row[19]);
-        $this->assertEquals(0, $row[20]);
+        $this->assertEquals(0, $row[8]);
+        $this->assertEquals(0, $row[9]);
+        $this->assertEquals(0, $row[10]);
     }
 
     public function test_map_municipio_fallback()
@@ -128,35 +129,26 @@ class InspeccionExportTest extends TestCase
         $export = new InspeccionExport;
         $row = $export->map($this->inspeccion->fresh());
 
-        $this->assertEquals('Localidad Fallback', $row[6]);
+        $this->assertEquals('Localidad Fallback', $row[4]);
     }
 
     public function test_map_fecha_nula_devuelve_vacio()
     {
-        $this->inspeccion->update(['fecha_inyeccion' => null, 'fecha_lectura' => null]);
+        $inspeccionSinFecha = Inspeccion::factory()->make(['fecha' => null]);
 
         $export = new InspeccionExport;
-        $row = $export->map($this->inspeccion->fresh());
+        $row = $export->map($inspeccionSinFecha);
 
-        $this->assertEquals('', $row[15]);
-        $this->assertEquals('', $row[16]);
-    }
-
-    public function test_map_poblacion_total()
-    {
-        $export = new InspeccionExport;
-        $row = $export->map($this->inspeccion);
-
-        $this->assertEquals(24, $row[8]); // 2+10+3+5+4
+        $this->assertEquals('', $row[7]);
     }
 
     public function test_map_fechas_formateadas()
     {
+        $this->inspeccion->update(['fecha' => '2026-06-15']);
         $export = new InspeccionExport;
-        $row = $export->map($this->inspeccion);
+        $row = $export->map($this->inspeccion->fresh());
 
-        $this->assertEquals('15/06/2026', $row[15]);
-        $this->assertEquals('18/06/2026', $row[16]);
+        $this->assertEquals('15/06/2026', $row[7]);
     }
 
     public function test_collection_eager_loads_relations()

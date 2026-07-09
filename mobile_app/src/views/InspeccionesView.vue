@@ -31,7 +31,7 @@
           <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3 w-100">
             <h5 class="mb-0 fw-bold fs-5 text-dark text-center text-lg-start w-100 w-lg-auto">Dictámenes Registrados</h5>
             <div class="d-flex flex-column flex-lg-row gap-2 w-100 w-lg-auto">
-              <button v-if="isAdmin" @click="downloadSábana()" class="btn btn-outline-success btn-sm-custom d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 fw-semibold border-success text-success bg-transparent rounded-3 w-100 w-lg-auto">
+              <button v-if="isAdmin || isMedico" @click="downloadSábana()" class="btn btn-outline-success btn-sm-custom d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 fw-semibold border-success text-success bg-transparent rounded-3 w-100 w-lg-auto">
                 <i class="bi bi-file-earmark-excel"></i> Descargar Sábana
               </button>
               <button @click="$router.push('/inspeccion')" class="btn btn-primary btn-sm-custom d-flex align-items-center justify-content-center gap-1-5 px-3 py-2 bg-primary text-white border-0 rounded-3 w-100 w-lg-auto">
@@ -292,6 +292,7 @@ export default {
     return {
       userName: '',
       isAdmin: false,
+      isMedico: false,
       isOnline: true,
       loading: false,
       refreshing: false,
@@ -365,9 +366,10 @@ export default {
   },
   async mounted() {
     const user = api.getCurrentUser();
-    this.userName = user?.name || 'Administrador Central';
-    this.isAdmin = user?.roles && user.roles.includes('Administrador');
-    this.isOnline = navigator.onLine;
+      this.userName = user?.name || 'Administrador Central';
+      this.isAdmin = user?.roles && user.roles.includes('Administrador');
+      this.isMedico = user?.roles && user.roles.includes('Medico_Campo');
+      this.isOnline = navigator.onLine;
 
     await this.loadAll();
 

@@ -8,6 +8,7 @@ use App\Http\Controllers\InspeccionController;
 use App\Http\Controllers\PredioController;
 use App\Http\Controllers\ProductorController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\ReportesRendimientoController;
 use App\Http\Controllers\UserController;
 /*
 |--------------------------------------------------------------------------
@@ -77,6 +78,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/importar-excel', [ImportExcelController::class, 'index'])->name('import.excel.index');
         Route::post('/importar-excel/preview', [ImportExcelController::class, 'preview'])->name('import.excel.preview');
         Route::post('/importar-excel/import', [ImportExcelController::class, 'import'])->name('import.excel.import');
+
+        // Reportes de Rendimiento (Exclusivo Administrador)
+        Route::get('/admin/reportes/rendimiento', [ReportesRendimientoController::class, 'index'])->name('reportes.rendimiento');
+        Route::get('/admin/reportes/rendimiento/excel', [ReportesRendimientoController::class, 'exportExcel'])->name('reportes.rendimiento.excel');
+        Route::get('/admin/reportes/rendimiento/pdf', [ReportesRendimientoController::class, 'exportPdf'])->name('reportes.rendimiento.pdf');
+    });
+
+    Route::middleware('role:Administrador|Medico_Campo')->group(function () {
         Route::get('/reportes/sábana-excel', [ReporteController::class, 'exportExcel'])->name('reportes.excel');
     });
 

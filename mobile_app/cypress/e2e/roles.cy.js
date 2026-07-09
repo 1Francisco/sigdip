@@ -130,13 +130,13 @@ describe('Role-based Navigation (E2E)', () => {
       cy.get('.sidebar').contains('Inspecciones').should('be.visible')
       cy.get('.sidebar').contains('Nuevo Dictamen').should('be.visible')
       cy.get('.sidebar').contains('Descargas').should('be.visible')
+      cy.get('.sidebar').contains('Sábana Excel').should('be.visible')
       cy.get('.sidebar').contains('Sincronizar').should('be.visible')
 
       cy.get('.sidebar').contains('Médicos').should('not.exist')
       cy.get('.sidebar').contains('Animales').should('not.exist')
       cy.get('.sidebar').contains('Aretes del Censo').should('not.exist')
       cy.get('.sidebar').contains('Importar Excel').should('not.exist')
-      cy.get('.sidebar').contains('Sábana Excel').should('not.exist')
     })
 
     it('navega a Dashboard y ve su nombre', () => {

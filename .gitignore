@@ -33,3 +33,6 @@ bootstrap/cache/*
 scratch/*
 comparativa_plataformas.docx
 comparativa_plataformas.md
+mobile_app/cypress/videos/
+mobile_app/cypress/screenshots/
+*.xlsx
