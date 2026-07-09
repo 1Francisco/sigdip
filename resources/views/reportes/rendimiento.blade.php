@@ -87,54 +87,74 @@
                     </a>
                 @endif
             </div>
-            <div class="col-12 mt-2">
-                <div class="form-check">
-                    <input type="checkbox" name="incluir_portada" id="incluir_portada" class="form-check-input" value="1" @checked(request()->boolean('incluir_portada'))>
-                    <label class="form-check-label small text-secondary" for="incluir_portada">
-                        Incluir portada resumen al descargar PDF
-                    </label>
-                </div>
-            </div>
         </form>
     </div>
 </div>
 
+<div class="d-flex justify-content-end gap-2 mb-3">
+    <a href="{{ route('reportes.rendimiento.excel', request()->except('tab', 'secciones', 'page')) }}" class="btn btn-sm btn-success rounded-pill px-3">
+        <i class="bi bi-file-earmark-excel me-1"></i> Exportar Todo (Excel)
+    </a>
+</div>
+
 <!-- Pestañas / Tabs -->
 <ul class="nav nav-tabs border-0 mb-4" id="reportTabs" role="tablist">
-    <li class="nav-item" role="presentation">
+    <li class="nav-item d-flex align-items-center" role="presentation">
         <button class="nav-link border-0 fw-semibold px-4 {{ $tab === 'medicos' ? 'active bg-white shadow-sm' : 'text-secondary' }}"
                 id="tab-medicos" data-bs-toggle="tab" data-bs-target="#panel-medicos"
                 type="button" role="tab" onclick="switchTab('medicos')">
             <i class="bi bi-person-badge me-1"></i> Médicos
         </button>
+        <a href="{{ route('reportes.rendimiento.pdf', request()->except('tab', 'secciones', 'page')) }}" class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF consolidado">
+            <i class="bi bi-file-earmark-pdf"></i>
+        </a>
     </li>
-    <li class="nav-item" role="presentation">
+    <li class="nav-item d-flex align-items-center" role="presentation">
         <button class="nav-link border-0 fw-semibold px-4 {{ $tab === 'actividades' ? 'active bg-white shadow-sm' : 'text-secondary' }}"
                 id="tab-actividades" data-bs-toggle="tab" data-bs-target="#panel-actividades"
                 type="button" role="tab" onclick="switchTab('actividades')">
             <i class="bi bi-activity me-1"></i> Actividades
         </button>
+        <a href="{{ route('reportes.rendimiento.pdf', request()->except('tab', 'secciones', 'page')) }}" class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF consolidado">
+            <i class="bi bi-file-earmark-pdf"></i>
+        </a>
     </li>
-    <li class="nav-item" role="presentation">
+    <li class="nav-item d-flex align-items-center" role="presentation">
         <button class="nav-link border-0 fw-semibold px-4 {{ $tab === 'zona' ? 'active bg-white shadow-sm' : 'text-secondary' }}"
                 id="tab-zona" data-bs-toggle="tab" data-bs-target="#panel-zona"
                 type="button" role="tab" onclick="switchTab('zona')">
             <i class="bi bi-geo-alt me-1"></i> Zona
         </button>
+        <a href="{{ route('reportes.rendimiento.pdf', request()->except('tab', 'secciones', 'page')) }}" class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF consolidado">
+            <i class="bi bi-file-earmark-pdf"></i>
+        </a>
     </li>
-    <li class="nav-item" role="presentation">
+    <li class="nav-item d-flex align-items-center" role="presentation">
         <button class="nav-link border-0 fw-semibold px-4 {{ $tab === 'cuarentena' ? 'active bg-white shadow-sm' : 'text-secondary' }}"
                 id="tab-cuarentena" data-bs-toggle="tab" data-bs-target="#panel-cuarentena"
                 type="button" role="tab" onclick="switchTab('cuarentena')">
             <i class="bi bi-shield-exclamation me-1"></i> Cuarentena
         </button>
+        <a href="{{ route('reportes.rendimiento.pdf', request()->except('tab', 'secciones', 'page')) }}" class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF consolidado">
+            <i class="bi bi-file-earmark-pdf"></i>
+        </a>
     </li>
-    <li class="nav-item" role="presentation">
+    <li class="nav-item d-flex align-items-center" role="presentation">
         <button class="nav-link border-0 fw-semibold px-4 {{ $tab === 'mes' ? 'active bg-white shadow-sm' : 'text-secondary' }}"
                 id="tab-mes" data-bs-toggle="tab" data-bs-target="#panel-mes"
                 type="button" role="tab" onclick="switchTab('mes')">
             <i class="bi bi-calendar-month me-1"></i> Mes
         </button>
+        <a href="{{ route('reportes.rendimiento.pdf', request()->except('tab', 'secciones', 'page')) }}" class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF consolidado">
+            <i class="bi bi-file-earmark-pdf"></i>
+        </a>
+    </li>
+    <li class="nav-item d-flex align-items-center" role="presentation">
+        <a href="{{ route('reportes.rendimiento.mensual') }}"
+           class="nav-link border-0 fw-semibold px-4 {{ $tab === 'mensual' ? 'active bg-white shadow-sm' : 'text-secondary' }}"
+           role="tab">
+            <i class="bi bi-table me-1"></i> Detalle Mensual
+        </a>
     </li>
 </ul>
 
@@ -281,9 +301,6 @@
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-pie-chart-fill me-2 text-primary"></i> Distribución por Tipo de Prueba</span>
-                <a href="{{ route('reportes.rendimiento.excel', request()->except('tab')) }}" class="btn btn-sm btn-success rounded-pill px-3">
-                    <i class="bi bi-file-earmark-excel me-1"></i> Excel
-                </a>
             </div>
             <div class="card-body">
                 <div style="height: 350px;">
@@ -336,9 +353,6 @@
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-map me-2 text-primary"></i> Distribución por Zona</span>
-                        <a href="{{ route('reportes.rendimiento.excel', request()->except('tab')) }}" class="btn btn-sm btn-success rounded-pill px-3">
-                            <i class="bi bi-file-earmark-excel me-1"></i> Excel
-                        </a>
                     </div>
                     <div class="card-body d-flex align-items-center justify-content-center">
                         <div style="height: 300px; width: 100%; max-width: 400px;">
@@ -488,9 +502,6 @@
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-graph-up me-2 text-primary"></i> Tendencia Mensual</span>
-                <a href="{{ route('reportes.rendimiento.excel', request()->except('tab')) }}" class="btn btn-sm btn-success rounded-pill px-3">
-                    <i class="bi bi-file-earmark-excel me-1"></i> Excel
-                </a>
             </div>
             <div class="card-body">
                 <div style="height: 350px;">

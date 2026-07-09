@@ -91,7 +91,9 @@ class ReportesRendimientoTest extends TestCase
 
     public function test_pdf_limit_exceeded_redirects()
     {
+        $predio = \App\Models\Predio::factory()->create();
         Inspeccion::factory(51)->create([
+            'predio_id' => $predio->id,
             'tipo_prueba' => 'PPC',
             'estado' => 'sincronizado',
         ]);

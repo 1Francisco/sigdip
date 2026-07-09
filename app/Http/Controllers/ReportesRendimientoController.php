@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\RendimientoExport;
+use App\Exports\RendimientoMensualExport;
 use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\User;
@@ -85,6 +86,101 @@ class ReportesRendimientoController extends Controller
         );
     }
 
+    public function exportExcelMensual(Request $request)
+    {
+        $year = $request->get('year', (int) now()->year);
+
+        return Excel::download(
+            new RendimientoMensualExport(
+                (int) $year,
+                $request->get('medico_id'),
+                $request->get('zona'),
+                $request->get('estado'),
+            ),
+            "rendimiento_mensual_{$year}.xlsx",
+            \Maatwebsite\Excel\Excel::XLSX
+        );
+    }
+
+    public function rendimientoMensual(Request $request)
+    {
+        $year = $request->get('year', (int) now()->year);
+        $medicoId = $request->get('medico_id');
+        $zona = $request->get('zona');
+        $estado = $request->get('estado');
+
+        $medicos = User::role('Medico_Campo')->orderBy('name')->get();
+        $driver = DB::connection()->getDriverName();
+        $yearExpr = $driver === 'sqlite' ? "strftime('%Y', fecha)" : "YEAR(fecha)";
+        $monthExpr = $driver === 'sqlite' ? "strftime('%Y-%m', inspecciones.fecha)" : "DATE_FORMAT(inspecciones.fecha, '%Y-%m')";
+        $mesExprVisitas = $driver === 'sqlite' ? "strftime('%Y-%m', visitas.fecha_programada)" : "DATE_FORMAT(visitas.fecha_programada, '%Y-%m')";
+        $mesExprDetalles = $driver === 'sqlite' ? "strftime('%Y-%m', inspecciones.fecha)" : "DATE_FORMAT(inspecciones.fecha, '%Y-%m')";
+
+        $years = Inspeccion::selectRaw("{$yearExpr} as year")
+            ->distinct()->orderBy('year', 'desc')->pluck('year');
+        if ($years->isEmpty()) {
+            $years = collect([now()->year]);
+        }
+
+        $rows = Inspeccion::select(
+            'inspecciones.veterinario_id',
+            DB::raw("{$monthExpr} as mes"),
+            DB::raw('COUNT(*) as total_inspecciones'),
+            DB::raw('COUNT(DISTINCT inspecciones.predio_id) as predios')
+        )
+            ->join('predios', 'inspecciones.predio_id', '=', 'predios.id')
+            ->join('productores', 'predios.productor_id', '=', 'productores.id')
+            ->whereYear('inspecciones.fecha', $year)
+            ->groupBy('inspecciones.veterinario_id', DB::raw($monthExpr))
+            ->orderBy('mes')
+            ->when($medicoId, fn ($q) => $q->where('inspecciones.veterinario_id', $medicoId))
+            ->when($zona, fn ($q) => $q->where('productores.zona', $zona))
+            ->when($estado, fn ($q) => $q->where('inspecciones.estado', $estado))
+            ->get();
+
+        $medicoNames = $medicos->pluck('name', 'id');
+        foreach ($rows as $row) {
+            $row->medico_nombre = $medicoNames[$row->veterinario_id] ?? 'Desconocido';
+        }
+
+        $visitasData = Visita::select(
+            'veterinario_id',
+            DB::raw("{$mesExprVisitas} as mes"),
+            DB::raw('COUNT(*) as total_visitas')
+        )
+            ->whereYear('fecha_programada', $year)
+            ->groupBy('veterinario_id', DB::raw($mesExprVisitas))
+            ->when($medicoId, fn ($q) => $q->where('veterinario_id', $medicoId))
+            ->get()
+            ->keyBy(fn ($v) => $v->veterinario_id . '|' . $v->mes);
+
+        $detallesQuery = DetalleInspeccion::select(
+            'inspecciones.veterinario_id',
+            DB::raw("{$mesExprDetalles} as mes"),
+            DB::raw('COUNT(*) as total_animales'),
+            DB::raw("COALESCE(SUM(CASE WHEN detalles_inspeccion.resultado_prueba IN ('Positivo','Sospechoso') THEN 1 ELSE 0 END), 0) as total_reactores")
+        )
+            ->join('inspecciones', 'detalles_inspeccion.inspeccion_id', '=', 'inspecciones.id')
+            ->join('predios', 'inspecciones.predio_id', '=', 'predios.id')
+            ->join('productores', 'predios.productor_id', '=', 'productores.id')
+            ->whereYear('inspecciones.fecha', $year)
+            ->groupBy('inspecciones.veterinario_id', DB::raw($mesExprDetalles))
+            ->when($medicoId, fn ($q) => $q->where('inspecciones.veterinario_id', $medicoId))
+            ->when($zona, fn ($q) => $q->where('productores.zona', $zona))
+            ->when($estado, fn ($q) => $q->where('inspecciones.estado', $estado))
+            ->get()
+            ->keyBy(fn ($d) => $d->veterinario_id . '|' . $d->mes);
+
+        foreach ($rows as $row) {
+            $key = $row->veterinario_id . '|' . $row->mes;
+            $row->total_visitas = $visitasData->get($key)?->total_visitas ?? 0;
+            $row->total_animales = $detallesQuery->get($key)?->total_animales ?? 0;
+            $row->total_reactores = $detallesQuery->get($key)?->total_reactores ?? 0;
+        }
+
+        return view('reportes.rendimiento_mensual', compact('rows', 'medicos', 'years', 'year', 'medicoId', 'zona', 'estado', 'driver'));
+    }
+
     public function exportPdf(Request $request)
     {
         $fechaDesde = $request->get('fecha_desde');
@@ -92,8 +188,6 @@ class ReportesRendimientoController extends Controller
         $estado = $request->get('estado');
         $zona = $request->get('zona');
         $medicoId = $request->get('medico_id');
-        $incluirPortada = $request->boolean('incluir_portada');
-
         [$inspecciones] = $this->filteredInspecciones($fechaDesde, $fechaHasta, $estado, $zona, $medicoId);
 
         if ($inspecciones->count() > 50) {
@@ -111,10 +205,6 @@ class ReportesRendimientoController extends Controller
 
         $pdf = new Fpdi();
         $tmpFiles = [];
-
-        if ($incluirPortada) {
-            $pdf = $this->prependPortada($pdf, $inspecciones, $fechaDesde, $fechaHasta, $estado, $zona, $medicoId);
-        }
 
         foreach ($inspecciones as $inspeccion) {
             $individual = Pdf::loadView('reports.inspeccion_pdf', ['inspeccion' => $inspeccion])->output();
@@ -429,39 +519,4 @@ class ReportesRendimientoController extends Controller
         }
     }
 
-    private function prependPortada(Fpdi $pdf, $inspecciones, $fechaDesde, $fechaHasta, $estado, $zona, $medicoId): Fpdi
-    {
-        $medicoNombre = $medicoId ? (User::find($medicoId)?->name ?? 'Todos') : 'Todos';
-        $totalAnimales = $inspecciones->sum(fn ($i) => $i->detalles->count());
-        $negativos = $inspecciones->sum(fn ($i) => $i->detalles->where('resultado_prueba', 'Negativo')->count());
-        $positivos = $inspecciones->sum(fn ($i) => $i->detalles->where('resultado_prueba', 'Positivo')->count());
-        $sospechosos = $inspecciones->sum(fn ($i) => $i->detalles->where('resultado_prueba', 'Sospechoso')->count());
-
-        $portadaHtml = Pdf::loadView('reports.portada_pdf', compact(
-            'inspecciones',
-            'fechaDesde',
-            'fechaHasta',
-            'estado',
-            'zona',
-            'medicoNombre',
-            'totalAnimales',
-            'negativos',
-            'positivos',
-            'sospechosos',
-        ))->output();
-
-        $tmp = tempnam(sys_get_temp_dir(), 'portada_');
-        file_put_contents($tmp, $portadaHtml);
-        $pageCount = $pdf->setSourceFile($tmp);
-        for ($i = 1; $i <= $pageCount; $i++) {
-            $tpl = $pdf->importPage($i);
-            $size = $pdf->getTemplateSize($tpl);
-            $orientation = $size['width'] > $size['height'] ? 'L' : 'P';
-            $pdf->AddPage($orientation, [$size['width'], $size['height']]);
-            $pdf->useTemplate($tpl);
-        }
-        unlink($tmp);
-
-        return $pdf;
-    }
 }

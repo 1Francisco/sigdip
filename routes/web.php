@@ -81,6 +81,8 @@ Route::middleware(['auth'])->group(function () {
 
         // Reportes de Rendimiento (Exclusivo Administrador)
         Route::get('/admin/reportes/rendimiento', [ReportesRendimientoController::class, 'index'])->name('reportes.rendimiento');
+        Route::get('/admin/reportes/rendimiento/mensual', [ReportesRendimientoController::class, 'rendimientoMensual'])->name('reportes.rendimiento.mensual');
+        Route::get('/admin/reportes/rendimiento/mensual/excel', [ReportesRendimientoController::class, 'exportExcelMensual'])->name('reportes.rendimiento.mensual.excel');
         Route::get('/admin/reportes/rendimiento/excel', [ReportesRendimientoController::class, 'exportExcel'])->name('reportes.rendimiento.excel');
         Route::get('/admin/reportes/rendimiento/pdf', [ReportesRendimientoController::class, 'exportPdf'])->name('reportes.rendimiento.pdf');
     });
