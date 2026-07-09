@@ -206,7 +206,6 @@ class UserController extends Controller
             ]);
 
         $disponibles = Productor::whereNull('medico_id')
-            ->orWhere('medico_id', '!=', $usuario->id)
             ->withCount('predios')
             ->orderBy('nombre')
             ->get()
@@ -245,10 +244,6 @@ class UserController extends Controller
         $productorIds = $request->input('productor_ids', []);
 
         Productor::whereIn('id', $productorIds)->update(['medico_id' => $usuario->id]);
-
-        Productor::where('medico_id', $usuario->id)
-            ->whereNotIn('id', $productorIds)
-            ->update(['medico_id' => null]);
 
         $count = count($productorIds);
 

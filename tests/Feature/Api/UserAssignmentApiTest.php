@@ -62,7 +62,7 @@ class UserAssignmentApiTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_guardar_asignacion_asigna_y_desasigna()
+    public function test_guardar_asignacion_asigna_sin_desasignar_existentes()
     {
         $otroProductor = Productor::factory()->create();
 
@@ -81,22 +81,24 @@ class UserAssignmentApiTest extends TestCase
             'id' => $otroProductor->id,
             'medico_id' => $this->medico->id,
         ]);
+        // Existing assignment should NOT be removed
         $this->assertDatabaseHas('productores', [
             'id' => $this->productorAsignado->id,
-            'medico_id' => null,
+            'medico_id' => $this->medico->id,
         ]);
     }
 
-    public function test_guardar_asignacion_vacia_desasigna_todos()
+    public function test_guardar_asignacion_vacia_no_desasigna()
     {
         $response = $this->postJson("/api/usuarios/{$this->medico->id}/asignar-productores", [
             'productor_ids' => [],
         ]);
 
         $response->assertStatus(200);
+        // Empty array should NOT unassign existing productors
         $this->assertDatabaseHas('productores', [
             'id' => $this->productorAsignado->id,
-            'medico_id' => null,
+            'medico_id' => $this->medico->id,
         ]);
     }
 

@@ -106,7 +106,7 @@
 <script>
 import api from '../services/api.js';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
+import { App } from '@capacitor/app';
 
 export default {
   name: 'InspeccionDetailView',
@@ -168,14 +168,22 @@ export default {
                 directory: Directory.Documents,
                 recursive: true
               });
+              // Also save to public Downloads folder (Android)
               try {
-                await Share.share({
-                  title: fileName,
-                  url: result.uri,
-                  dialogTitle: 'Abrir / Compartir PDF'
+                await Filesystem.writeFile({
+                  path: fileName,
+                  data: base64data,
+                  directory: Directory.Downloads,
+                  recursive: true
                 });
-              } catch (shareErr) {
-                // User may cancel share dialog
+              } catch (_) {
+                // Downloads not available on this platform
+              }
+              try {
+                await App.openUrl({ url: result.uri });
+              } catch (openErr) {
+                console.error('Error opening PDF:', openErr);
+                this.errorMsg = 'No se pudo abrir el PDF: ' + openErr.message;
               }
             } catch (err) {
               console.error('Error saving PDF native:', err);

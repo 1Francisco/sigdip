@@ -283,7 +283,7 @@ import PullToRefresh from '../components/PullToRefresh.vue';
 import api from '../services/api.js';
 import db from '../services/db.js';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
+import { App } from '@capacitor/app';
 
 export default {
   name: 'InspeccionesView',
@@ -546,16 +546,24 @@ export default {
                 directory: Directory.Documents,
                 recursive: true
               });
-              this.successMsg = `PDF guardado en Documentos: ${fileName}`;
-              // Open/share the file
+              // Also save to public Downloads folder (Android)
               try {
-                await Share.share({
-                  title: fileName,
-                  url: result.uri,
-                  dialogTitle: 'Abrir / Compartir PDF'
+                await Filesystem.writeFile({
+                  path: fileName,
+                  data: base64data,
+                  directory: Directory.Downloads,
+                  recursive: true
                 });
-              } catch (shareErr) {
-                // User may cancel share dialog, that's ok
+                this.successMsg = `PDF guardado en Descargas del dispositivo.`;
+              } catch (_) {
+                this.successMsg = `PDF guardado en Documentos: ${fileName}`;
+              }
+              // Open with system PDF viewer
+              try {
+                await App.openUrl({ url: result.uri });
+              } catch (openErr) {
+                console.error('Error opening PDF:', openErr);
+                this.errorMsg = 'No se pudo abrir el PDF: ' + openErr.message;
               }
             } catch (err) {
               console.error('Error saving PDF native:', err);
@@ -592,7 +600,18 @@ export default {
                 directory: Directory.Documents,
                 recursive: true
               });
-              this.successMsg = `Sábana Excel guardada con éxito en Documentos: ${fileName}`;
+              // Also save to public Downloads folder (Android)
+              try {
+                await Filesystem.writeFile({
+                  path: fileName,
+                  data: base64data,
+                  directory: Directory.Downloads,
+                  recursive: true
+                });
+                this.successMsg = `Sábana Excel guardada con éxito en Descargas del dispositivo.`;
+              } catch (_) {
+                this.successMsg = `Sábana Excel guardada con éxito en Documentos: ${fileName}`;
+              }
               alert(`¡Archivo descargado con éxito!\n\nSe ha guardado en la carpeta de Documentos de tu dispositivo:\n\n${fileName}`);
             } catch (err) {
               console.error('Error saving file native:', err);

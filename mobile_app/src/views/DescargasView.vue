@@ -181,9 +181,14 @@
               <span class="fw-bold text-truncate">{{ previewFileName }}</span>
             </div>
             <div class="d-flex gap-2">
-              <a v-if="previewBlobUrl" :href="previewBlobUrl" target="_blank" class="dl-preview-btn-external" title="Abrir en pestaña nueva">
+              <button
+                v-if="previewFileUri"
+                class="dl-preview-btn-external"
+                title="Abrir externamente"
+                @click="openFileExternally(previewFileUri, previewFileName)"
+              >
                 <i class="bi bi-box-arrow-up-right"></i>
-              </a>
+              </button>
               <button class="dl-preview-btn-close" @click="closePreview">
                 <i class="bi bi-x-lg"></i>
               </button>
@@ -194,11 +199,28 @@
               <div class="spinner-border text-primary mb-3" role="status"></div>
               <p class="text-muted">Cargando vista previa...</p>
             </div>
-            <iframe 
+            <iframe
               v-else-if="previewBlobUrl"
-              :src="previewBlobUrl" 
+              :src="previewBlobUrl"
               class="dl-preview-iframe"
             ></iframe>
+            <div v-else-if="previewError" class="d-flex flex-column align-items-center justify-content-center h-100 text-center p-4">
+              <i class="bi bi-exclamation-triangle display-4 text-warning mb-3"></i>
+              <p class="text-secondary fw-semibold mb-1">Vista previa no disponible</p>
+              <p class="text-muted small mb-3 px-3">{{ previewError }}</p>
+              <div class="d-flex gap-2">
+                <button
+                  v-if="previewFileUri"
+                  class="dl-preview-btn-action"
+                  @click="openFileExternally(previewFileUri, previewFileName)"
+                >
+                  <i class="bi bi-box-arrow-up-right me-1"></i> Abrir externamente
+                </button>
+                <button class="dl-preview-btn-action dl-preview-btn-action-secondary" @click="closePreview">
+                  Cerrar
+                </button>
+              </div>
+            </div>
             <div v-else class="d-flex flex-column align-items-center justify-content-center h-100 text-center p-4">
               <i class="bi bi-exclamation-triangle display-4 text-warning mb-3"></i>
               <p class="text-secondary">No se pudo cargar la vista previa del archivo.</p>
@@ -232,7 +254,9 @@ export default {
       previewVisible: false,
       previewLoading: false,
       previewBlobUrl: null,
-      previewFileName: ''
+      previewFileName: '',
+      previewFileUri: null,
+      previewError: ''
     };
   },
   computed: {
@@ -369,39 +393,77 @@ export default {
       this.previewFileName = file.name;
       this.previewVisible = true;
       this.previewLoading = true;
+      this.previewError = '';
+      this.previewFileUri = null;
+      this.cleanPreviewUrl();
+
+      // Get file URI for fallback (Abrir externamente)
+      try {
+        const uriResult = await Filesystem.getUri({
+          path: file.name,
+          directory: Directory.Documents
+        });
+        this.previewFileUri = uriResult.uri;
+      } catch (e) {
+        // proceed without URI fallback
+      }
+
+      // Read as base64 → blob → iframe
       try {
         const fileData = await Filesystem.readFile({
           path: file.name,
           directory: Directory.Documents
         });
         const blob = this.base64ToBlob(fileData.data, 'application/pdf');
-        this.cleanPreviewUrl();
         this.previewBlobUrl = URL.createObjectURL(blob);
       } catch (err) {
         console.error('Error reading PDF:', err);
-        this.errorMsg = `No se pudo leer el archivo "${file.name}": ${err.message || 'Error desconocido'}.`;
-        this.previewVisible = false;
+        this.previewError = err.message || 'Error desconocido al leer el archivo.';
       } finally {
         this.previewLoading = false;
       }
     },
 
     async openNativeFile(file) {
+      this.previewError = '';
       try {
         const uriResult = await Filesystem.getUri({
           path: file.name,
           directory: Directory.Documents
         });
-        await Share.share({
-          title: file.name,
-          url: uriResult.uri,
-          dialogTitle: `Abrir ${file.name}`
-        });
+        const uri = uriResult.uri;
+
+        // Try opening externally via URI navigation
+        this.openFileExternally(uri, file.name);
       } catch (e) {
         if (e.message && !e.message.includes('cancel')) {
           console.error('Error opening file:', e);
           this.errorMsg = `No se pudo abrir "${file.name}": ${e.message}`;
         }
+      }
+    },
+
+    openFileExternally(uri, fileName) {
+      this.cleanPreviewUrl();
+      this.previewVisible = false;
+      this.errorMsg = '';
+      this.successMsg = '';
+
+      try {
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+          // On native: try to open with system handler via Share (with just the URI)
+          Share.share({
+            title: fileName,
+            url: uri,
+            dialogTitle: `Abrir ${fileName}`
+          }).catch(() => {});
+          this.successMsg = `Abriendo "${fileName}"...`;
+        } else {
+          // Web fallback: open in new tab / download
+          window.open(uri, '_blank');
+        }
+      } catch (e) {
+        this.errorMsg = `No se pudo abrir "${fileName}": ${e.message || 'Error desconocido'}`;
       }
     },
 
@@ -459,6 +521,8 @@ export default {
     closePreview() {
       this.previewVisible = false;
       this.previewFileName = '';
+      this.previewError = '';
+      this.previewFileUri = null;
       this.cleanPreviewUrl();
     },
 
@@ -873,6 +937,31 @@ export default {
   transition: background 0.15s;
 }
 .dl-preview-btn-close:hover { background: #fecaca; }
+.dl-preview-btn-action {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  background: #2563eb;
+  color: #fff;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.dl-preview-btn-action:hover {
+  background: #1d4ed8;
+}
+.dl-preview-btn-action-secondary {
+  background: #f1f5f9;
+  color: #475569;
+}
+.dl-preview-btn-action-secondary:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
 .dl-preview-body {
   flex: 1;
   overflow: hidden;
