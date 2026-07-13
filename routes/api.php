@@ -94,6 +94,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/inspecciones/{id}/sync-detalles', [InspeccionDetallesController::class, 'sync']);
     Route::get('/reportes/sábana-excel', [ReporteController::class, 'exportExcel']);
     Route::get('/censo/buscar-arete/{numero}', [InspeccionController::class, 'buscarArete']);
+    Route::get('/reportes/rendimiento', [\App\Http\Controllers\Api\ReportesRendimientoApiController::class, 'index']);
+    Route::get('/reportes/rendimiento/excel', [\App\Http\Controllers\Api\ReportesRendimientoApiController::class, 'exportExcel']);
+    Route::get('/reportes/rendimiento/pdf', [\App\Http\Controllers\Api\ReportesRendimientoApiController::class, 'exportPdf']);
+    Route::get('/reportes/rendimiento/mensual/excel', [\App\Http\Controllers\Api\ReportesRendimientoApiController::class, 'exportExcelMensual']);
+    Route::get('/reportes/rendimiento/mensual/pdf', [\App\Http\Controllers\Api\ReportesRendimientoApiController::class, 'exportPdfMensual']);
 
     // Médicos desde la App Móvil
     Route::get('/medicos', [MedicosApiController::class, 'index']);

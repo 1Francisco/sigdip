@@ -492,6 +492,11 @@ export default {
     return await request('GET', `/censo/buscar-arete/${numero}`);
   },
 
+  async getRendimiento(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return await request('GET', `/reportes/rendimiento${query ? `?${query}` : ''}`);
+  },
+
   // Helpers
   isAuthenticated() {
     return !!getToken();

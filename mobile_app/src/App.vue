@@ -8,6 +8,7 @@ import backgroundSync from './services/backgroundSync.js';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Camera } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
+import { Share } from '@capacitor/share';
 
 export default {
   name: 'App',
@@ -50,6 +51,25 @@ export default {
       }
     } catch (e) {
       console.warn('Permiso de ubicación no disponible:', e);
+    }
+
+    // 6. Escuchar cuando el usuario hace clic en una notificación local para abrir el archivo
+    try {
+      LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
+        const uri = action.notification.extra?.uri;
+        const filename = action.notification.extra?.filename;
+        if (uri) {
+          Share.share({
+            title: filename || 'Abrir archivo',
+            url: uri,
+            dialogTitle: `Abrir ${filename || 'archivo'}`
+          }).catch(err => {
+            console.error('Error sharing from notification:', err);
+          });
+        }
+      });
+    } catch (e) {
+      console.warn('Listener de notificaciones locales no soportado:', e);
     }
   }
 };

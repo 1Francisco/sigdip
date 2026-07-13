@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Inspeccion;
+use App\Observers\InspeccionObserver;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
@@ -22,6 +24,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Inspeccion::observe(InspeccionObserver::class);
+
         Paginator::useBootstrapFive();
 
         // Trust all proxies dynamically when running behind Cloudflare Tunnel, ngrok, or Railway

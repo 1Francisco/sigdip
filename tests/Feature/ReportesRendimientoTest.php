@@ -2,8 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
+use App\Models\Predio;
+use App\Models\Productor;
 use App\Models\User;
+use App\Models\Visita;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -91,7 +95,7 @@ class ReportesRendimientoTest extends TestCase
 
     public function test_pdf_limit_exceeded_redirects()
     {
-        $predio = \App\Models\Predio::factory()->create();
+        $predio = Predio::factory()->create();
         Inspeccion::factory(51)->create([
             'predio_id' => $predio->id,
             'tipo_prueba' => 'PPC',
@@ -102,5 +106,155 @@ class ReportesRendimientoTest extends TestCase
             ->get(route('reportes.rendimiento.pdf'))
             ->assertRedirect()
             ->assertSessionHas('error');
+    }
+
+    public function test_rendimiento_page_shows_kpis_with_data()
+    {
+        $medico = User::factory()->create();
+        $medico->assignRole('Medico_Campo');
+
+        $productor = Productor::factory()->create(['zona' => 'A']);
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+
+        Inspeccion::factory()->count(5)->create([
+            'veterinario_id' => $medico->id,
+            'predio_id' => $predio->id,
+            'fecha' => now()->format('Y-m-d'),
+            'estado' => 'sincronizado',
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('reportes.rendimiento'))
+            ->assertStatus(200);
+
+        $response->assertSee('5');
+        $response->assertSee($medico->name);
+    }
+
+    public function test_rendimiento_page_shows_medicos_table()
+    {
+        $medico = User::factory()->create();
+        $medico->assignRole('Medico_Campo');
+
+        $productor = Productor::factory()->create();
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+
+        Inspeccion::factory()->count(2)->create([
+            'veterinario_id' => $medico->id,
+            'predio_id' => $predio->id,
+            'fecha' => now()->format('Y-m-d'),
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('reportes.rendimiento'))
+            ->assertStatus(200);
+
+        $response->assertSee($medico->name);
+        $response->assertSee('Detalle de Rendimiento');
+    }
+
+    public function test_rendimiento_tab_actividades()
+    {
+        $productor = Productor::factory()->create();
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+
+        Inspeccion::factory()->create([
+            'predio_id' => $predio->id,
+            'tipo_prueba' => 'PPC',
+            'fecha' => now()->format('Y-m-d'),
+        ]);
+        Inspeccion::factory()->create([
+            'predio_id' => $predio->id,
+            'tipo_prueba' => 'PCC',
+            'fecha' => now()->format('Y-m-d'),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('reportes.rendimiento', ['tab' => 'actividades']))
+            ->assertStatus(200)
+            ->assertSee('Distribución por Tipo de Prueba');
+    }
+
+    public function test_rendimiento_tab_zona()
+    {
+        $productorA = Productor::factory()->create(['zona' => 'A']);
+        $predioA = Predio::factory()->create(['productor_id' => $productorA->id]);
+
+        Inspeccion::factory()->create([
+            'predio_id' => $predioA->id,
+            'fecha' => now()->format('Y-m-d'),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('reportes.rendimiento', ['tab' => 'zona']))
+            ->assertStatus(200)
+            ->assertSee('Distribución por Zona');
+    }
+
+    public function test_rendimiento_tab_cuarentena()
+    {
+        $productor = Productor::factory()->create([
+            'zona' => 'A',
+            'clave_cuarentena' => 'AD01',
+        ]);
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+
+        Inspeccion::factory()->create([
+            'predio_id' => $predio->id,
+            'fecha' => now()->format('Y-m-d'),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('reportes.rendimiento', ['tab' => 'cuarentena']))
+            ->assertStatus(200)
+            ->assertSee('Cuarentena');
+    }
+
+    public function test_rendimiento_tab_mes()
+    {
+        $productor = Productor::factory()->create();
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+
+        Inspeccion::factory()->create([
+            'predio_id' => $predio->id,
+            'fecha' => now()->format('Y-m-d'),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('reportes.rendimiento', ['tab' => 'mes']))
+            ->assertStatus(200)
+            ->assertSee('Tendencia Mensual');
+    }
+
+    public function test_rendimiento_detalle_medico()
+    {
+        $medico = User::factory()->create();
+        $medico->assignRole('Medico_Campo');
+
+        $productor = Productor::factory()->create();
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+
+        Inspeccion::factory()->create([
+            'veterinario_id' => $medico->id,
+            'predio_id' => $predio->id,
+            'fecha' => now()->format('Y-m-d'),
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('reportes.rendimiento', ['medico_id' => $medico->id]))
+            ->assertStatus(200);
+
+        $response->assertSee('Últimas inspecciones');
+    }
+
+    public function test_rendimiento_excel_with_filters()
+    {
+        $this->actingAs($this->admin)
+            ->get(route('reportes.rendimiento.excel', [
+                'zona' => 'A',
+                'estado' => 'sincronizado',
+            ]))
+            ->assertStatus(200)
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }
 }

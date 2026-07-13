@@ -118,7 +118,7 @@ class InspeccionesApiController extends Controller
             'estado' => 'nullable|in:borrador,sincronizado',
         ]);
 
-        $inspeccion->update($validated);
+        $inspeccion->update(array_merge($validated, ['modified_at' => now()]));
 
         return response()->json([
             'success' => true,
@@ -177,6 +177,8 @@ class InspeccionesApiController extends Controller
             ] : null,
             'visita_id' => $inspeccion->visita_id,
             'clave_interna' => $inspeccion->clave_interna,
+            'modified_at' => optional($inspeccion->modified_at)->format('Y-m-d\TH:i:s'),
+            'modified_at_formatted' => optional($inspeccion->modified_at)->format('d/m/Y H:i'),
         ];
     }
 
@@ -190,6 +192,8 @@ class InspeccionesApiController extends Controller
             'predio_id' => $inspeccion->predio_id,
             'visita_id' => $inspeccion->visita_id,
             'clave_interna' => $inspeccion->clave_interna,
+            'modified_at' => optional($inspeccion->modified_at)->format('Y-m-d\TH:i:s'),
+            'modified_at_formatted' => optional($inspeccion->modified_at)->format('d/m/Y H:i'),
             'tipo_prueba' => $inspeccion->tipo_prueba,
             'motivo_prueba' => $inspeccion->motivo_prueba,
             'funcion_zootecnica' => $inspeccion->funcion_zootecnica,

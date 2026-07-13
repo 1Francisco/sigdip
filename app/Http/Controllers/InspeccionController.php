@@ -22,7 +22,10 @@ class InspeccionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Inspeccion::with(['predio.productor', 'veterinario'])->orderBy('id', 'desc');
+        $query = Inspeccion::with(['predio.productor', 'veterinario'])
+            ->orderBy(DB::raw('modified_at IS NULL'))
+            ->latest('modified_at')
+            ->latest('id');
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -478,7 +481,10 @@ class InspeccionController extends Controller
         try {
             DB::beginTransaction();
 
-            $inspeccion->update($request->except(['animales', '_token', '_method']));
+            $inspeccion->update(array_merge(
+                $request->except(['animales', '_token', '_method']),
+                ['modified_at' => now()]
+            ));
 
             // Sync animals (simplistic: delete and recreate for this MVP)
             if ($request->has('animales')) {

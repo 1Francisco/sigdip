@@ -140,6 +140,49 @@ describe('ProductorDetailView', () => {
     cy.location('hash', { timeout: 5000 }).should('include', '/productores')
   })
 
+  it('muestra UPP y email cuando estan presentes', () => {
+    const productorConDatos = {
+      ...fakeProductor,
+      upp: 'UPP-999',
+      email: 'productor@example.com',
+    }
+
+    cy.intercept('GET', '**/api/productores/1', {
+      statusCode: 200,
+      body: { data: productorConDatos },
+    }).as('getProductorFull')
+
+    const router = buildRouter()
+    router.push('/productores/1')
+    mount(ProductorDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getProductorFull', { timeout: 10000 })
+    cy.contains('UPP-999', { timeout: 5000 }).should('be.visible')
+    cy.contains('productor@example.com').should('be.visible')
+  })
+
+  it('muestra placeholder cuando faltan datos opcionales', () => {
+    const productorMinimo = {
+      ...fakeProductor,
+      telefono: null,
+      email: null,
+      domicilio: null,
+      estado: null,
+    }
+
+    cy.intercept('GET', '**/api/productores/1', {
+      statusCode: 200,
+      body: { data: productorMinimo },
+    }).as('getProductorMinimo')
+
+    const router = buildRouter()
+    router.push('/productores/1')
+    mount(ProductorDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getProductorMinimo', { timeout: 10000 })
+    cy.contains('—', { timeout: 5000 }).should('be.visible')
+  })
+
   it('muestra error cuando falla carga', () => {
     cy.intercept('GET', '**/api/productores/999', {
       statusCode: 404,

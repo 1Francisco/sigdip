@@ -6,6 +6,7 @@ use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\User;
 use App\Models\Visita;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -49,8 +50,9 @@ class RendimientoMensualExport implements FromCollection, ShouldAutoSize, WithHe
         $medicos = User::role('Medico_Campo')->orderBy('name')->get();
         $medicoNames = $medicos->pluck('name', 'id');
 
-        $rows = Inspeccion::select(
+        $rawRows = Inspeccion::select(
             'inspecciones.veterinario_id',
+            'inspecciones.tipo_prueba',
             DB::raw("{$monthExpr} as mes"),
             DB::raw('COUNT(*) as total_inspecciones'),
             DB::raw('COUNT(DISTINCT inspecciones.predio_id) as predios')
@@ -58,16 +60,31 @@ class RendimientoMensualExport implements FromCollection, ShouldAutoSize, WithHe
             ->join('predios', 'inspecciones.predio_id', '=', 'predios.id')
             ->join('productores', 'predios.productor_id', '=', 'productores.id')
             ->whereYear('inspecciones.fecha', $this->year)
-            ->groupBy('inspecciones.veterinario_id', DB::raw($monthExpr))
+            ->groupBy('inspecciones.veterinario_id', 'inspecciones.tipo_prueba', DB::raw($monthExpr))
             ->orderBy('mes')
             ->when($this->medicoId, fn ($q) => $q->where('inspecciones.veterinario_id', $this->medicoId))
             ->when($this->zona, fn ($q) => $q->where('productores.zona', $this->zona))
             ->when($this->estado, fn ($q) => $q->where('inspecciones.estado', $this->estado))
             ->get();
 
-        foreach ($rows as $row) {
-            $row->medico_nombre = $medicoNames[$row->veterinario_id] ?? 'Desconocido';
+        $grouped = collect();
+        foreach ($rawRows as $row) {
+            $key = $row->veterinario_id.'|'.$row->mes;
+            if (! $grouped->has($key)) {
+                $row->medico_nombre = $medicoNames[$row->veterinario_id] ?? 'Desconocido';
+                $row->ppc = 0;
+                $row->pcc = 0;
+                $row->total_inspecciones = 0;
+                $row->predios = 0;
+                $grouped[$key] = $row;
+            }
+            $existing = $grouped[$key];
+            $existing->total_inspecciones += $row->total_inspecciones;
+            $existing->predios = max($existing->predios, $row->predios);
+            $tipo = in_array($row->tipo_prueba, ['P.P.C.', 'PPC']) ? 'ppc' : 'pcc';
+            $existing->{$tipo} += $row->total_inspecciones;
         }
+        $rows = $grouped->values();
 
         $visitasData = Visita::select(
             'veterinario_id',
@@ -78,10 +95,11 @@ class RendimientoMensualExport implements FromCollection, ShouldAutoSize, WithHe
             ->groupBy('veterinario_id', DB::raw($mesExprVisitas))
             ->when($this->medicoId, fn ($q) => $q->where('veterinario_id', $this->medicoId))
             ->get()
-            ->keyBy(fn ($v) => $v->veterinario_id . '|' . $v->mes);
+            ->keyBy(fn ($v) => $v->veterinario_id.'|'.$v->mes);
 
         $detallesData = DetalleInspeccion::select(
             'inspecciones.veterinario_id',
+            'inspecciones.tipo_prueba',
             DB::raw("{$mesExprDetalles} as mes"),
             DB::raw('COUNT(*) as total_animales'),
             DB::raw("COALESCE(SUM(CASE WHEN detalles_inspeccion.resultado_prueba IN ('Positivo','Sospechoso') THEN 1 ELSE 0 END), 0) as total_reactores")
@@ -90,33 +108,47 @@ class RendimientoMensualExport implements FromCollection, ShouldAutoSize, WithHe
             ->join('predios', 'inspecciones.predio_id', '=', 'predios.id')
             ->join('productores', 'predios.productor_id', '=', 'productores.id')
             ->whereYear('inspecciones.fecha', $this->year)
-            ->groupBy('inspecciones.veterinario_id', DB::raw($mesExprDetalles))
+            ->groupBy('inspecciones.veterinario_id', 'inspecciones.tipo_prueba', DB::raw($mesExprDetalles))
             ->when($this->medicoId, fn ($q) => $q->where('inspecciones.veterinario_id', $this->medicoId))
             ->when($this->zona, fn ($q) => $q->where('productores.zona', $this->zona))
             ->when($this->estado, fn ($q) => $q->where('inspecciones.estado', $this->estado))
             ->get()
-            ->keyBy(fn ($d) => $d->veterinario_id . '|' . $d->mes);
+            ->groupBy(fn ($d) => $d->veterinario_id.'|'.$d->mes);
 
         foreach ($rows as $row) {
-            $key = $row->veterinario_id . '|' . $row->mes;
+            $key = $row->veterinario_id.'|'.$row->mes;
             $row->total_visitas = $visitasData->get($key)?->total_visitas ?? 0;
-            $row->total_animales = $detallesData->get($key)?->total_animales ?? 0;
-            $row->total_reactores = $detallesData->get($key)?->total_reactores ?? 0;
+            $row->total_animales = 0;
+            $row->total_reactores = 0;
+            $row->reactores_ppc = 0;
+            $row->reactores_pcc = 0;
+
+            $detalles = $detallesData->get($key, collect());
+            foreach ($detalles as $d) {
+                $row->total_animales += $d->total_animales;
+                $row->total_reactores += $d->total_reactores;
+                $tipo = in_array($d->tipo_prueba, ['P.P.C.', 'PPC']) ? 'reactores_ppc' : 'reactores_pcc';
+                $row->{$tipo} += $d->total_reactores;
+            }
         }
 
         $export = collect();
         foreach ($rows as $row) {
             $parts = explode('-', $row->mes);
-            $mesNombre = \Carbon\Carbon::createFromFormat('Y-m', $row->mes)->locale('es')->translatedFormat('F Y');
+            $mesNombre = Carbon::createFromFormat('Y-m', $row->mes)->locale('es')->translatedFormat('F Y');
 
             $export->push([
                 'medico' => $row->medico_nombre,
                 'mes' => ucfirst($mesNombre),
                 'inspecciones' => $row->total_inspecciones,
+                'ppc' => $row->ppc ?? 0,
+                'pcc' => $row->pcc ?? 0,
                 'predios' => $row->predios,
                 'visitas' => $row->total_visitas,
                 'animales' => $row->total_animales,
                 'reactores' => $row->total_reactores,
+                'reactores_ppc' => $row->reactores_ppc ?? 0,
+                'reactores_pcc' => $row->reactores_pcc ?? 0,
             ]);
         }
 
@@ -129,10 +161,14 @@ class RendimientoMensualExport implements FromCollection, ShouldAutoSize, WithHe
             'Médico',
             'Mes',
             'Inspecciones',
+            'PPC',
+            'PCC',
             'Predios',
             'Visitas',
             'Animales Probados',
             'Reactores',
+            'Reactores PPC',
+            'Reactores PCC',
         ];
     }
 
@@ -142,16 +178,20 @@ class RendimientoMensualExport implements FromCollection, ShouldAutoSize, WithHe
             $row['medico'],
             $row['mes'],
             $row['inspecciones'],
+            $row['ppc'],
+            $row['pcc'],
             $row['predios'],
             $row['visitas'],
             $row['animales'],
             $row['reactores'],
+            $row['reactores_ppc'],
+            $row['reactores_pcc'],
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:G1')->applyFromArray([
+        $sheet->getStyle('A1:K1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'name' => 'Arial', 'size' => 11],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -171,7 +211,7 @@ class RendimientoMensualExport implements FromCollection, ShouldAutoSize, WithHe
 
         $highestRow = $sheet->getHighestRow();
         if ($highestRow > 1) {
-            $sheet->getStyle('A2:G'.$highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('A2:K'.$highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         }
 
         return [];

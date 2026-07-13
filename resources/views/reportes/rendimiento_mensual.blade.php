@@ -4,6 +4,43 @@
 @section('header_title', 'Rendimiento Mensual')
 @section('header_subtitle', 'Desempeño mensual detallado por médico')
 
+@section('styles')
+<style>
+    .nav-pills-premium {
+        background: #f1f5f9;
+        padding: 4px;
+        border-radius: 12px;
+        display: inline-flex;
+        border: none;
+    }
+    .nav-pills-premium .nav-item {
+        margin: 0;
+    }
+    .nav-pills-premium .nav-link {
+        border: none;
+        color: #64748b !important;
+        font-weight: 600;
+        padding: 0.6rem 1.25rem;
+        transition: all 0.2s ease;
+        border-radius: 10px;
+        margin: 0;
+        background: transparent !important;
+        box-shadow: none !important;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .nav-pills-premium .nav-link:hover {
+        color: #1e293b !important;
+    }
+    .nav-pills-premium .nav-link.active {
+        color: #2563eb !important;
+        background: white !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05) !important;
+    }
+</style>
+@endsection
+
 @section('content')
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body bg-light border-bottom py-3 px-4">
@@ -55,6 +92,47 @@
     </div>
 </div>
 
+<!-- Pestañas / Tabs -->
+<ul class="nav nav-pills nav-pills-premium mb-4" id="reportTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'medicos'])) }}"
+           class="nav-link">
+            <i class="bi bi-person-badge"></i> Médicos
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'actividades'])) }}"
+           class="nav-link">
+            <i class="bi bi-activity"></i> Actividades
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'zona'])) }}"
+           class="nav-link">
+            <i class="bi bi-geo-alt"></i> Zona
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'cuarentena'])) }}"
+           class="nav-link">
+            <i class="bi bi-shield-exclamation"></i> Cuarentena
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'mes'])) }}"
+           class="nav-link">
+            <i class="bi bi-calendar-month"></i> Mes
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a href="{{ route('reportes.rendimiento.mensual', request()->query()) }}"
+           class="nav-link active"
+           role="tab">
+            <i class="bi bi-table"></i> Detalle Mensual
+        </a>
+    </li>
+</ul>
+
 <style>
 .table-mensual { table-layout: fixed; }
 .table-mensual th,
@@ -67,9 +145,14 @@
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
         <span><i class="bi bi-calendar-month me-2 text-primary"></i> Detalle Mensual por Médico</span>
-        <a href="{{ route('reportes.rendimiento.mensual.excel', request()->query()) }}" class="btn btn-sm btn-success rounded-pill px-3">
-            <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('reportes.rendimiento.mensual.pdf', request()->query()) }}" class="btn btn-sm btn-danger rounded-pill px-3">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
+            </a>
+            <a href="{{ route('reportes.rendimiento.mensual.excel', request()->query()) }}" class="btn btn-sm btn-success rounded-pill px-3">
+                <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
+            </a>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -79,10 +162,14 @@
                         <th class="ps-4 col-medico">Médico</th>
                         <th class="col-mes">Mes</th>
                         <th class="text-center col-num">Inspecciones</th>
+                        <th class="text-center col-num">PPC</th>
+                        <th class="text-center col-num">PCC</th>
                         <th class="text-center col-num">Predios</th>
                         <th class="text-center col-num">Visitas</th>
                         <th class="text-center col-num">Animales</th>
                         <th class="text-center col-num">Reactores</th>
+                        <th class="text-center col-num">React. PPC</th>
+                        <th class="text-center col-num">React. PCC</th>
                         <th class="text-center pe-4 col-download">Descargar</th>
                     </tr>
                 </thead>
@@ -99,12 +186,28 @@
                             <td class="ps-4 fw-semibold">{{ $row->medico_nombre }}</td>
                             <td>{{ ucfirst($mesNombre) }}</td>
                             <td class="text-center"><span class="badge bg-primary rounded-pill">{{ $row->total_inspecciones }}</span></td>
+                            <td class="text-center">{{ $row->ppc ?? 0 }}</td>
+                            <td class="text-center">{{ $row->pcc ?? 0 }}</td>
                             <td class="text-center">{{ $row->predios }}</td>
                             <td class="text-center">{{ $row->total_visitas }}</td>
                             <td class="text-center">{{ $row->total_animales }}</td>
                             <td class="text-center">
                                 @if($row->total_reactores > 0)
                                     <span class="badge bg-danger rounded-pill">{{ $row->total_reactores }}</span>
+                                @else
+                                    <span class="text-muted">0</span>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                @if(($row->reactores_ppc ?? 0) > 0)
+                                    <span class="badge bg-danger rounded-pill">{{ $row->reactores_ppc }}</span>
+                                @else
+                                    <span class="text-muted">0</span>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                @if(($row->reactores_pcc ?? 0) > 0)
+                                    <span class="badge bg-danger rounded-pill">{{ $row->reactores_pcc }}</span>
                                 @else
                                     <span class="text-muted">0</span>
                                 @endif
@@ -122,7 +225,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">
+                            <td colspan="12" class="text-center text-muted py-4">
                                 <i class="bi bi-inbox display-6 d-block mb-2"></i>
                                 No hay datos para el período seleccionado.
                             </td>
@@ -132,19 +235,27 @@
                     @if($rows->isNotEmpty())
                         @php
                             $totalInspecciones = $rows->sum('total_inspecciones');
+                            $totalPPC = $rows->sum(fn($r) => $r->ppc ?? 0);
+                            $totalPCC = $rows->sum(fn($r) => $r->pcc ?? 0);
                             $totalPredios = $rows->sum('predios');
                             $totalVisitas = $rows->sum('total_visitas');
                             $totalAnimales = $rows->sum('total_animales');
                             $totalReactores = $rows->sum('total_reactores');
+                            $totalReactoresPPC = $rows->sum(fn($r) => $r->reactores_ppc ?? 0);
+                            $totalReactoresPCC = $rows->sum(fn($r) => $r->reactores_pcc ?? 0);
                         @endphp
                         <tr class="table-primary fw-bold">
                             <td class="ps-4">Total General</td>
                             <td class="text-muted fst-italic">——</td>
                             <td class="text-center">{{ $totalInspecciones }}</td>
+                            <td class="text-center">{{ $totalPPC }}</td>
+                            <td class="text-center">{{ $totalPCC }}</td>
                             <td class="text-center">{{ $totalPredios }}</td>
                             <td class="text-center">{{ $totalVisitas }}</td>
                             <td class="text-center">{{ $totalAnimales }}</td>
                             <td class="text-center">{{ $totalReactores }}</td>
+                            <td class="text-center">{{ $totalReactoresPPC }}</td>
+                            <td class="text-center">{{ $totalReactoresPCC }}</td>
                             <td class="text-center pe-4"></td>
                         </tr>
                     @endif

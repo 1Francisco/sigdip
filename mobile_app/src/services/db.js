@@ -190,6 +190,22 @@ export default {
     return await catalogStore.getItem('dashboard_data');
   },
 
+  async saveDashboardKpis(kpis) {
+    await catalogStore.setItem('dashboard_kpis', clean(kpis));
+  },
+
+  async getDashboardKpis() {
+    return await catalogStore.getItem('dashboard_kpis');
+  },
+
+  async saveMedicosRanking(ranking) {
+    await catalogStore.setItem('medicos_ranking', clean(ranking));
+  },
+
+  async getMedicosRanking() {
+    return await catalogStore.getItem('medicos_ranking') || [];
+  },
+
   // ====== ANIMALES OFFLINE CACHE ======
   async saveAnimales(animales) {
     await catalogStore.setItem('animales', clean(animales));

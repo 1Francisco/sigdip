@@ -43,6 +43,7 @@ class Inspeccion extends Model
         'estado',
         'visita_id',
         'clave_interna',
+        'modified_at',
     ];
 
     protected $casts = [
@@ -53,6 +54,7 @@ class Inspeccion extends Model
         'fecha_prueba_anterior' => 'date',
         'exencion_fecha' => 'date',
         'hato_libre_fecha' => 'date',
+        'modified_at' => 'datetime',
     ];
 
     /**

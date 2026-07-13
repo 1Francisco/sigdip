@@ -111,6 +111,11 @@
                             @else
                                 <span class="badge bg-success"><i class="bi bi-check-all me-1"></i> Finalizado</span>
                             @endif
+                            @if($inspeccion->modified_at)
+                                <span class="badge bg-info text-dark mt-1 d-block d-md-inline-block mt-md-0 ms-md-1">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Modificado
+                                </span>
+                            @endif
                         </td>
                         <td data-label="Acciones">
                             <div class="d-flex gap-2">

@@ -30,6 +30,9 @@
           <a class="nav-link" :class="{ active: isActive('/medicos') }" @click.prevent="navigate('/medicos')">
             <i class="bi bi-person-badge"></i> Médicos
           </a>
+          <a class="nav-link" :class="{ active: isActive('/reportes/rendimiento') }" @click.prevent="navigate('/reportes/rendimiento')">
+            <i class="bi bi-bar-chart-fill"></i> Rendimiento
+          </a>
           <hr class="mx-3 text-slate-200">
           <a class="nav-link" :class="{ active: isActive('/descargas') }" @click.prevent="navigate('/descargas')">
             <i class="bi bi-download"></i> Descargas

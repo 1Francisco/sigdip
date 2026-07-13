@@ -8,6 +8,19 @@ export default defineConfig({
       '/api': 'http://127.0.0.1:8000',
     },
   },
+  optimizeDeps: {
+    include: [
+      '@capacitor/app',
+      '@capacitor/filesystem',
+      '@capacitor/camera',
+      '@capacitor/core',
+      'html5-qrcode',
+      'localforage',
+      'pinia',
+      'vue',
+      'vue-router'
+    ]
+  },
   build: {
     rollupOptions: {
       output: {

@@ -35,4 +35,34 @@ describe('Modo Offline (E2E)', () => {
 
     cy.contains('Resumen Administrativo', { timeout: 5000 }).should('be.visible')
   })
+
+  it('permite navegar a secciones offline sin error', () => {
+    cy.setLoginState({
+      user: { id: 1, name: 'Admin', email: 'admin@test.com', roles: ['Administrador'] },
+    })
+
+    cy.visit('/#/dashboard', {
+      onBeforeLoad(win) {
+        cy.stub(win.navigator, 'onLine').value(false)
+      },
+    })
+
+    cy.get('.bottom-nav-link', { timeout: 5000 }).contains('Productores').click({ force: true })
+    cy.location('hash', { timeout: 5000 }).should('include', 'productores')
+  })
+
+  it('muestra indicador offline al navegar sin conexion', () => {
+    cy.setLoginState({
+      user: { id: 1, name: 'Admin', email: 'admin@test.com', roles: ['Administrador'] },
+    })
+
+    cy.visit('/#/dashboard', {
+      onBeforeLoad(win) {
+        cy.stub(win.navigator, 'onLine').value(false)
+      },
+    })
+
+    cy.contains('Modo Offline', { timeout: 5000 }).should('be.visible')
+    cy.contains('Mostrando datos del último guardado local', { timeout: 5000 }).should('be.visible')
+  })
 })

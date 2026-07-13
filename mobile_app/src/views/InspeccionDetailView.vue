@@ -107,6 +107,8 @@
 import api from '../services/api.js';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { App } from '@capacitor/app';
+import { Share } from '@capacitor/share';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 export default {
   name: 'InspeccionDetailView',
@@ -169,6 +171,7 @@ export default {
                 recursive: true
               });
               // Also save to public Downloads folder (Android)
+              let downloadSaved = false;
               try {
                 await Filesystem.writeFile({
                   path: fileName,
@@ -176,14 +179,49 @@ export default {
                   directory: Directory.Downloads,
                   recursive: true
                 });
+                downloadSaved = true;
               } catch (_) {
                 // Downloads not available on this platform
               }
+
+              // Programar notificación de descarga completa
               try {
-                await App.openUrl({ url: result.uri });
-              } catch (openErr) {
-                console.error('Error opening PDF:', openErr);
-                this.errorMsg = 'No se pudo abrir el PDF: ' + openErr.message;
+                const permission = await LocalNotifications.checkPermissions();
+                if (permission.display !== 'granted') {
+                  await LocalNotifications.requestPermissions();
+                }
+                await LocalNotifications.schedule({
+                  notifications: [
+                    {
+                      title: "📥 Descarga Completa",
+                      body: `El archivo "${fileName}" se descargó exitosamente. Toca para abrirlo.`,
+                      id: Math.floor(Math.random() * 1000000),
+                      sound: true,
+                      extra: {
+                        uri: result.uri,
+                        filename: fileName
+                      }
+                    }
+                  ]
+                });
+              } catch (notiErr) {
+                console.warn('Error scheduling local notification:', notiErr);
+              }
+
+              if (downloadSaved) {
+                alert(`Descarga completada. El archivo "${fileName}" se guardó en la carpeta de Descargas de tu teléfono.`);
+              } else {
+                alert(`Descarga completada. El archivo "${fileName}" se guardó en los Documentos de tu teléfono.`);
+              }
+
+              try {
+                await Share.share({
+                  title: fileName,
+                  url: result.uri,
+                  dialogTitle: `Abrir ${fileName}`
+                });
+              } catch (shareErr) {
+                console.warn('Error al abrir PDF automáticamente:', shareErr);
               }
             } catch (err) {
               console.error('Error saving PDF native:', err);

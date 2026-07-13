@@ -53,7 +53,7 @@
             color: var(--primary);
         }
 
-        .nav-link {
+        .sidebar .nav-link {
             padding: 0.8rem 1.5rem;
             color: var(--secondary);
             font-weight: 500;
@@ -65,12 +65,12 @@
             border-radius: 12px;
         }
 
-        .nav-link:hover {
+        .sidebar .nav-link:hover {
             background-color: var(--primary-soft);
             color: var(--primary);
         }
 
-        .nav-link.active {
+        .sidebar .nav-link.active {
             background-color: var(--primary);
             color: white;
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);

@@ -47,6 +47,66 @@
           </div>
         </div>
 
+        <!-- Tarjetas de KPIs de Eficiencia -->
+        <div class="row g-2 mb-4">
+          <div class="col-6 col-md-3">
+            <div class="card p-2 p-md-3 bg-white border-0 shadow-sm text-start rounded-3">
+              <small class="text-secondary small text-uppercase fw-bold ls-wide mb-0">Animales/Insp.</small>
+              <h4 class="fw-bold mb-0 text-dark">{{ kpis.animales_por_inspeccion }}</h4>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="card p-2 p-md-3 bg-white border-0 shadow-sm text-start rounded-3">
+              <small class="text-secondary small text-uppercase fw-bold ls-wide mb-0">% Reactores</small>
+              <h4 class="fw-bold mb-0" :class="kpis.porcentaje_reactores > 5 ? 'text-danger' : 'text-success'">{{ kpis.porcentaje_reactores }}%</h4>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="card p-2 p-md-3 bg-white border-0 shadow-sm text-start rounded-3">
+              <small class="text-secondary small text-uppercase fw-bold ls-wide mb-0">% Finalización</small>
+              <h4 class="fw-bold mb-0" :class="kpis.porcentaje_finalizacion > 80 ? 'text-success' : 'text-warning'">{{ kpis.porcentaje_finalizacion }}%</h4>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="card p-2 p-md-3 bg-white border-0 shadow-sm text-start rounded-3">
+              <small class="text-secondary small text-uppercase fw-bold ls-wide mb-0">Eficiencia</small>
+              <h4 class="fw-bold mb-0" :class="eficienciaColorClass">{{ kpis.eficiencia_score }}</h4>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ranking de Médicos por Eficiencia -->
+        <div class="card border-0 shadow-sm mb-4 custom-list-card">
+          <div class="card-header bg-white fw-bold text-primary d-flex justify-content-between align-items-center py-3 list-card-header">
+            <span><i class="bi bi-trophy me-2"></i> Ranking Médicos {{ currentYear }}</span>
+            <span class="badge bg-primary-soft text-primary rounded-pill px-2-5 py-1 font-mono">{{ medicosRanking.length }}</span>
+          </div>
+          <div class="card-body p-0 border-top text-start">
+            <div v-if="medicosRanking.length === 0" class="text-center p-4 text-muted">
+              <i class="bi bi-people display-6 d-block mb-2"></i>
+              <p class="mb-0 small">No hay datos de médicos para {{ currentYear }}</p>
+            </div>
+            <div v-else class="list-group list-group-flush">
+              <div v-for="(medico, i) in medicosRanking" :key="medico.id" class="list-group-item p-2 p-md-3">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="fw-bold" :class="i === 0 ? 'text-warning' : i === 1 ? 'text-secondary' : i === 2 ? 'text-danger-emphasis' : 'text-muted'" style="min-width: 24px;">#{{ i + 1 }}</span>
+                  <div class="flex-grow-1 text-start">
+                    <div class="fw-semibold small">{{ medico.name }}</div>
+                    <div class="text-muted" style="font-size: 0.65rem;">
+                      {{ medico.total_inspecciones }} insp · {{ medico.animales_por_inspeccion }} anim/insp · {{ medico.porcentaje_reactores }}% reac
+                    </div>
+                  </div>
+                  <div class="text-end">
+                    <span class="badge rounded-pill px-2 py-1" :class="getEficienciaBadge(medico.eficiencia_score)" style="font-size: 0.7rem;">
+                      {{ medico.eficiencia_score }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Contenedores de Gráficos (HTML/CSS Autogenerados Offline-Safe) -->
         <div class="row g-4 mb-4">
           <div class="col-12 col-lg-8">
@@ -296,7 +356,15 @@ export default {
         borradoresGlobales: []
       },
 
-      // Gráficos
+      // KPIs de Eficiencia y Ranking
+      kpis: {
+        animales_por_inspeccion: 0,
+        porcentaje_reactores: 0,
+        porcentaje_finalizacion: 0,
+        eficiencia_score: 0
+      },
+      medicosRanking: [],
+      currentYear: new Date().getFullYear(),
     };
   },
   async mounted() {
@@ -390,6 +458,10 @@ export default {
           this.totalAnimalesDoc = cached.doctorStats.totalAnimales || 0;
         }
       }
+      const cachedKpis = await db.getDashboardKpis();
+      if (cachedKpis) this.kpis = cachedKpis;
+      const cachedRanking = await db.getMedicosRanking();
+      if (cachedRanking.length) this.medicosRanking = cachedRanking;
     },
 
     // Cargar estadísticas en vivo del backend SIGDIP
@@ -420,6 +492,12 @@ export default {
               borradoresGlobales: res.borradoresGlobales || []
             };
             
+            if (res.kpisData) this.kpis = res.kpisData;
+            if (res.medicosRanking) this.medicosRanking = res.medicosRanking;
+
+            await db.saveDashboardKpis(this.kpis);
+            await db.saveMedicosRanking(this.medicosRanking);
+
             // Guardar en base de datos local
             await db.saveDashboardData({ adminStats: this.adminStats });
           } else {
@@ -462,6 +540,12 @@ export default {
       return colors[idx % colors.length];
     },
 
+    getEficienciaBadge(score) {
+      if (score >= 80) return 'bg-success text-white';
+      if (score >= 60) return 'bg-warning text-dark';
+      return 'bg-danger text-white';
+    },
+
     getDoughnutGradient() {
       if (!this.adminStats.rendimientoVeterinarios || this.adminStats.rendimientoVeterinarios.length === 0) {
         return '#f1f5f9';
@@ -483,6 +567,11 @@ export default {
     }
   },
   computed: {
+    eficienciaColorClass() {
+      if (this.kpis.eficiencia_score >= 80) return 'text-success';
+      if (this.kpis.eficiencia_score >= 60) return 'text-warning';
+      return 'text-danger';
+    },
     chartLocalidadesLabels() {
       return (this.adminStats.inspeccionesPorLocalidad || []).map(item => item.localidad);
     },

@@ -205,6 +205,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/reportes/rendimiento',
+    name: 'Rendimiento',
+    component: () => import('../views/RendimientoView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard'
   }

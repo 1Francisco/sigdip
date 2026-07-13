@@ -4,6 +4,43 @@
 @section('header_title', 'Rendimiento de Médicos')
 @section('header_subtitle', 'Reportes de actividad y productividad del personal de campo')
 
+@section('styles')
+<style>
+    .nav-pills-premium {
+        background: #f1f5f9;
+        padding: 4px;
+        border-radius: 12px;
+        display: inline-flex;
+        border: none;
+    }
+    .nav-pills-premium .nav-item {
+        margin: 0;
+    }
+    .nav-pills-premium .nav-link {
+        border: none;
+        color: #64748b !important;
+        font-weight: 600;
+        padding: 0.6rem 1.25rem;
+        transition: all 0.2s ease;
+        border-radius: 10px;
+        margin: 0;
+        background: transparent !important;
+        box-shadow: none !important;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .nav-pills-premium .nav-link:hover {
+        color: #1e293b !important;
+    }
+    .nav-pills-premium .nav-link.active {
+        color: #2563eb !important;
+        background: white !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05) !important;
+    }
+</style>
+@endsection
+
 @section('content')
 <!-- KPIs -->
 <div class="row g-3 mb-4">
@@ -45,6 +82,15 @@
         <form method="GET" class="row g-2 align-items-end">
             <input type="hidden" name="tab" value="{{ $tab }}">
             <div class="col-md-2 col-sm-6">
+                <label class="form-label small fw-semibold text-secondary mb-1">Año</label>
+                <select name="year" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    @foreach($years as $y)
+                        <option value="{{ $y }}" @selected((int) $year === (int) $y)>{{ $y }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2 col-sm-6">
                 <label class="form-label small fw-semibold text-secondary mb-1">Fecha inicio</label>
                 <input type="date" name="fecha_desde" class="form-control form-control-sm" value="{{ $fechaDesde }}">
             </div>
@@ -69,6 +115,15 @@
                 </select>
             </div>
             <div class="col-md-2 col-sm-4">
+                <label class="form-label small fw-semibold text-secondary mb-1">Localidad</label>
+                <select name="localidad" class="form-select form-select-sm">
+                    <option value="">Todas</option>
+                    @foreach($localidades as $loc)
+                        <option value="{{ $loc }}" @selected($localidad === $loc)>{{ $loc }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2 col-sm-4">
                 <label class="form-label small fw-semibold text-secondary mb-1">Médico</label>
                 <select name="medico_id" class="form-select form-select-sm">
                     <option value="">Todos</option>
@@ -81,7 +136,7 @@
                 <button class="btn btn-sm btn-primary rounded-pill px-3 flex-fill" type="submit">
                     <i class="bi bi-funnel me-1"></i> Filtrar
                 </button>
-                @if(request()->anyFilled(['fecha_desde', 'fecha_hasta', 'estado', 'zona', 'medico_id']))
+                @if(request()->anyFilled(['fecha_desde', 'fecha_hasta', 'estado', 'zona', 'medico_id', 'year', 'localidad']))
                     <a href="{{ route('reportes.rendimiento') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
                         <i class="bi bi-x-lg"></i>
                     </a>
@@ -92,68 +147,51 @@
 </div>
 
 <div class="d-flex justify-content-end gap-2 mb-3">
+    <a href="{{ route('reportes.rendimiento.pdf', request()->except('tab', 'secciones', 'page')) }}" class="btn btn-sm btn-danger rounded-pill px-3">
+        <i class="bi bi-file-earmark-pdf me-1"></i> Exportar Todo (PDF)
+    </a>
     <a href="{{ route('reportes.rendimiento.excel', request()->except('tab', 'secciones', 'page')) }}" class="btn btn-sm btn-success rounded-pill px-3">
         <i class="bi bi-file-earmark-excel me-1"></i> Exportar Todo (Excel)
     </a>
 </div>
 
 <!-- Pestañas / Tabs -->
-<ul class="nav nav-tabs border-0 mb-4" id="reportTabs" role="tablist">
-    <li class="nav-item d-flex align-items-center" role="presentation">
-        <button class="nav-link border-0 fw-semibold px-4 {{ $tab === 'medicos' ? 'active bg-white shadow-sm' : 'text-secondary' }}"
-                id="tab-medicos" data-bs-toggle="tab" data-bs-target="#panel-medicos"
-                type="button" role="tab" onclick="switchTab('medicos')">
-            <i class="bi bi-person-badge me-1"></i> Médicos
-        </button>
-        <a href="{{ route('reportes.rendimiento.pdf', request()->except('tab', 'secciones', 'page')) }}" class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF consolidado">
-            <i class="bi bi-file-earmark-pdf"></i>
+<ul class="nav nav-pills nav-pills-premium mb-4" id="reportTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'medicos'])) }}"
+           class="nav-link {{ $tab === 'medicos' ? 'active' : '' }}">
+            <i class="bi bi-person-badge"></i> Médicos
         </a>
     </li>
-    <li class="nav-item d-flex align-items-center" role="presentation">
-        <button class="nav-link border-0 fw-semibold px-4 {{ $tab === 'actividades' ? 'active bg-white shadow-sm' : 'text-secondary' }}"
-                id="tab-actividades" data-bs-toggle="tab" data-bs-target="#panel-actividades"
-                type="button" role="tab" onclick="switchTab('actividades')">
-            <i class="bi bi-activity me-1"></i> Actividades
-        </button>
-        <a href="{{ route('reportes.rendimiento.pdf', request()->except('tab', 'secciones', 'page')) }}" class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF consolidado">
-            <i class="bi bi-file-earmark-pdf"></i>
+    <li class="nav-item" role="presentation">
+        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'actividades'])) }}"
+           class="nav-link {{ $tab === 'actividades' ? 'active' : '' }}">
+            <i class="bi bi-activity"></i> Actividades
         </a>
     </li>
-    <li class="nav-item d-flex align-items-center" role="presentation">
-        <button class="nav-link border-0 fw-semibold px-4 {{ $tab === 'zona' ? 'active bg-white shadow-sm' : 'text-secondary' }}"
-                id="tab-zona" data-bs-toggle="tab" data-bs-target="#panel-zona"
-                type="button" role="tab" onclick="switchTab('zona')">
-            <i class="bi bi-geo-alt me-1"></i> Zona
-        </button>
-        <a href="{{ route('reportes.rendimiento.pdf', request()->except('tab', 'secciones', 'page')) }}" class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF consolidado">
-            <i class="bi bi-file-earmark-pdf"></i>
+    <li class="nav-item" role="presentation">
+        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'zona'])) }}"
+           class="nav-link {{ $tab === 'zona' ? 'active' : '' }}">
+            <i class="bi bi-geo-alt"></i> Zona
         </a>
     </li>
-    <li class="nav-item d-flex align-items-center" role="presentation">
-        <button class="nav-link border-0 fw-semibold px-4 {{ $tab === 'cuarentena' ? 'active bg-white shadow-sm' : 'text-secondary' }}"
-                id="tab-cuarentena" data-bs-toggle="tab" data-bs-target="#panel-cuarentena"
-                type="button" role="tab" onclick="switchTab('cuarentena')">
-            <i class="bi bi-shield-exclamation me-1"></i> Cuarentena
-        </button>
-        <a href="{{ route('reportes.rendimiento.pdf', request()->except('tab', 'secciones', 'page')) }}" class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF consolidado">
-            <i class="bi bi-file-earmark-pdf"></i>
+    <li class="nav-item" role="presentation">
+        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'cuarentena'])) }}"
+           class="nav-link {{ $tab === 'cuarentena' ? 'active' : '' }}">
+            <i class="bi bi-shield-exclamation"></i> Cuarentena
         </a>
     </li>
-    <li class="nav-item d-flex align-items-center" role="presentation">
-        <button class="nav-link border-0 fw-semibold px-4 {{ $tab === 'mes' ? 'active bg-white shadow-sm' : 'text-secondary' }}"
-                id="tab-mes" data-bs-toggle="tab" data-bs-target="#panel-mes"
-                type="button" role="tab" onclick="switchTab('mes')">
-            <i class="bi bi-calendar-month me-1"></i> Mes
-        </button>
-        <a href="{{ route('reportes.rendimiento.pdf', request()->except('tab', 'secciones', 'page')) }}" class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF consolidado">
-            <i class="bi bi-file-earmark-pdf"></i>
+    <li class="nav-item" role="presentation">
+        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'mes'])) }}"
+           class="nav-link {{ $tab === 'mes' ? 'active' : '' }}">
+            <i class="bi bi-calendar-month"></i> Mes
         </a>
     </li>
-    <li class="nav-item d-flex align-items-center" role="presentation">
-        <a href="{{ route('reportes.rendimiento.mensual') }}"
-           class="nav-link border-0 fw-semibold px-4 {{ $tab === 'mensual' ? 'active bg-white shadow-sm' : 'text-secondary' }}"
+    <li class="nav-item" role="presentation">
+        <a href="{{ route('reportes.rendimiento.mensual', request()->query()) }}"
+           class="nav-link {{ $tab === 'mensual' ? 'active' : '' }}"
            role="tab">
-            <i class="bi bi-table me-1"></i> Detalle Mensual
+            <i class="bi bi-table"></i> Detalle Mensual
         </a>
     </li>
 </ul>
@@ -197,6 +235,11 @@
                                 <th class="text-center">Visitas</th>
                                 <th class="text-center">Completadas</th>
                                 <th class="text-center">Predios</th>
+                                <th class="text-center">Animales</th>
+                                <th class="text-center">Anim/Insp</th>
+                                <th class="text-center">% Reactores</th>
+                                <th class="text-center">% Finalización</th>
+                                <th class="text-center">Eficiencia</th>
                                 <th>Última actividad</th>
                                 <th class="text-center">Detalle</th>
                             </tr>
@@ -217,6 +260,39 @@
                                     @endif
                                 </td>
                                 <td class="text-center">{{ $m->predios_atendidos }}</td>
+                                <td class="text-center">{{ $m->total_animales }}</td>
+                                <td class="text-center">{{ $m->promedio_animales }}</td>
+                                <td class="text-center">
+                                    @if($m->tasa_reactores > 0)
+                                        <span class="badge bg-danger rounded-pill">{{ $m->tasa_reactores }}%</span>
+                                    @else
+                                        <span class="text-muted">0%</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    @if($m->total_visitas > 0)
+                                        <div class="d-flex align-items-center justify-content-center gap-1">
+                                            <div class="progress" style="height:6px;width:60px">
+                                                <div class="progress-bar bg-success" style="width:{{ $m->tasa_finalizacion }}%"></div>
+                                            </div>
+                                            <small>{{ $m->tasa_finalizacion }}%</small>
+                                        </div>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    @php
+                                        $efClass = $m->eficiencia_score >= 70 ? 'success' : ($m->eficiencia_score >= 40 ? 'warning text-dark' : 'danger');
+                                        $efWidth = min($m->eficiencia_score, 100);
+                                    @endphp
+                                    <div class="d-flex align-items-center justify-content-center gap-1">
+                                        <div class="progress" style="height:8px;width:60px">
+                                            <div class="progress-bar bg-{{ $efClass }}" style="width:{{ $efWidth }}%"></div>
+                                        </div>
+                                        <small class="fw-bold text-{{ $efClass }}">{{ $m->eficiencia_score }}</small>
+                                    </div>
+                                </td>
                                 <td>
                                     @if($m->ultima_inspeccion)
                                         <small class="text-muted">{{ \Carbon\Carbon::parse($m->ultima_inspeccion)->format('d/m/Y') }}</small>
@@ -232,7 +308,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
+                                <td colspan="12" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox display-6 d-block mb-2"></i>
                                     No hay datos para el período seleccionado.
                                 </td>
@@ -517,7 +593,9 @@
                             <tr>
                                 <th class="ps-4">Mes</th>
                                 <th class="text-center">Inspecciones</th>
-                                <th class="pe-4">Variación</th>
+                                <th class="text-center">Año Anterior</th>
+                                <th class="text-center">Var. Mensual</th>
+                                <th class="pe-4">Var. YoY</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -529,6 +607,7 @@
                                     $var = round(($mes->total - $prevTotal) / $prevTotal * 100, 1);
                                 }
                                 $prevTotal = $mes->total;
+                                $yoy = $mes->total_anterior > 0 ? round(($mes->total - $mes->total_anterior) / $mes->total_anterior * 100, 1) : null;
                             @endphp
                             <tr>
                                 <td class="ps-4 fw-semibold">
@@ -539,7 +618,14 @@
                                     {{ ucfirst($mesNombre) }}
                                 </td>
                                 <td class="text-center"><span class="badge bg-primary rounded-pill fs-6">{{ $mes->total }}</span></td>
-                                <td class="pe-4">
+                                <td class="text-center">
+                                    @if($mes->total_anterior > 0)
+                                        <span class="badge bg-secondary rounded-pill">{{ $mes->total_anterior }}</span>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
                                     @if(!is_null($var))
                                         <span class="badge {{ $var >= 0 ? 'bg-success' : 'bg-danger' }} rounded-pill">
                                             <i class="bi {{ $var >= 0 ? 'bi-arrow-up' : 'bi-arrow-down' }} me-1"></i>
@@ -549,10 +635,20 @@
                                         <span class="text-muted small">—</span>
                                     @endif
                                 </td>
+                                <td class="pe-4">
+                                    @if(!is_null($yoy))
+                                        <span class="badge {{ $yoy >= 0 ? 'bg-success' : 'bg-danger' }} rounded-pill">
+                                            <i class="bi {{ $yoy >= 0 ? 'bi-arrow-up' : 'bi-arrow-down' }} me-1"></i>
+                                            {{ $yoy >= 0 ? '+' : '' }}{{ $yoy }}%
+                                        </span>
+                                    @else
+                                        <span class="text-muted small">—</span>
+                                    @endif
+                                </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="3" class="text-center text-muted py-4">Sin datos</td>
+                                <td colspan="5" class="text-center text-muted py-4">Sin datos</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -566,18 +662,8 @@
 
 @section('scripts')
 <script>
-// Tab switching via URL
-function switchTab(tab) {
-    const url = new URL(window.location);
-    url.searchParams.set('tab', tab);
-    window.location.href = url.toString();
-}
-
-// Color palette
-const colors = ['#2563eb', '#60a5fa', '#93c5fd', '#3b82f6', '#1d4ed8', '#7c3aed', '#a78bfa', '#6366f1', '#4f46e5', '#0ea5e9'];
-
 // ===== CHART: Médicos =====
-const medicosData = @json($medicosRendimiento->map(fn($m) => ['name' => $m->name, 'total' => $m->total_inspecciones]));
+const medicosData = @json($medicosRendimiento->map(fn($m) => ['name' => $m->name, 'total' => $m->total_inspecciones, 'eficiencia' => $m->eficiencia_score]));
 new Chart(document.getElementById('chartMedicos'), {
     type: 'bar',
     data: {
@@ -585,7 +671,10 @@ new Chart(document.getElementById('chartMedicos'), {
         datasets: [{
             label: 'Inspecciones',
             data: medicosData.map(m => m.total),
-            backgroundColor: colors.slice(0, medicosData.length),
+            backgroundColor: medicosData.map(m => {
+                const ef = m.eficiencia;
+                return ef >= 70 ? '#16a34a' : (ef >= 40 ? '#f59e0b' : '#dc2626');
+            }),
             borderRadius: 8,
             barThickness: 35
         }]
@@ -602,7 +691,7 @@ new Chart(document.getElementById('chartMedicos'), {
                     },
                     afterLabel: function(ctx) {
                         const m = medicosData[ctx.dataIndex];
-                        return 'Médico: ' + m.name;
+                        return 'Eficiencia: ' + m.eficiencia + '/100';
                     }
                 }
             }
@@ -729,12 +818,18 @@ new Chart(document.getElementById('chartMes'), {
                         return 'Inspecciones: ' + ctx.raw;
                     },
                     afterLabel: function(ctx) {
+                        const d = mesData[ctx.dataIndex];
                         const prev = ctx.dataIndex > 0 ? mesData[ctx.dataIndex - 1].total : null;
+                        let lines = [];
                         if (prev && prev > 0) {
                             const varPct = ((ctx.raw - prev) / prev * 100).toFixed(1);
-                            return 'Variación vs mes ant.: ' + (varPct >= 0 ? '+' : '') + varPct + '%';
+                            lines.push('Var. mensual: ' + (varPct >= 0 ? '+' : '') + varPct + '%');
                         }
-                        return '';
+                        if (d.total_anterior > 0) {
+                            const yoy = ((ctx.raw - d.total_anterior) / d.total_anterior * 100).toFixed(1);
+                            lines.push('Var. YoY: ' + (yoy >= 0 ? '+' : '') + yoy + '%');
+                        }
+                        return lines.join('\n');
                     }
                 }
             }

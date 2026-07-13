@@ -120,6 +120,9 @@
                         <i class="bi" :class="isBorrador(inspeccion) ? 'bi-pencil-square' : 'bi-check-circle-fill'"></i>
                         {{ isBorrador(inspeccion) ? 'Borrador' : 'Finalizado' }}
                       </span>
+                      <span v-if="inspeccion.modified_at" class="badge bg-info text-dark rounded-3 px-2-5 py-1-5 d-inline-flex align-items-center gap-1 fw-bold fs-7-5 ms-1 mt-1">
+                        <i class="bi bi-arrow-repeat"></i> Modificado {{ inspeccion.modified_at_formatted || formatDateTime(inspeccion.modified_at) }}
+                      </span>
                     </td>
                     <td>
                       <div class="d-flex justify-content-center gap-2">
@@ -200,6 +203,9 @@
                       <i class="bi" :class="isBorrador(inspeccion) ? 'bi-pencil-square' : 'bi-check-lg'"></i>
                       {{ isBorrador(inspeccion) ? 'Borrador' : 'Finalizado' }}
                     </div>
+                    <span v-if="inspeccion.modified_at" class="badge bg-info text-dark rounded-3 px-2 py-1 d-flex align-items-center justify-content-center gap-1 fw-bold fs-7-5 mt-1 w-100">
+                      <i class="bi bi-arrow-repeat"></i> Modificado {{ inspeccion.modified_at_formatted || formatDateTime(inspeccion.modified_at) }}
+                    </span>
                   </div>
                 </div>
 
@@ -284,6 +290,8 @@ import api from '../services/api.js';
 import db from '../services/db.js';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { App } from '@capacitor/app';
+import { Share } from '@capacitor/share';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 export default {
   name: 'InspeccionesView',
@@ -333,7 +341,12 @@ export default {
       if (this.filtro.estado) {
         items = items.filter(i => i.estado === this.filtro.estado);
       }
-      return items;
+      return items.sort((a, b) => {
+        const aMod = a.modified_at ? new Date(a.modified_at).getTime() : 0;
+        const bMod = b.modified_at ? new Date(b.modified_at).getTime() : 0;
+        if (aMod !== bMod) return bMod - aMod;
+        return new Date(b.fecha) - new Date(a.fecha);
+      });
     },
     hayFiltrosActivos() {
       return this.filtro.texto || this.filtro.fecha_desde || this.filtro.fecha_hasta || this.filtro.estado;
@@ -513,6 +526,18 @@ export default {
         return dateStr;
       }
     },
+    formatDateTime(isoStr) {
+      if (!isoStr) return '';
+      try {
+        const d = new Date(isoStr);
+        return d.toLocaleDateString('es-MX', {
+          day: '2-digit', month: '2-digit', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
+      } catch (e) {
+        return isoStr;
+      }
+    },
     continueDraft(item) {
       this.$router.push(`/inspeccion/editar/${item.id || item.folio}${item.visita_id ? `?visita_id=${item.visita_id}` : ''}`);
     },
@@ -549,6 +574,7 @@ export default {
                 recursive: true
               });
               // Also save to public Downloads folder (Android)
+              let downloadSaved = false;
               try {
                 await Filesystem.writeFile({
                   path: fileName,
@@ -556,16 +582,45 @@ export default {
                   directory: Directory.Downloads,
                   recursive: true
                 });
+                downloadSaved = true;
                 this.successMsg = `PDF guardado en Descargas del dispositivo.`;
               } catch (_) {
                 this.successMsg = `PDF guardado en Documentos: ${fileName}`;
               }
-              // Open with system PDF viewer
+
+              // Programar notificación de descarga completa
               try {
-                await App.openUrl({ url: result.uri });
-              } catch (openErr) {
-                console.error('Error opening PDF:', openErr);
-                this.errorMsg = 'No se pudo abrir el PDF: ' + openErr.message;
+                const permission = await LocalNotifications.checkPermissions();
+                if (permission.display !== 'granted') {
+                  await LocalNotifications.requestPermissions();
+                }
+                await LocalNotifications.schedule({
+                  notifications: [
+                    {
+                      title: "📥 Descarga Completa",
+                      body: `El archivo "${fileName}" se descargó exitosamente. Toca para abrirlo.`,
+                      id: Math.floor(Math.random() * 1000000),
+                      sound: true,
+                      extra: {
+                        uri: result.uri,
+                        filename: fileName
+                      }
+                    }
+                  ]
+                });
+              } catch (notiErr) {
+                console.warn('Error scheduling local notification:', notiErr);
+              }
+
+              // Intentar abrir el menú de compartir/abrir nativo silenciosamente
+              try {
+                await Share.share({
+                  title: fileName,
+                  url: result.uri,
+                  dialogTitle: `Abrir ${fileName}`
+                });
+              } catch (shareErr) {
+                console.warn('Error al abrir PDF automáticamente:', shareErr);
               }
             } catch (err) {
               console.error('Error saving PDF native:', err);
@@ -603,6 +658,7 @@ export default {
                 recursive: true
               });
               // Also save to public Downloads folder (Android)
+              let downloadSaved = false;
               try {
                 await Filesystem.writeFile({
                   path: fileName,
@@ -610,11 +666,53 @@ export default {
                   directory: Directory.Downloads,
                   recursive: true
                 });
+                downloadSaved = true;
                 this.successMsg = `Sábana Excel guardada con éxito en Descargas del dispositivo.`;
               } catch (_) {
                 this.successMsg = `Sábana Excel guardada con éxito en Documentos: ${fileName}`;
               }
-              alert(`¡Archivo descargado con éxito!\n\nSe ha guardado en la carpeta de Documentos de tu dispositivo:\n\n${fileName}`);
+
+              // Programar notificación de descarga completa
+              try {
+                const permission = await LocalNotifications.checkPermissions();
+                if (permission.display !== 'granted') {
+                  await LocalNotifications.requestPermissions();
+                }
+                await LocalNotifications.schedule({
+                  notifications: [
+                    {
+                      title: "📥 Descarga Completa",
+                      body: `El archivo "${fileName}" se descargó exitosamente. Toca para abrirlo.`,
+                      id: Math.floor(Math.random() * 1000000),
+                      sound: true,
+                      extra: {
+                        uri: result.uri,
+                        filename: fileName
+                      }
+                    }
+                  ]
+                });
+              } catch (notiErr) {
+                console.warn('Error scheduling local notification:', notiErr);
+              }
+
+              // Alerta
+              if (downloadSaved) {
+                alert(`Descarga completada. El archivo "${fileName}" se guardó en la carpeta de Descargas de tu teléfono.`);
+              } else {
+                alert(`Descarga completada. El archivo "${fileName}" se guardó en los Documentos de tu teléfono.`);
+              }
+
+              // Intentar compartir
+              try {
+                await Share.share({
+                  title: fileName,
+                  url: result.uri,
+                  dialogTitle: `Abrir ${fileName}`
+                });
+              } catch (shareErr) {
+                console.warn('Error al abrir sábana automáticamente:', shareErr);
+              }
             } catch (err) {
               console.error('Error saving file native:', err);
               this.errorMsg = 'No se pudo guardar el archivo en el dispositivo móvil: ' + err.message;

@@ -98,6 +98,51 @@ describe('DescargasView', () => {
       cy.contains('Ir a Dictámenes').should('be.visible')
     })
 
+    it('comparte archivo y muestra mensaje de exito', () => {
+      cy.window().then((win) => {
+        win.localStorage.setItem('local_downloads_mock', JSON.stringify(mockFiles))
+        cy.stub(win.navigator.clipboard, 'writeText').resolves()
+      })
+
+      const router = buildRouter()
+      router.push('/descargas')
+      mount(DescargasView, { global: { plugins: [router] } })
+
+      cy.contains('Enviar', { timeout: 5000 }).first().click()
+      cy.contains('copiado al portapapeles', { timeout: 5000 }).should('be.visible')
+    })
+
+    it('limpia busqueda con boton clear', () => {
+      cy.window().then((win) => {
+        win.localStorage.setItem('local_downloads_mock', JSON.stringify(mockFiles))
+      })
+
+      const router = buildRouter()
+      router.push('/descargas')
+      mount(DescargasView, { global: { plugins: [router] } })
+
+      cy.get('input[placeholder*="Buscar archivo"]').type('xyz')
+      cy.get('button.dl-search-clear', { timeout: 5000 }).click()
+      cy.get('input[placeholder*="Buscar archivo"]').should('have.value', '')
+    })
+
+    it('ordena archivos por fecha mas reciente primero', () => {
+      cy.window().then((win) => {
+        const unsorted = [
+          { name: 'dictamen_viejo.pdf', size: 1000, mtime: Date.now() - 86400000 * 3, isNative: false },
+          { name: 'dictamen_nuevo.pdf', size: 2000, mtime: Date.now() - 3600000, isNative: false },
+        ]
+        win.localStorage.setItem('local_downloads_mock', JSON.stringify(unsorted))
+      })
+
+      const router = buildRouter()
+      router.push('/descargas')
+      mount(DescargasView, { global: { plugins: [router] } })
+
+      cy.contains('dictamen_nuevo', { timeout: 5000 }).should('be.visible')
+      cy.get('.dl-file-name').first().should('contain', 'dictamen_nuevo')
+    })
+
     it('abre y cierra preview modal de PDF', () => {
       cy.window().then((win) => {
         win.localStorage.setItem('local_downloads_mock', JSON.stringify(mockFiles))

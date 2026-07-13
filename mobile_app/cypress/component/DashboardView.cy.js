@@ -49,6 +49,48 @@ function seedCachedAdminStats() {
   cy.seedIndexedDB('catalogos', 'dashboard_data', { adminStats })
 }
 
+function seedCachedAdminStatsEmptyRendimiento() {
+  const adminStats = {
+    totalInspecciones: 100,
+    totalAnimales: 500,
+    totalVisitasPendientes: 10,
+    inspeccionesPorLocalidad: [
+      { localidad: 'Villahermosa', total: 60 },
+      { localidad: 'Escarcega', total: 40 },
+    ],
+    rendimientoVeterinarios: [],
+    proximasVisitasGlobales: [],
+    borradoresGlobales: [],
+  }
+  cy.seedIndexedDB('catalogos', 'dashboard_data', { adminStats })
+}
+
+function seedCachedAdminStatsMultiVet() {
+  const adminStats = {
+    totalInspecciones: 300,
+    totalAnimales: 5000,
+    totalVisitasPendientes: 20,
+    inspeccionesPorLocalidad: [
+      { localidad: 'Villahermosa', total: 100 },
+      { localidad: 'Escarcega', total: 80 },
+      { localidad: 'Cd del Carmen', total: 70 },
+      { localidad: 'Comalcalco', total: 50 },
+    ],
+    rendimientoVeterinarios: [
+      { nombre: 'Dr. Juan Perez', name: 'Dr. Juan Perez', total: 80 },
+      { nombre: 'Dra. Ana Garcia', name: 'Dra. Ana Garcia', total: 70 },
+      { nombre: 'MVZ. Pedro Lopez', name: 'MVZ. Pedro Lopez', total: 55 },
+      { nombre: 'Dr. Luis Martinez', name: 'Dr. Luis Martinez', total: 40 },
+      { nombre: 'Dra. Sofia Ramirez', name: 'Dra. Sofia Ramirez', total: 25 },
+    ],
+    proximasVisitasGlobales: [
+      { codigo: 'V-001', fecha_programada: '2026-07-01', predio: { nombre_rancho: 'Rancho A', localidad: 'Villahermosa', productor: { nombre: 'Prod A' } }, veterinario: { nombre: 'Dr. Juan Perez', name: 'Dr. Juan Perez' } },
+    ],
+    borradoresGlobales: [],
+  }
+  cy.seedIndexedDB('catalogos', 'dashboard_data', { adminStats })
+}
+
 describe('DashboardView', () => {
   beforeEach(() => {
     cy.resetAppState()
@@ -141,6 +183,61 @@ describe('DashboardView', () => {
       cy.contains('Salir').click({ force: true })
       cy.location('hash', { timeout: 5000 }).should('include', '/login')
     })
+
+    it('renderiza estado vacio del grafico de rendimiento', () => {
+      seedCachedAdminStatsEmptyRendimiento()
+      const router = buildDashboardRouter()
+      router.push('/dashboard')
+      mount(DashboardView, { global: { plugins: [router] } })
+
+      cy.contains('Resumen Administrativo', { timeout: 5000 }).should('be.visible')
+      cy.contains('Rendimiento Veterinarios').should('be.visible')
+      cy.get('canvas').should('be.visible')
+    })
+
+    it('renderiza multiples veterinarios en el grafico doughnut', () => {
+      seedCachedAdminStatsMultiVet()
+      const router = buildDashboardRouter()
+      router.push('/dashboard')
+      mount(DashboardView, { global: { plugins: [router] } })
+
+      cy.contains('Rendimiento Veterinarios').should('be.visible')
+      cy.get('.chart-card-wrapper').should('have.length.at.least', 1)
+      cy.get('canvas').should('be.visible')
+    })
+
+    it('maneja error de API del dashboard sin romperse', () => {
+      cy.intercept('GET', '**/api/dashboard/stats', {
+        statusCode: 500,
+        body: { message: 'Error interno' },
+      }).as('getStatsError')
+
+      const router = buildDashboardRouter()
+      router.push('/dashboard')
+      mount(DashboardView, { global: { plugins: [router] } })
+
+      cy.contains('Resumen Administrativo', { timeout: 5000 }).should('be.visible')
+    })
+
+    it('renderiza desde cache offline de IndexedDB', () => {
+      cy.intercept('GET', '**/api/dashboard/stats', {
+        statusCode: 200,
+        body: {
+          totalInspecciones: 0, totalAnimales: 0, totalVisitasPendientes: 0,
+          inspeccionesPorLocalidad: [], rendimientoVeterinarios: [],
+          proximasVisitasGlobales: [], borradoresGlobales: [],
+        },
+      }).as('getStatsEmpty')
+
+      seedCachedAdminStats()
+      const router = buildDashboardRouter()
+      router.push('/dashboard')
+      mount(DashboardView, { global: { plugins: [router] } })
+
+      cy.contains('Resumen Administrativo', { timeout: 5000 }).should('be.visible')
+      cy.contains('150').should('be.visible')
+      cy.contains('Rendimiento Veterinarios').should('be.visible')
+    })
   })
 
   describe('Vista Medico', () => {
@@ -178,6 +275,15 @@ describe('DashboardView', () => {
       mount(DashboardView, { global: { plugins: [router] } })
 
       cy.get('.small-stat-card', { timeout: 5000 }).should('have.length', 4)
+    })
+
+    it('no muestra grafico de rendimiento veterinarios para medico', () => {
+      const router = buildDashboardRouter()
+      router.push('/dashboard')
+      mount(DashboardView, { global: { plugins: [router] } })
+
+      cy.contains('Bienvenido', { timeout: 5000 }).should('be.visible')
+      cy.contains('Rendimiento Veterinarios').should('not.exist')
     })
   })
 })
