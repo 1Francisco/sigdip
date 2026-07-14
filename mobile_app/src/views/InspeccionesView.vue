@@ -120,9 +120,12 @@
                         <i class="bi" :class="isBorrador(inspeccion) ? 'bi-pencil-square' : 'bi-check-circle-fill'"></i>
                         {{ isBorrador(inspeccion) ? 'Borrador' : 'Finalizado' }}
                       </span>
-                      <span v-if="inspeccion.modified_at" class="badge bg-info text-dark rounded-3 px-2-5 py-1-5 d-inline-flex align-items-center gap-1 fw-bold fs-7-5 ms-1 mt-1">
+                      <span v-if="inspeccion.modified_at && !isBorrador(inspeccion)" class="badge bg-info text-dark rounded-3 px-2-5 py-1-5 d-inline-flex align-items-center gap-1 fw-bold fs-7-5 ms-1 mt-1">
                         <i class="bi bi-arrow-repeat"></i> Modificado {{ inspeccion.modified_at_formatted || formatDateTime(inspeccion.modified_at) }}
                       </span>
+                      <small v-if="inspeccion.modified_at && isBorrador(inspeccion)" class="text-muted d-block mt-1" style="font-size:0.65rem;">
+                        <i class="bi bi-clock"></i> {{ inspeccion.modified_at_formatted || formatDateTime(inspeccion.modified_at) }}
+                      </small>
                     </td>
                     <td>
                       <div class="d-flex justify-content-center gap-2">
@@ -203,9 +206,12 @@
                       <i class="bi" :class="isBorrador(inspeccion) ? 'bi-pencil-square' : 'bi-check-lg'"></i>
                       {{ isBorrador(inspeccion) ? 'Borrador' : 'Finalizado' }}
                     </div>
-                    <span v-if="inspeccion.modified_at" class="badge bg-info text-dark rounded-3 px-2 py-1 d-flex align-items-center justify-content-center gap-1 fw-bold fs-7-5 mt-1 w-100">
+                    <span v-if="inspeccion.modified_at && !isBorrador(inspeccion)" class="badge bg-info text-dark rounded-3 px-2 py-1 d-flex align-items-center justify-content-center gap-1 fw-bold fs-7-5 mt-1 w-100">
                       <i class="bi bi-arrow-repeat"></i> Modificado {{ inspeccion.modified_at_formatted || formatDateTime(inspeccion.modified_at) }}
                     </span>
+                    <small v-if="inspeccion.modified_at && isBorrador(inspeccion)" class="text-muted d-block mt-1 text-center" style="font-size:0.65rem;">
+                      <i class="bi bi-clock"></i> {{ inspeccion.modified_at_formatted || formatDateTime(inspeccion.modified_at) }}
+                    </small>
                   </div>
                 </div>
 

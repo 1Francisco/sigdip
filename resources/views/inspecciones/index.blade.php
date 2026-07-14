@@ -112,9 +112,15 @@
                                 <span class="badge bg-success"><i class="bi bi-check-all me-1"></i> Finalizado</span>
                             @endif
                             @if($inspeccion->modified_at)
-                                <span class="badge bg-info text-dark mt-1 d-block d-md-inline-block mt-md-0 ms-md-1">
-                                    <i class="bi bi-arrow-repeat me-1"></i> Modificado
-                                </span>
+                                @if(in_array($inspeccion->estado, ['finalizado', 'sincronizado']))
+                                    <span class="badge bg-info text-dark mt-1 d-block">
+                                        <i class="bi bi-arrow-repeat me-1"></i> Modificado {{ $inspeccion->modified_at->format('d/m H:i') }}
+                                    </span>
+                                @else
+                                    <small class="text-muted d-block mt-1" style="font-size:0.7rem;">
+                                        <i class="bi bi-clock me-1"></i> {{ $inspeccion->modified_at->format('d/m H:i') }}
+                                    </small>
+                                @endif
                             @endif
                         </td>
                         <td data-label="Acciones">
