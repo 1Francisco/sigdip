@@ -1094,7 +1094,7 @@ export default {
           }
         }
       } catch (err) {
-        alert(`❌ Error al resolver conflicto: ${err.message}`);
+        alert(`Error al resolver conflicto: ${err.message}`);
         if (resolve) {
           resolve(Promise.reject(err));
         } else {
@@ -1106,7 +1106,7 @@ export default {
     },
 
     async clearLocalData() {
-      if (confirm('🚨 ATENCIÓN: ¿Seguro que deseas borrar todos los datos locales?\nLos dictámenes creados en offline que NO estén sincronizados se perderán permanentemente.')) {
+      if (confirm('ATENCIÓN: ¿Seguro que deseas borrar todos los datos locales?\nLos dictámenes creados en offline que NO estén sincronizados se perderán permanentemente.')) {
         await db.clearAll();
         await this.refreshStats();
         this.resultado = 'Caché y catálogos locales eliminados con éxito.';

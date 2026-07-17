@@ -252,7 +252,7 @@ export default {
         fechaProg.setHours(0, 0, 0, 0);
 
         if (fechaProg.getTime() < hoy.getTime()) {
-          this.errorMsg = '⚠️ La fecha programada no puede ser anterior a la fecha de hoy.';
+          this.errorMsg = 'La fecha programada no puede ser anterior a la fecha de hoy.';
           return;
         }
       }
@@ -298,7 +298,7 @@ export default {
             const check = await api.checkVisitaCodigo(generatedCodigo);
             if (check.exists) {
               const msg =
-                `⚠️ El código ${generatedCodigo} ya está registrado en el servidor.\n\n` +
+                `El código ${generatedCodigo} ya está registrado en el servidor.\n\n` +
                 `Fecha: ${check.visita?.fecha_programada || '—'}\n` +
                 `Predio: ${check.visita?.predio?.nombre_rancho || '—'}\n` +
                 `Médico: ${check.visita?.veterinario?.name || '—'}\n\n` +

@@ -71,12 +71,15 @@ class RendimientoMensualExport implements FromCollection, ShouldAutoSize, WithHe
         foreach ($rawRows as $row) {
             $key = $row->veterinario_id.'|'.$row->mes;
             if (! $grouped->has($key)) {
-                $row->medico_nombre = $medicoNames[$row->veterinario_id] ?? 'Desconocido';
-                $row->ppc = 0;
-                $row->pcc = 0;
-                $row->total_inspecciones = 0;
-                $row->predios = 0;
-                $grouped[$key] = $row;
+                $grouped[$key] = (object) [
+                    'veterinario_id' => $row->veterinario_id,
+                    'mes' => $row->mes,
+                    'medico_nombre' => $medicoNames[$row->veterinario_id] ?? 'Desconocido',
+                    'ppc' => 0,
+                    'pcc' => 0,
+                    'total_inspecciones' => 0,
+                    'predios' => 0,
+                ];
             }
             $existing = $grouped[$key];
             $existing->total_inspecciones += $row->total_inspecciones;
@@ -135,7 +138,7 @@ class RendimientoMensualExport implements FromCollection, ShouldAutoSize, WithHe
         $export = collect();
         foreach ($rows as $row) {
             $parts = explode('-', $row->mes);
-            $mesNombre = Carbon::createFromFormat('Y-m', $row->mes)->locale('es')->translatedFormat('F Y');
+            $mesNombre = Carbon::createFromFormat('Y-m-d', $row->mes . '-01')->locale('es')->translatedFormat('F Y');
 
             $export->push([
                 'medico' => $row->medico_nombre,

@@ -870,7 +870,7 @@ export default {
                 await LocalNotifications.schedule({
                   notifications: [
                     {
-                      title: "📥 Descarga Completa",
+                      title: "Descarga Completa",
                       body: `El archivo "${filename}" se descargó exitosamente. Toca para abrirlo.`,
                       id: Math.floor(Math.random() * 1000000),
                       sound: true,

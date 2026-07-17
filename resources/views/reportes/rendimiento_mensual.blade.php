@@ -42,6 +42,9 @@
 @endsection
 
 @section('content')
+@php
+    $rows = collect($rows);
+@endphp
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body bg-light border-bottom py-3 px-4">
         <form method="GET" class="row g-2 align-items-end">
@@ -177,7 +180,7 @@
                     @forelse($rows as $row)
                         @php
                             $parts = explode('-', $row->mes);
-                            $mesNombre = \Carbon\Carbon::createFromFormat('Y-m', $row->mes)->locale('es')->translatedFormat('F');
+                            $mesNombre = \Carbon\Carbon::createFromFormat('Y-m-d', $row->mes . '-01')->locale('es')->translatedFormat('F');
                             $firstDay = $parts[0] . '-' . $parts[1] . '-01';
                             $lastDay = \Carbon\Carbon::createFromDate($parts[0], (int) $parts[1], 1)->endOfMonth()->toDateString();
                         @endphp

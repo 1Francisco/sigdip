@@ -136,7 +136,7 @@ export default {
       await LocalNotifications.schedule({
         notifications: [
           {
-            title: "🔄 Sincronización Automática",
+            title: "Sincronización Automática",
             body: `Se subieron con éxito ${count} dictámenes pecuarios pendientes al servidor del CEFPPENAY.`,
             id: 1,
             sound: true,

@@ -2,7 +2,7 @@
   <div class="app-container">
     <header class="app-header">
       <div>
-        <h1>📷 Escáner SINIIGA</h1>
+        <h1><i class="bi bi-camera-fill me-2"></i>Escáner SINIIGA</h1>
         <div class="subtitle" v-if="isSingleMode">Escanea el arete para el animal #{{ singleIndex + 1 }}</div>
         <div class="subtitle" v-else>Escanea el código de barras del arete</div>
       </div>
@@ -12,7 +12,7 @@
     <main class="app-content">
       <!-- Mensaje de permiso denegado con botón reintentar -->
       <div v-if="permissionDenied" class="card p-4 text-center mb-3" style="border: 2px dashed #dc3545;">
-        <div style="font-size: 3rem; margin-bottom: 8px;">📷</div>
+        <i class="bi bi-camera-fill" style="font-size: 3rem; margin-bottom: 8px;"></i>
         <h5 class="fw-bold text-danger mb-2">Permiso de cámara denegado</h5>
         <p class="text-muted small mb-3">Para usar el escáner, la app necesita acceso a la cámara. Presiona "Reintentar" para solicitarlo de nuevo.</p>
         <button class="btn btn-primary btn-lg w-100 mb-2" :disabled="retrying" @click="requestCameraPermission">
@@ -32,7 +32,7 @@
 
       <!-- Input manual como fallback -->
       <div class="card" style="margin-top: 16px;">
-        <div class="card-title" style="margin-bottom: 12px;">✏️ Ingreso Manual</div>
+        <div class="card-title" style="margin-bottom: 12px;"><i class="bi bi-pencil-fill me-2"></i>Ingreso Manual</div>
         <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 12px;">
           <template v-if="isSingleMode">
             Escribe el arete del animal y presiona "Confirmar":
@@ -53,12 +53,12 @@
 
         <!-- Single-scan mode: confirm button -->
         <button v-if="isSingleMode" class="btn btn-accent" @click="confirmSingle" :disabled="!manualCode">
-          <span class="btn-icon">✅</span> Confirmar Arete
+          <i class="bi bi-check-lg me-1"></i> Confirmar Arete
         </button>
 
         <!-- Batch mode: add button -->
         <button v-else class="btn btn-accent" @click="addAnimal" :disabled="!manualCode">
-          <span class="btn-icon">➕</span> Agregar Animal
+          <i class="bi bi-plus-lg me-1"></i> Agregar Animal
         </button>
       </div>
 
@@ -72,21 +72,21 @@
             class="animal-row"
             :class="{ positivo: animal.resultado === 'Positivo' }"
           >
-            <span class="arete">🏷️ {{ animal.identificador }}</span>
+            <span class="arete"><i class="bi bi-tag-fill me-1"></i> {{ animal.identificador }}</span>
             <select v-model="animal.resultado" style="padding: 6px; border-radius: 8px; border: 1px solid #ccc; font-size: 0.8rem;">
-              <option value="Pendiente">⏳ Pendiente</option>
-              <option value="Negativo">✅ Negativo</option>
-              <option value="Positivo">🔴 Positivo</option>
-              <option value="Sospechoso">🟡 Sospechoso</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Negativo">Negativo</option>
+              <option value="Positivo">Positivo</option>
+              <option value="Sospechoso">Sospechoso</option>
             </select>
-            <button @click="removeAnimal(idx)" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--color-danger);">🗑️</button>
+            <button @click="removeAnimal(idx)" class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-trash-fill"></i></button>
           </div>
         </div>
 
         <!-- Botón para ir a formulario completo con estos animales -->
         <div v-if="scannedAnimals.length" style="margin-top: 20px;">
           <button class="btn btn-primary btn-lg" @click="goToForm">
-            📝 Continuar al Dictamen ({{ scannedAnimals.length }} animales)
+            <i class="bi bi-pencil-square me-1"></i>Continuar al Dictamen ({{ scannedAnimals.length }} animales)
           </button>
         </div>
       </template>

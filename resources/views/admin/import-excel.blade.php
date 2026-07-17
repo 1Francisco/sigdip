@@ -13,14 +13,14 @@
 
             @if(session('success'))
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <strong>✅ ¡Éxito!</strong> {{ session('success') }}
+                    <strong>¡Éxito!</strong> {{ session('success') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
 
             @if(session('error'))
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <strong>❌ Error:</strong> {{ session('error') }}
+                    <strong>Error:</strong> {{ session('error') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
@@ -28,7 +28,7 @@
             <!-- Formulario de Importación -->
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-success text-white py-3">
-                    <h5 class="mb-0">📁 Subir Archivo Excel</h5>
+                    <h5 class="mb-0">Subir Archivo Excel</h5>
                 </div>
                 <div class="card-body p-4">
                     <form action="{{ route('import.excel.import') }}" method="POST" enctype="multipart/form-data" id="importForm">
@@ -38,14 +38,14 @@
                         <div id="dropZone" class="border border-3 border-dashed rounded-4 p-5 text-center mb-4"
                              style="border-color: #ccc !important; background: #fafafa; cursor: pointer; transition: all 0.3s;">
                             <div id="dropContent">
-                                <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
+                                <i class="bi bi-box-seam-fill" style="font-size: 3rem; margin-bottom: 1rem;"></i>
                                 <h5 class="text-muted">Arrastra tu archivo .xlsx o .zip aquí</h5>
                                 <p class="text-muted small">Puedes subir un archivo ZIP con muchos expedientes a la vez</p>
                                 <input type="file" name="archivo" id="fileInput" accept=".xlsx,.xls,.zip"
                                        class="d-none" required>
                             </div>
                             <div id="fileSelected" class="d-none">
-                                <div style="font-size: 2.5rem;">✅</div>
+                                <i class="bi bi-check-circle-fill text-success" style="font-size: 2.5rem;"></i>
                                 <h5 class="text-success" id="fileName"></h5>
                                 <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="clearFile()">✕ Quitar archivo</button>
                             </div>
@@ -64,7 +64,7 @@
                         <div id="previewSection" class="d-none mb-4">
                             <div class="card bg-light border-0">
                                 <div class="card-body">
-                                    <h6 class="fw-bold">👁️ Vista Previa de las Pestañas Encontradas:</h6>
+                                    <h6 class="fw-bold">Vista Previa de las Pestañas Encontradas:</h6>
                                     <div id="previewContent"></div>
                                 </div>
                             </div>
@@ -72,10 +72,10 @@
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <button type="button" class="btn btn-outline-primary btn-lg" onclick="previewFile()">
-                                👁️ Previsualizar
+                                <i class="bi bi-eye me-2"></i>Previsualizar
                             </button>
                             <button type="submit" class="btn btn-success btn-lg" id="btnImport">
-                                ⬆️ Importar Datos
+                                <i class="bi bi-upload me-2"></i>Importar Datos
                             </button>
                         </div>
                     </form>
@@ -85,16 +85,16 @@
             <!-- Historial de Importaciones -->
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-dark text-white py-3">
-                    <h5 class="mb-0">📜 Historial de Importaciones</h5>
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historial de Importaciones</h5>
                 </div>
                 <div class="card-body p-0">
                     @if($importaciones->count())
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>📁 Archivo</th>
-                                    <th>🏷️ Aretes Importados</th>
-                                    <th>📅 Fecha</th>
+                                    <th>Archivo</th>
+                                    <th>Aretes Importados</th>
+                                    <th>Fecha</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -109,7 +109,7 @@
                         </table>
                     @else
                         <div class="text-center py-5 text-muted">
-                            <div style="font-size: 2rem;">📭</div>
+                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                             <p>No hay importaciones registradas aún.</p>
                         </div>
                     @endif
@@ -206,7 +206,7 @@
                         html = `
                             <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4">
                                 <div class="d-flex align-items-center">
-                                    <div class="fs-1 me-3">📦</div>
+                                    <i class="bi bi-box-seam-fill fs-1 me-3"></i>
                                     <div>
                                         <h5 class="alert-heading fw-bold mb-1">¡Paquete ZIP Detectado!</h5>
                                         <p class="mb-0">Se han encontrado <strong>${res.file_count} archivos Excel</strong> listos para ser unificados.</p>
@@ -227,7 +227,7 @@
 
                         // Mostrar muestra de cada archivo
                         for (const [fileName, fileData] of Object.entries(res.samples)) {
-                            html += `<h6 class="fw-bold text-primary mb-3 mt-4"><i class="bi bi-file-earmark-excel me-2"></i>📄 ${fileName}</h6>`;
+                            html += `<h6 class="fw-bold text-primary mb-3 mt-4"><i class="bi bi-file-earmark-excel me-2"></i> ${fileName}</h6>`;
                             
                             for (const [sheetName, sheetData] of Object.entries(fileData)) {
                                 const headers = sheetData.headers;

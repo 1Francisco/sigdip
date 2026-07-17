@@ -245,7 +245,7 @@
     new Chart(document.getElementById('chartLocalidades'), {
         type: 'bar',
         data: {
-            labels: {!! json_encode($inspeccionesPorLocalidad->pluck('localidad')) !!},
+            labels: {!! json_encode($inspeccionesPorLocalidad->pluck('localidad'), JSON_UNESCAPED_UNICODE) !!},
             datasets: [{
                 label: 'Inspecciones',
                 data: {!! json_encode($inspeccionesPorLocalidad->pluck('total')) !!},
@@ -269,7 +269,7 @@
     new Chart(document.getElementById('chartVeterinarios'), {
         type: 'doughnut',
         data: {
-            labels: {!! json_encode($rendimientoVeterinarios->pluck('name')) !!},
+            labels: {!! json_encode($rendimientoVeterinarios->pluck('name'), JSON_UNESCAPED_UNICODE) !!},
             datasets: [{
                 data: {!! json_encode($rendimientoVeterinarios->pluck('total')) !!},
                 backgroundColor: ['#2563eb', '#60a5fa', '#93c5fd', '#bfdbfe'],

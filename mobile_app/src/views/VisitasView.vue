@@ -676,7 +676,7 @@ export default {
         const check = await api.checkVisitaCodigo(visita.codigo);
         if (check.exists) {
           const msg =
-            `⚠️ El código ${visita.codigo} ya existe en el servidor.\n\n` +
+            `El código ${visita.codigo} ya existe en el servidor.\n\n` +
             `Fecha: ${check.visita?.fecha_programada || '—'}\n` +
             `Predio: ${check.visita?.predio?.nombre_rancho || '—'}\n` +
             `Médico: ${check.visita?.veterinario?.name || '—'}\n\n` +

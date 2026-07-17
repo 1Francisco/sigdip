@@ -413,7 +413,7 @@ export default {
         if (coordinates && coordinates.coords) {
           this.form.latitud = coordinates.coords.latitude.toFixed(6);
           this.form.longitud = coordinates.coords.longitude.toFixed(6);
-          alert('✅ Ubicación GPS nativa obtenida con éxito.');
+          alert('Ubicación GPS nativa obtenida con éxito.');
         }
       } catch (err) {
         console.warn('GPS nativo no disponible, intentando Geolocation de navegador:', err);
@@ -422,29 +422,29 @@ export default {
             (position) => {
               this.form.latitud = position.coords.latitude.toFixed(6);
               this.form.longitud = position.coords.longitude.toFixed(6);
-              alert('✅ Ubicación GPS del navegador obtenida con éxito.');
+              alert('Ubicación GPS del navegador obtenida con éxito.');
             },
             (geoErr) => {
               console.error('Error de geolocalización de navegador:', geoErr);
-              alert('❌ No se pudo obtener la ubicación GPS. Habilita los permisos de ubicación.');
+              alert('No se pudo obtener la ubicación GPS. Habilita los permisos de ubicación.');
             }
           );
         } else {
-          alert('❌ La geolocalización no está soportada por este dispositivo.');
+          alert('La geolocalización no está soportada por este dispositivo.');
         }
       }
     },
 
     nextStep() {
       if (!this.form.nombre.trim() || !this.form.apellido_paterno.trim() || !this.form.curp.trim() || !this.form.upp.trim()) {
-        alert('⚠️ Por favor completa los campos requeridos (*) en el Paso 1.');
+        alert('Por favor completa los campos requeridos (*) en el Paso 1.');
         return;
       }
 
       const curpVal = this.form.curp.trim().toUpperCase();
       const curpRegex = /^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/;
       if (curpVal.length !== 18 || !curpRegex.test(curpVal)) {
-        alert('⚠️ La CURP debe tener exactamente 18 caracteres y un formato válido (Ej: AAAA111111HXXYYY01).');
+        alert('La CURP debe tener exactamente 18 caracteres y un formato válido (Ej: AAAA111111HXXYYY01).');
         return;
       }
 
@@ -464,7 +464,7 @@ export default {
     // Guardar con Rancho asociado
     async saveWithPredio() {
       if (!this.form.nombre_rancho.trim() || !this.form.clave_unidad_produccion.trim()) {
-        alert('⚠️ Por favor completa los campos requeridos del Rancho (*).');
+        alert('Por favor completa los campos requeridos del Rancho (*).');
         return;
       }
       this.registrarPredio = true;
@@ -511,20 +511,20 @@ export default {
         
         const duplicateCurp = prediosLocales.some(p => p.productor && p.productor.curp && p.productor.curp.toUpperCase() === body.curp && String(p.productor.id) !== String(this.productorId));
         if (duplicateCurp) {
-          alert('⚠️ Ya existe un productor registrado con esta CURP localmente.');
+          alert('Ya existe un productor registrado con esta CURP localmente.');
           return;
         }
 
         const duplicateUpp = prediosLocales.some(p => p.productor && p.productor.upp && p.productor.upp === body.upp && String(p.productor.id) !== String(this.productorId));
         if (duplicateUpp) {
-          alert('⚠️ Ya existe un productor registrado con esta UPP localmente.');
+          alert('Ya existe un productor registrado con esta UPP localmente.');
           return;
         }
 
         if (body.registrar_predio) {
           const duplicatePredioUpp = prediosLocales.some(p => p.upp && p.upp === body.clave_unidad_produccion && String(p.productor_id) !== String(this.productorId));
           if (duplicatePredioUpp) {
-            alert('⚠️ Ya existe un Rancho/Predio registrado con esta UPP localmente.');
+            alert('Ya existe un Rancho/Predio registrado con esta UPP localmente.');
             return;
           }
         }
@@ -556,7 +556,7 @@ export default {
             }
           } catch (apiErr) {
             console.warn('Error en validación o conexión con servidor Laravel:', apiErr);
-            alert('⚠️ Error en el servidor central: ' + (apiErr.message || 'Compruebe duplicados (CURP/UPP).'));
+            alert('Error en el servidor central: ' + (apiErr.message || 'Compruebe duplicados (CURP/UPP).'));
             return;
           }
         }
@@ -630,8 +630,8 @@ export default {
           await db.savePredios(predios);
           
           alert(newPredio.nombre !== 'Sin Rancho' 
-            ? '✅ ¡Productor y Rancho creados exitosamente!'
-            : '✅ ¡Productor registrado exitosamente (Sin Rancho)!'
+            ? 'Productor y Rancho creados exitosamente!'
+            : 'Productor registrado exitosamente (Sin Rancho)!'
           );
         } else {
           // Edición
@@ -667,13 +667,13 @@ export default {
           });
 
           await db.savePredios(predios);
-          alert('✅ ¡Datos del productor actualizados con éxito!');
+          alert('¡Datos del productor actualizados con éxito!');
         }
 
         this.$router.push('/productores');
       } catch (err) {
         console.error('Error al guardar productor:', err);
-        alert('❌ Error al procesar la solicitud.');
+        alert('Error al procesar la solicitud.');
       }
     }
   }

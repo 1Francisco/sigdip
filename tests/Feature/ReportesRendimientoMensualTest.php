@@ -60,7 +60,7 @@ class ReportesRendimientoMensualTest extends TestCase
         $productor = Productor::factory()->create();
         $predio = Predio::factory()->create(['productor_id' => $productor->id]);
 
-        Inspeccion::factory()->count(3)->create([
+        Inspeccion::factory()->count(7)->create([
             'veterinario_id' => $medico->id,
             'predio_id' => $predio->id,
             'fecha' => now()->format('Y-m-d'),
@@ -71,7 +71,7 @@ class ReportesRendimientoMensualTest extends TestCase
             ->get(route('reportes.rendimiento.mensual'))
             ->assertStatus(200)
             ->assertSee($medico->name)
-            ->assertSee('3');
+            ->assertSee('7');
     }
 
     public function test_mensual_page_empty_state()

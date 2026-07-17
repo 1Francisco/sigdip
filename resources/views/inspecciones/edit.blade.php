@@ -448,7 +448,7 @@
                                     <i class="bi bi-exclamation-triangle-fill fs-5"></i>
                                 </div>
                                 <div>
-                                    <strong class="d-block mb-0.5">⚠️ Sección de resultados bloqueada</strong>
+                                    <strong class="d-block mb-0.5">Sección de resultados bloqueada</strong>
                                     <span>La captura de resultados de la prueba se habilitará el día de la lectura: <strong id="fecha-lectura-warning-text">{{ $inspeccion->fecha_lectura ? $inspeccion->fecha_lectura->format('d/m/Y') : '' }}</strong>.</span>
                                 </div>
                             </div>
@@ -1880,7 +1880,7 @@
                             bsCollapse.show();
                         }
                         
-                        alert(`⚠️ No se puede finalizar el dictamen. Faltan definir ${pendingCount} resultados de las pruebas individuales.`);
+                        alert(`No se puede finalizar el dictamen. Faltan definir ${pendingCount} resultados de las pruebas individuales.`);
                         
                         if (firstPendingSelect) {
                             setTimeout(() => {

@@ -603,7 +603,7 @@ export default {
                 await LocalNotifications.schedule({
                   notifications: [
                     {
-                      title: "📥 Descarga Completa",
+                      title: "Descarga Completa",
                       body: `El archivo "${fileName}" se descargó exitosamente. Toca para abrirlo.`,
                       id: Math.floor(Math.random() * 1000000),
                       sound: true,
@@ -687,7 +687,7 @@ export default {
                 await LocalNotifications.schedule({
                   notifications: [
                     {
-                      title: "📥 Descarga Completa",
+                      title: "Descarga Completa",
                       body: `El archivo "${fileName}" se descargó exitosamente. Toca para abrirlo.`,
                       id: Math.floor(Math.random() * 1000000),
                       sound: true,

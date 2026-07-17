@@ -713,8 +713,8 @@ export default {
         };
         
         alert(createdOnServer 
-          ? '✅ ¡Productor registrado y seleccionado con éxito!' 
-          : '✅ ¡Productor guardado localmente (Offline) y seleccionado!');
+          ? 'Productor registrado y seleccionado con éxito!' 
+          : 'Productor guardado localmente (Offline) y seleccionado!');
       } catch (err) {
         console.error('Error al registrar productor:', err);
         this.modalErrorMsg = err.message || 'No se pudo guardar el productor.';
@@ -728,12 +728,12 @@ export default {
     async savePredio() {
       // Validaciones básicas de campos requeridos
       if (!this.form.nombre_rancho.trim() || !this.form.clave_unidad_produccion.trim() || !this.form.localidad.trim()) {
-        this.errorMsg = '⚠️ Por favor complete todos los campos obligatorios del Rancho (Nombre, UPP y Localidad).';
+        this.errorMsg = 'Por favor complete todos los campos obligatorios del Rancho (Nombre, UPP y Localidad).';
         return;
       }
 
       if (!this.form.productor_id) {
-        this.errorMsg = '⚠️ Por favor seleccione un productor para este Rancho.';
+        this.errorMsg = 'Por favor seleccione un productor para este Rancho.';
         return;
       }
 
@@ -742,19 +742,19 @@ export default {
       const lng = this.form.longitud ? parseFloat(this.form.longitud) : null;
 
       if (this.form.latitud && (isNaN(lat) || lat < -90 || lat > 90)) {
-        this.errorMsg = '⚠️ La latitud debe ser un número entre -90 y 90.';
+        this.errorMsg = 'La latitud debe ser un número entre -90 y 90.';
         return;
       }
 
       if (this.form.longitud && (isNaN(lng) || lng < -180 || lng > 180)) {
-        this.errorMsg = '⚠️ La longitud debe ser un número entre -180 y 180.';
+        this.errorMsg = 'La longitud debe ser un número entre -180 y 180.';
         return;
       }
 
       // Validar CURP del productor si se está editando
       if (this.isEditing) {
         if (!this.productorForm.nombre.trim() || !this.productorForm.apellido_paterno.trim()) {
-          this.errorMsg = '⚠️ Por favor complete los campos obligatorios del Productor (Nombre y Apellido Paterno).';
+          this.errorMsg = 'Por favor complete los campos obligatorios del Productor (Nombre y Apellido Paterno).';
           return;
         }
 
@@ -762,7 +762,7 @@ export default {
           const curpVal = this.productorForm.curp.trim().toUpperCase();
           const curpRegex = /^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/;
           if (curpVal.length !== 18 || !curpRegex.test(curpVal)) {
-            this.errorMsg = '⚠️ La CURP del productor debe tener exactamente 18 caracteres y un formato válido.';
+            this.errorMsg = 'La CURP del productor debe tener exactamente 18 caracteres y un formato válido.';
             return;
           }
         }
@@ -775,7 +775,7 @@ export default {
         // Duplicidad de UPP del predio
         const duplicatePredioUpp = prediosLocales.some(p => p.upp && p.upp === this.form.clave_unidad_produccion.trim() && String(p.id) !== String(this.predioId));
         if (duplicatePredioUpp) {
-          this.errorMsg = '⚠️ Ya existe un Rancho/Predio registrado con esta UPP localmente.';
+          this.errorMsg = 'Ya existe un Rancho/Predio registrado con esta UPP localmente.';
           return;
         }
 
@@ -787,7 +787,7 @@ export default {
           if (prodCurp) {
             const duplicateCurp = prediosLocales.some(p => p.productor && p.productor.curp && p.productor.curp.toUpperCase() === prodCurp && String(p.productor.id) !== String(this.productorIdOriginal));
             if (duplicateCurp) {
-              this.errorMsg = '⚠️ Ya existe un productor registrado con esta CURP localmente.';
+              this.errorMsg = 'Ya existe un productor registrado con esta CURP localmente.';
               return;
             }
           }
@@ -795,7 +795,7 @@ export default {
           if (prodUpp) {
             const duplicateUpp = prediosLocales.some(p => p.productor && p.productor.upp && p.productor.upp === prodUpp && String(p.productor.id) !== String(this.productorIdOriginal));
             if (duplicateUpp) {
-              this.errorMsg = '⚠️ Ya existe un productor registrado con esta UPP localmente.';
+              this.errorMsg = 'Ya existe un productor registrado con esta UPP localmente.';
               return;
             }
           }

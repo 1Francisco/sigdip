@@ -531,14 +531,14 @@ export default {
     // GUARDAR PRODUCTOR (API ROTA AL SERVIDOR SI ONLINE, FALLBACK INDEXEDDB)
     async saveProductor() {
       if (!this.productorForm.nombre.trim() || !this.productorForm.apellido_paterno.trim() || !this.productorForm.curp.trim() || !this.productorForm.upp.trim()) {
-        alert('⚠️ Por favor completa todos los campos requeridos (*).');
+        alert('Por favor completa todos los campos requeridos (*).');
         return;
       }
 
       // Validar datos del rancho si se seleccionó registrarlo
       if (this.productorModalMode === 'create' && this.registrarPredio) {
         if (!this.productorForm.nombre_rancho.trim() || !this.productorForm.clave_unidad_produccion.trim()) {
-          alert('⚠️ Por favor completa los campos requeridos del rancho (*).');
+          alert('Por favor completa los campos requeridos del rancho (*).');
           return;
         }
       }
@@ -583,7 +583,7 @@ export default {
             }
           } catch (apiErr) {
             console.warn('Error al conectar con la API de Laravel, usando guardado local offline:', apiErr);
-            alert('⚠️ Error de validación o conexión con el servidor: ' + (apiErr.message || 'Inténtalo de nuevo.'));
+            alert('Error de validación o conexión con el servidor: ' + (apiErr.message || 'Inténtalo de nuevo.'));
             return; // Detener flujo para no crear inconsistencias si la validación del servidor falló (ej: CURP repetido)
           }
         }
@@ -661,11 +661,11 @@ export default {
 
           if (createdOnServer) {
             alert(newPredio.nombre !== 'Sin Rancho' 
-              ? '✅ ¡Productor y su Rancho registrados con éxito en el servidor!' 
-              : '✅ ¡Productor registrado con éxito (Sin Rancho) en el servidor!'
+              ? 'Productor y su Rancho registrados con éxito en el servidor!' 
+              : 'Productor registrado con éxito (Sin Rancho) en el servidor!'
             );
           } else {
-            alert('✅ ¡Productor guardado localmente (Modo Offline)! Se sincronizará con el servidor al conectar.');
+            alert('¡Productor guardado localmente (Modo Offline)! Se sincronizará con el servidor al conectar.');
           }
         } else {
           // Edición
@@ -701,9 +701,9 @@ export default {
           }
           
           if (createdOnServer) {
-            alert('✅ ¡Datos del productor actualizados con éxito en el servidor y local!');
+            alert('¡Datos del productor actualizados con éxito en el servidor y local!');
           } else {
-            alert('✅ ¡Cambios guardados localmente en offline!');
+            alert('¡Cambios guardados localmente en offline!');
           }
         }
 
@@ -711,14 +711,14 @@ export default {
         await this.loadProductores();
       } catch (err) {
         console.error('Error al guardar productor:', err);
-        alert('❌ Ocurrió un error inesperado al procesar los datos.');
+        alert('Ocurrió un error inesperado al procesar los datos.');
       }
     },
 
     // GUARDAR RANCHO (API AL SERVIDOR SI ONLINE, FALLBACK INDEXEDDB)
     async saveRancho() {
       if (!this.ranchoForm.nombre_rancho.trim() || !this.ranchoForm.upp.trim()) {
-        alert('⚠️ Por favor ingresa el nombre del rancho y su clave UPP.');
+        alert('Por favor ingresa el nombre del rancho y su clave UPP.');
         return;
       }
 
@@ -744,7 +744,7 @@ export default {
             }
           } catch (apiErr) {
             console.warn('Error al crear rancho en el servidor:', apiErr);
-            alert('⚠️ Error de validación o conexión con el servidor: ' + (apiErr.message || 'Inténtalo de nuevo.'));
+            alert('Error de validación o conexión con el servidor: ' + (apiErr.message || 'Inténtalo de nuevo.'));
             return;
           }
         }
@@ -786,16 +786,16 @@ export default {
         }
 
         if (createdOnServer) {
-          alert(`✅ ¡Rancho "${body.nombre_rancho}" registrado con éxito en el servidor y local!`);
+          alert(`Rancho "${body.nombre_rancho}" registrado con éxito en el servidor y local!`);
         } else {
-          alert(`✅ ¡Rancho "${body.nombre_rancho}" guardado localmente (Offline)! Se sincronizará al conectar.`);
+          alert(`Rancho "${body.nombre_rancho}" guardado localmente (Offline)! Se sincronizará al conectar.`);
         }
 
         this.showRanchoModal = false;
         await this.loadProductores();
       } catch (err) {
         console.error('Error al guardar rancho:', err);
-        alert('❌ Ocurrió un error inesperado al guardar el rancho.');
+        alert('Ocurrió un error inesperado al guardar el rancho.');
       }
     },
 

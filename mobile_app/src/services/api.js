@@ -154,7 +154,7 @@ function getOfflineCredentials() {
 async function tryOfflineLogin(email, password) {
   const offlineData = getOfflineCredentials();
   if (!offlineData) {
-    throw new Error('⚠️ Sin conexión a internet y no hay credenciales locales guardadas. Debes iniciar sesión con internet al menos una vez en este dispositivo.');
+    throw new Error('Sin conexión a internet y no hay credenciales locales guardadas. Debes iniciar sesión con internet al menos una vez en este dispositivo.');
   }
 
   const passwordHash = await hashPassword(password);

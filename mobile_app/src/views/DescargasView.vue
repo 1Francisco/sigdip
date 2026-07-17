@@ -484,7 +484,7 @@ export default {
 </style></head>
 <body>
 <div class="card">
-  <div class="icon">📄</div>
+  <i class="bi bi-file-earmark-text" style="font-size: 2rem;"></i>
   <div class="title">${file.name}</div>
   <div class="meta">${this.formatBytes(file.size)} · ${this.formatDate(file.mtime)}</div>
   <div class="badge">Vista previa no disponible</div>

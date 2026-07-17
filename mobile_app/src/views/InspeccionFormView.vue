@@ -351,7 +351,7 @@
                   <i class="bi bi-exclamation-triangle-fill text-warning fs-3"></i>
                 </div>
                 <div class="banner-text-box text-start">
-                  <div class="fw-bold text-dark fs-7-5">⚠️ Sección de resultados bloqueada</div>
+                  <div class="fw-bold text-dark fs-7-5">Sección de resultados bloqueada</div>
                   <div class="text-secondary small mt-0.5" style="line-height: 1.35;">La captura de resultados de la prueba se habilitará el día de la lectura: <strong class="text-dark">{{ form.fecha_lectura.split('-').reverse().join('/') }}</strong>.</div>
                 </div>
               </div>
@@ -1072,7 +1072,7 @@ export default {
             await this.onPredioSelect();
           }
           this.activeSection = 4;
-          alert('💾 Dictamen local cargado.');
+          alert('Dictamen local cargado.');
         }
       }
     }
@@ -1148,7 +1148,7 @@ export default {
               await this.onPredioSelect();
             }
             this.activeSection = 4;
-            alert('💾 Dictamen recuperado del servidor para continuar.');
+            alert('Dictamen recuperado del servidor para continuar.');
           } catch (err) {
             console.warn('No se pudo cargar el dictamen del servidor para esta visita:', err);
           }
@@ -1291,7 +1291,7 @@ export default {
           if (Array.isArray(borradorExistente.animales) && borradorExistente.animales.length > 0) {
             this.activeSection = 4;
           }
-          alert('💾 Se detectó un borrador existente para este productor hoy. Se ha cargado automáticamente para evitar duplicados.');
+          alert('Se detectó un borrador existente para este productor hoy. Se ha cargado automáticamente para evitar duplicados.');
         } else {
           // No pre-llenar folio con clave_interna; queda vacío para que el médico ingrese el real
           if (!this.form.folio || this.form.folio === '') {
@@ -1329,14 +1329,14 @@ export default {
         }
         
         if (permStatus.location === 'denied') {
-          const retry = confirm("⚠️ El permiso de ubicación (GPS) está desactivado o denegado.\n\n¿Deseas intentar solicitar el permiso de nuevo?");
+          const retry = confirm("El permiso de ubicación (GPS) está desactivado o denegado.\n\n¿Deseas intentar solicitar el permiso de nuevo?");
           if (retry) {
             permStatus = await Geolocation.requestPermissions();
           }
         }
         
         if (permStatus.location !== 'granted') {
-          alert("❌ Permiso de ubicación no concedido. Debes otorgar el permiso en la configuración de la app o dispositivo para capturar coordenadas GPS.");
+          alert("Permiso de ubicación no concedido. Debes otorgar el permiso en la configuración de la app o dispositivo para capturar coordenadas GPS.");
           return;
         }
 
@@ -1346,7 +1346,7 @@ export default {
         });
         this.form.latitud = coordinates.coords.latitude.toFixed(6);
         this.form.longitud = coordinates.coords.longitude.toFixed(6);
-        alert(`📍 Coordenadas capturadas con éxito:\nLatitud: ${this.form.latitud}\nLongitud: ${this.form.longitud}`);
+        alert(`Coordenadas capturadas con éxito:\nLatitud: ${this.form.latitud}\nLongitud: ${this.form.longitud}`);
       } catch (e) {
         console.error("Error al obtener ubicación Capacitor:", e);
         // Fallback for browser geolocation
@@ -1355,16 +1355,16 @@ export default {
             (position) => {
               this.form.latitud = position.coords.latitude.toFixed(6);
               this.form.longitud = position.coords.longitude.toFixed(6);
-              alert(`📍 Coordenadas capturadas con éxito (Navegador):\nLatitud: ${this.form.latitud}\nLongitud: ${this.form.longitud}`);
+              alert(`Coordenadas capturadas con éxito (Navegador):\nLatitud: ${this.form.latitud}\nLongitud: ${this.form.longitud}`);
             },
             (err) => {
               console.error("Error de ubicación en navegador:", err);
-              alert('⚠️ No se pudo obtener la localización del dispositivo. Por favor ingresa las coordenadas manualmente o verifica que el GPS esté encendido.');
+              alert('No se pudo obtener la localización del dispositivo. Por favor ingresa las coordenadas manualmente o verifica que el GPS esté encendido.');
             },
             { enableHighAccuracy: true, timeout: 10000 }
           );
         } else {
-          alert('⚠️ Geolocalización no soportada en este dispositivo.');
+          alert('Geolocalización no soportada en este dispositivo.');
         }
       }
     },
@@ -1392,7 +1392,7 @@ export default {
       
       const exists = this.form.animales.some(a => a.identificador.toUpperCase() === this.quickArete.trim().toUpperCase());
       if (exists) {
-        alert('⚠️ Este arete ya fue registrado en el dictamen.');
+        alert('Este arete ya fue registrado en el dictamen.');
         return;
       }
 
@@ -1551,13 +1551,13 @@ export default {
     },
     async saveInspeccion(estado) {
       if (!this.form.predio_id) {
-        alert('⚠️ Por favor seleccione el productor y predio del dictamen.');
+        alert('Por favor seleccione el productor y predio del dictamen.');
         this.activeSection = 1;
         return;
       }
 
       if (!this.form.fecha) {
-        alert('⚠️ La fecha del dictamen es obligatoria.');
+        alert('La fecha del dictamen es obligatoria.');
         this.activeSection = 1;
         return;
       }
@@ -1574,34 +1574,34 @@ export default {
 
       if (saveEstado === 'sincronizado') {
         if (!this.form.fecha_inyeccion || !this.form.hora_inyeccion || !this.form.fecha_lectura || !this.form.hora_lectura) {
-          alert('⚠️ Las fechas y horas de inyección y lectura son obligatorias para finalizar el dictamen.');
+          alert('Las fechas y horas de inyección y lectura son obligatorias para finalizar el dictamen.');
           this.activeSection = 3;
           return;
         }
 
         if (this.form.animales.length === 0) {
-          alert('⚠️ Debe capturar al menos un animal con su resultado individual para finalizar el dictamen.');
+          alert('Debe capturar al menos un animal con su resultado individual para finalizar el dictamen.');
           this.activeSection = 4;
           return;
         }
 
         const animalesActivos = this.puedoEditarResultados() ? this.form.animales.filter(a => a.resultado !== 'No Aplica') : this.form.animales;
         if (animalesActivos.length === 0 && saveEstado === 'sincronizado') {
-          alert('⚠️ No hay animales que hayan recibido inyecci\u00f3n para finalizar el dictamen. Registre al menos un animal con inyecci\u00f3n o guarde como borrador.');
+          alert('No hay animales que hayan recibido inyecci\u00f3n para finalizar el dictamen. Registre al menos un animal con inyecci\u00f3n o guarde como borrador.');
           this.activeSection = 4;
           return;
         }
 
         const hasEmptyAretes = this.form.animales.some(a => !a.identificador || !a.identificador.trim());
         if (hasEmptyAretes) {
-          alert('⚠️ Hay animales en la lista con número de arete vacío. Rellene los campos o elimine las filas vacías.');
+          alert('Hay animales en la lista con número de arete vacío. Rellene los campos o elimine las filas vacías.');
           this.activeSection = 4;
           return;
         }
 
         const hasPendientes = this.form.animales.filter(a => a.resultado !== 'No Aplica').some(a => !a.resultado || a.resultado === 'Pendiente');
         if (hasPendientes && this.puedoEditarResultados()) {
-          alert(`⚠️ Todos los animales (excepto los menores de ${this.edadMinimaPrueba} meses sin inyección) deben tener un resultado asignado (Negativo, Positivo o Sospechoso) para poder finalizar el dictamen.`);
+          alert(`Todos los animales (excepto los menores de ${this.edadMinimaPrueba} meses sin inyección) deben tener un resultado asignado (Negativo, Positivo o Sospechoso) para poder finalizar el dictamen.`);
           this.activeSection = 4;
           return;
         }
@@ -1619,7 +1619,7 @@ export default {
             
             if (hoy.getTime() < fechaProg.getTime()) {
               const formattedDate = fechaProg.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
-              alert(`⚠️ No se puede finalizar la inyección antes de la fecha programada de la visita (${formattedDate}).`);
+              alert(`No se puede finalizar la inyección antes de la fecha programada de la visita (${formattedDate}).`);
               return;
             }
           }
@@ -1635,7 +1635,7 @@ export default {
           
           if (hoy.getTime() < fechaLectura.getTime()) {
             const formattedLectura = fechaLectura.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            alert(`⚠️ No se puede finalizar el dictamen antes de la fecha programada de la lectura (${formattedLectura}).`);
+            alert(`No se puede finalizar el dictamen antes de la fecha programada de la lectura (${formattedLectura}).`);
             return;
           }
         }
@@ -1648,10 +1648,10 @@ export default {
         if (sumaConteo !== animalesParaConteo.length) {
           const dif = animalesParaConteo.length - sumaConteo;
           const advertencia =
-            `⚠️ Diferencia en el conteo de animales:\n\n` +
-            `➡️ Animales en lista individual: ${animalesParaConteo.length}\n` +
-            `➡️ Suma de categorías (Sementales+Vacas+Vaquillas+Becerras+Becerros): ${sumaConteo}\n` +
-            `➡️ Diferencia: ${dif > 0 ? `${dif} animales sin categoría asignada` : `${Math.abs(dif)} de más en categorías`}\n\n` +
+            `Diferencia en el conteo de animales:\n\n` +
+            `Animales en lista individual: ${animalesParaConteo.length}\n` +
+            `Suma de categorías (Sementales+Vacas+Vaquillas+Becerras+Becerros): ${sumaConteo}\n` +
+            `Diferencia: ${dif > 0 ? `${dif} animales sin categoría asignada` : `${Math.abs(dif)} de más en categorías`}\n\n` +
             `Los animales sin edad registrada no se contabilizan en las categorías.` +
             (dif > 0 ? ` Revise que todos los animales tengan edad y sexo.` : '');
           if (saveEstado === 'sincronizado') {
@@ -1735,24 +1735,24 @@ export default {
         }
 
         if (conflictFound) {
-          alert(`⚠️ Conflicto Detectado: El dictamen con folio "${this.form.folio}" ya existe en el servidor con datos diferentes.\n\nSe ha guardado localmente en tu dispositivo. Te redirigiremos al Centro de Sincronización para comparar las diferencias y elegir la versión correcta.`);
+          alert(`Conflicto Detectado: El dictamen con folio "${this.form.folio}" ya existe en el servidor con datos diferentes.\n\nSe ha guardado localmente en tu dispositivo. Te redirigiremos al Centro de Sincronización para comparar las diferencias y elegir la versión correcta.`);
           this.$router.push({ path: '/sync', query: { check_folio: this.form.folio } });
           return;
         }
 
         if (estado === 'sincronizado' && saveEstado === 'borrador') {
-          alert('🎉 Fase de Inyección registrada con éxito.\nEl dictamen se guardó como borrador local y la visita se marcó con inyección realizada. Se sincronizará automáticamente al detectar conexión.');
+          alert('Fase de Inyección registrada con éxito.\nEl dictamen se guardó como borrador local y la visita se marcó con inyección realizada. Se sincronizará automáticamente al detectar conexión.');
           backgroundSync.syncIfConnected().catch(e => console.error(e));
         } else if (saveEstado === 'sincronizado') {
-          alert('🎉 Dictamen finalizado con éxito.\nQueda almacenado de manera local y seguro en tu dispositivo. Se sincronizará automáticamente cuando tengas conexión.');
+          alert('Dictamen finalizado con éxito.\nQueda almacenado de manera local y seguro en tu dispositivo. Se sincronizará automáticamente cuando tengas conexión.');
           backgroundSync.syncIfConnected().catch(e => console.error(e));
         } else {
-          alert('💾 Borrador guardado exitosamente. Podrás continuar editándolo en el panel.');
+          alert('Borrador guardado exitosamente. Podrás continuar editándolo en el panel.');
         }
 
         this.$router.push('/dashboard');
       } catch (err) {
-        alert('❌ Error al guardar el dictamen localmente: ' + err.message);
+        alert('Error al guardar el dictamen localmente: ' + err.message);
       }
     }
   }

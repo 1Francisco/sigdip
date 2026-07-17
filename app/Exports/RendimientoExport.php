@@ -27,25 +27,29 @@ class RendimientoExport implements FromCollection, ShouldAutoSize, WithHeadings,
 
     private ?string $medicoId;
 
+    private ?string $localidad;
+
     public function __construct(
         ?string $fechaDesde = null,
         ?string $fechaHasta = null,
         ?string $estado = null,
         ?string $zona = null,
         ?string $medicoId = null,
+        ?string $localidad = null,
     ) {
         $this->fechaDesde = $fechaDesde;
         $this->fechaHasta = $fechaHasta;
         $this->estado = $estado;
         $this->zona = $zona;
         $this->medicoId = $medicoId;
+        $this->localidad = $localidad;
     }
 
     public function collection()
     {
         $medicos = User::role('Medico_Campo')->orderBy('name')->get();
 
-        return $medicos->map(function ($user) {
+        $data = $medicos->map(function ($user) {
             $inspeccionesQuery = Inspeccion::where('inspecciones.veterinario_id', $user->id)
                 ->join('predios', 'inspecciones.predio_id', '=', 'predios.id')
                 ->join('productores', 'predios.productor_id', '=', 'productores.id');
@@ -61,6 +65,9 @@ class RendimientoExport implements FromCollection, ShouldAutoSize, WithHeadings,
             }
             if ($this->zona) {
                 $inspeccionesQuery->where('productores.zona', $this->zona);
+            }
+            if ($this->localidad) {
+                $inspeccionesQuery->where('predios.localidad', $this->localidad);
             }
 
             $totalInspecciones = (clone $inspeccionesQuery)->count();
@@ -78,14 +85,28 @@ class RendimientoExport implements FromCollection, ShouldAutoSize, WithHeadings,
             $visitasCompletadas = (clone $visitasQuery)->where('estado', 'completada')->count();
 
             return [
-                $user->name,
-                $totalInspecciones,
-                $totalVisitas,
-                $visitasCompletadas,
-                $prediosAtendidos,
-                $ultima ? date('d/m/Y', strtotime($ultima)) : 'Sin actividad',
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'total_inspecciones' => $totalInspecciones,
+                'total_visitas' => $totalVisitas,
+                'visitas_completadas' => $visitasCompletadas,
+                'predios_atendidos' => $prediosAtendidos,
+                'ultima' => $ultima ? date('d/m/Y', strtotime($ultima)) : 'Sin actividad',
             ];
         });
+
+        return $data->filter(function ($row) {
+            return $row['total_inspecciones'] > 0 || !$this->medicoId || $this->medicoId == $row['user_id'];
+        })->map(function ($row) {
+            return [
+                $row['name'],
+                $row['total_inspecciones'],
+                $row['total_visitas'],
+                $row['visitas_completadas'],
+                $row['predios_atendidos'],
+                $row['ultima'],
+            ];
+        })->values();
     }
 
     public function headings(): array
@@ -108,7 +129,12 @@ class RendimientoExport implements FromCollection, ShouldAutoSize, WithHeadings,
     public function styles(Worksheet $sheet)
     {
         $headerStyle = [
-            'font' => ['bold' => true, 'name' => 'Arial', 'size' => 11],
+            'font' => [
+                'bold' => true,
+                'name' => 'Arial',
+                'size' => 11,
+                'color' => ['rgb' => 'FFFFFF'],
+            ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
                 'vertical' => Alignment::VERTICAL_CENTER,
@@ -117,7 +143,6 @@ class RendimientoExport implements FromCollection, ShouldAutoSize, WithHeadings,
                 'fillType' => Fill::FILL_SOLID,
                 'startColor' => ['rgb' => '2563EB'],
             ],
-            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,

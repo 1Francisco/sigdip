@@ -18,6 +18,9 @@
     </style>
 </head>
 <body>
+    @php
+        $rows = collect($rows);
+    @endphp
     <div class="header-logo">
         <img src="{{ public_path('img/logo_sigdip.png') }}" alt="SIGDIP" onerror="this.style.display='none'">
     </div>
@@ -45,7 +48,7 @@
             @forelse($rows as $row)
                 @php
                     $parts = explode('-', $row->mes);
-                    $mesNombre = \Carbon\Carbon::createFromFormat('Y-m', $row->mes)->locale('es')->translatedFormat('F');
+                    $mesNombre = \Carbon\Carbon::createFromFormat('Y-m-d', $row->mes . '-01')->locale('es')->translatedFormat('F');
                 @endphp
                 <tr>
                     <td class="text-left fw-bold">{{ $row->medico_nombre }}</td>

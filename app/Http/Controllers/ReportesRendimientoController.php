@@ -128,15 +128,39 @@ class ReportesRendimientoController extends Controller
         $medicos = User::role('Medico_Campo')->orderBy('name')->get();
         $driver = DB::connection()->getDriverName();
         $yearExpr = $driver === 'sqlite' ? "strftime('%Y', fecha)" : 'YEAR(fecha)';
-        $monthExpr = $driver === 'sqlite' ? "strftime('%Y-%m', inspecciones.fecha)" : "DATE_FORMAT(inspecciones.fecha, '%Y-%m')";
-        $mesExprVisitas = $driver === 'sqlite' ? "strftime('%Y-%m', visitas.fecha_programada)" : "DATE_FORMAT(visitas.fecha_programada, '%Y-%m')";
-        $mesExprDetalles = $driver === 'sqlite' ? "strftime('%Y-%m', inspecciones.fecha)" : "DATE_FORMAT(inspecciones.fecha, '%Y-%m')";
 
         $years = Inspeccion::selectRaw("{$yearExpr} as year")
             ->distinct()->orderBy('year', 'desc')->pluck('year');
         if ($years->isEmpty()) {
             $years = collect([now()->year]);
         }
+
+        $rows = $this->getMensualData($year, $medicoId, $zona, $estado);
+
+        return view('reportes.rendimiento_mensual', compact('rows', 'medicos', 'years', 'year', 'medicoId', 'zona', 'estado', 'driver'));
+    }
+
+    public function exportPdfMensual(Request $request)
+    {
+        $year = $request->get('year', (int) now()->year);
+        $medicoId = $request->get('medico_id');
+        $zona = $request->get('zona');
+        $estado = $request->get('estado');
+
+        $rows = $this->getMensualData($year, $medicoId, $zona, $estado);
+
+        $pdf = Pdf::loadView('reports.rendimiento_mensual_pdf', compact('rows', 'year'));
+
+        return $pdf->download("rendimiento_mensual_{$year}.pdf");
+    }
+
+    private function getMensualData($year, $medicoId, $zona, $estado): \Illuminate\Support\Collection
+    {
+        $medicos = User::role('Medico_Campo')->orderBy('name')->get();
+        $driver = DB::connection()->getDriverName();
+        $monthExpr = $driver === 'sqlite' ? "strftime('%Y-%m', inspecciones.fecha)" : "DATE_FORMAT(inspecciones.fecha, '%Y-%m')";
+        $mesExprVisitas = $driver === 'sqlite' ? "strftime('%Y-%m', visitas.fecha_programada)" : "DATE_FORMAT(visitas.fecha_programada, '%Y-%m')";
+        $mesExprDetalles = $driver === 'sqlite' ? "strftime('%Y-%m', inspecciones.fecha)" : "DATE_FORMAT(inspecciones.fecha, '%Y-%m')";
 
         $rawRows = Inspeccion::select(
             'inspecciones.veterinario_id',
@@ -161,12 +185,15 @@ class ReportesRendimientoController extends Controller
         foreach ($rawRows as $row) {
             $key = $row->veterinario_id.'|'.$row->mes;
             if (! $grouped->has($key)) {
-                $row->medico_nombre = $medicoNames[$row->veterinario_id] ?? 'Desconocido';
-                $row->ppc = 0;
-                $row->pcc = 0;
-                $row->total_inspecciones = 0;
-                $row->predios = 0;
-                $grouped[$key] = $row;
+                $grouped[$key] = (object) [
+                    'veterinario_id' => $row->veterinario_id,
+                    'mes' => $row->mes,
+                    'medico_nombre' => $medicoNames[$row->veterinario_id] ?? 'Desconocido',
+                    'ppc' => 0,
+                    'pcc' => 0,
+                    'total_inspecciones' => 0,
+                    'predios' => 0,
+                ];
             }
             $existing = $grouped[$key];
             $existing->total_inspecciones += $row->total_inspecciones;
@@ -223,109 +250,7 @@ class ReportesRendimientoController extends Controller
             }
         }
 
-        return view('reportes.rendimiento_mensual', compact('rows', 'medicos', 'years', 'year', 'medicoId', 'zona', 'estado', 'driver'));
-    }
-
-    public function exportPdfMensual(Request $request)
-    {
-        $year = $request->get('year', (int) now()->year);
-        $medicoId = $request->get('medico_id');
-        $zona = $request->get('zona');
-        $estado = $request->get('estado');
-
-        $driver = DB::connection()->getDriverName();
-        $monthExpr = $driver === 'sqlite' ? "strftime('%Y-%m', inspecciones.fecha)" : "DATE_FORMAT(inspecciones.fecha, '%Y-%m')";
-        $mesExprVisitas = $driver === 'sqlite' ? "strftime('%Y-%m', visitas.fecha_programada)" : "DATE_FORMAT(visitas.fecha_programada, '%Y-%m')";
-        $mesExprDetalles = $driver === 'sqlite' ? "strftime('%Y-%m', inspecciones.fecha)" : "DATE_FORMAT(inspecciones.fecha, '%Y-%m')";
-
-        $medicos = User::role('Medico_Campo')->orderBy('name')->get();
-        $medicoNames = $medicos->pluck('name', 'id');
-
-        $rawRows = Inspeccion::select(
-            'inspecciones.veterinario_id',
-            'inspecciones.tipo_prueba',
-            DB::raw("{$monthExpr} as mes"),
-            DB::raw('COUNT(*) as total_inspecciones'),
-            DB::raw('COUNT(DISTINCT inspecciones.predio_id) as predios')
-        )
-            ->join('predios', 'inspecciones.predio_id', '=', 'predios.id')
-            ->join('productores', 'predios.productor_id', '=', 'productores.id')
-            ->whereYear('inspecciones.fecha', $year)
-            ->groupBy('inspecciones.veterinario_id', 'inspecciones.tipo_prueba', DB::raw($monthExpr))
-            ->orderBy('mes')
-            ->when($medicoId, fn ($q) => $q->where('inspecciones.veterinario_id', $medicoId))
-            ->when($zona, fn ($q) => $q->where('productores.zona', $zona))
-            ->when($estado, fn ($q) => $q->where('inspecciones.estado', $estado))
-            ->get();
-
-        $grouped = collect();
-        foreach ($rawRows as $row) {
-            $key = $row->veterinario_id.'|'.$row->mes;
-            if (! $grouped->has($key)) {
-                $row->medico_nombre = $medicoNames[$row->veterinario_id] ?? 'Desconocido';
-                $row->ppc = 0;
-                $row->pcc = 0;
-                $row->total_inspecciones = 0;
-                $row->predios = 0;
-                $grouped[$key] = $row;
-            }
-            $existing = $grouped[$key];
-            $existing->total_inspecciones += $row->total_inspecciones;
-            $existing->predios = max($existing->predios, $row->predios);
-            $tipo = in_array($row->tipo_prueba, ['P.P.C.', 'PPC']) ? 'ppc' : 'pcc';
-            $existing->{$tipo} += $row->total_inspecciones;
-        }
-        $rows = $grouped->values();
-
-        $visitasData = Visita::select(
-            'veterinario_id',
-            DB::raw("{$mesExprVisitas} as mes"),
-            DB::raw('COUNT(*) as total_visitas')
-        )
-            ->whereYear('fecha_programada', $year)
-            ->groupBy('veterinario_id', DB::raw($mesExprVisitas))
-            ->when($medicoId, fn ($q) => $q->where('veterinario_id', $medicoId))
-            ->get()
-            ->keyBy(fn ($v) => $v->veterinario_id.'|'.$v->mes);
-
-        $detallesData = DetalleInspeccion::select(
-            'inspecciones.veterinario_id',
-            'inspecciones.tipo_prueba',
-            DB::raw("{$mesExprDetalles} as mes"),
-            DB::raw('COUNT(*) as total_animales'),
-            DB::raw("COALESCE(SUM(CASE WHEN detalles_inspeccion.resultado_prueba IN ('Positivo','Sospechoso') THEN 1 ELSE 0 END), 0) as total_reactores")
-        )
-            ->join('inspecciones', 'detalles_inspeccion.inspeccion_id', '=', 'inspecciones.id')
-            ->join('predios', 'inspecciones.predio_id', '=', 'predios.id')
-            ->join('productores', 'predios.productor_id', '=', 'productores.id')
-            ->whereYear('inspecciones.fecha', $year)
-            ->groupBy('inspecciones.veterinario_id', 'inspecciones.tipo_prueba', DB::raw($mesExprDetalles))
-            ->when($medicoId, fn ($q) => $q->where('inspecciones.veterinario_id', $medicoId))
-            ->when($zona, fn ($q) => $q->where('productores.zona', $zona))
-            ->when($estado, fn ($q) => $q->where('inspecciones.estado', $estado))
-            ->get()
-            ->groupBy(fn ($d) => $d->veterinario_id.'|'.$d->mes);
-
-        foreach ($rows as $row) {
-            $key = $row->veterinario_id.'|'.$row->mes;
-            $row->total_visitas = $visitasData->get($key)?->total_visitas ?? 0;
-            $row->total_animales = 0;
-            $row->total_reactores = 0;
-            $row->reactores_ppc = 0;
-            $row->reactores_pcc = 0;
-
-            $detalles = $detallesData->get($key, collect());
-            foreach ($detalles as $d) {
-                $row->total_animales += $d->total_animales;
-                $row->total_reactores += $d->total_reactores;
-                $tipo = in_array($d->tipo_prueba, ['P.P.C.', 'PPC']) ? 'reactores_ppc' : 'reactores_pcc';
-                $row->{$tipo} += $d->total_reactores;
-            }
-        }
-
-        $pdf = Pdf::loadView('reports.rendimiento_mensual_pdf', compact('rows', 'year'));
-
-        return $pdf->download("rendimiento_mensual_{$year}.pdf");
+        return $rows;
     }
 
     public function exportPdf(Request $request)

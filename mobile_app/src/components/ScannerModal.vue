@@ -7,7 +7,7 @@
       </div>
       <div class="scanner-modal-body">
         <div v-if="permissionDenied" class="text-center py-4">
-          <div style="font-size: 3rem; margin-bottom: 8px;">📷</div>
+          <i class="bi bi-camera-fill" style="font-size: 3rem; margin-bottom: 8px;"></i>
           <h5 class="fw-bold text-danger mb-2">Permiso de cámara denegado</h5>
           <p class="text-muted small mb-3 px-3">Para escanear aretes, la app necesita acceso a la cámara. Presiona "Reintentar" para solicitarlo de nuevo.</p>
           <button class="btn btn-primary w-100 mb-2" :disabled="retrying" @click="retryPermission">
