@@ -172,70 +172,16 @@
         </div>
       </div>
 
-      <!-- PDF Preview Modal -->
-      <div v-if="previewVisible" class="dl-preview-overlay" @click.self="closePreview">
-        <div class="dl-preview-modal">
-          <div class="dl-preview-header">
-            <div class="d-flex align-items-center gap-2 min-w-0">
-              <i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i>
-              <span class="fw-bold text-truncate">{{ previewFileName }}</span>
-            </div>
-            <div class="d-flex gap-2">
-              <button
-                v-if="previewFileUri"
-                class="dl-preview-btn-external"
-                title="Abrir externamente"
-                @click="openFileExternally(previewFileUri, previewFileName)"
-              >
-                <i class="bi bi-box-arrow-up-right"></i>
-              </button>
-              <button class="dl-preview-btn-close" @click="closePreview">
-                <i class="bi bi-x-lg"></i>
-              </button>
-            </div>
-          </div>
-          <div class="dl-preview-body">
-            <div v-if="previewLoading" class="d-flex flex-column align-items-center justify-content-center h-100">
-              <div class="spinner-border text-primary mb-3" role="status"></div>
-              <p class="text-muted">Cargando vista previa...</p>
-            </div>
-            <iframe
-              v-else-if="previewBlobUrl"
-              :src="previewBlobUrl"
-              class="dl-preview-iframe"
-            ></iframe>
-            <div v-else-if="previewError" class="d-flex flex-column align-items-center justify-content-center h-100 text-center p-4">
-              <i class="bi bi-exclamation-triangle display-4 text-warning mb-3"></i>
-              <p class="text-secondary fw-semibold mb-1">Vista previa no disponible</p>
-              <p class="text-muted small mb-3 px-3">{{ previewError }}</p>
-              <div class="d-flex gap-2">
-                <button
-                  v-if="previewFileUri"
-                  class="dl-preview-btn-action"
-                  @click="openFileExternally(previewFileUri, previewFileName)"
-                >
-                  <i class="bi bi-box-arrow-up-right me-1"></i> Abrir externamente
-                </button>
-                <button class="dl-preview-btn-action dl-preview-btn-action-secondary" @click="closePreview">
-                  Cerrar
-                </button>
-              </div>
-            </div>
-            <div v-else class="d-flex flex-column align-items-center justify-content-center h-100 text-center p-4">
-              <i class="bi bi-exclamation-triangle display-4 text-warning mb-3"></i>
-              <p class="text-secondary">No se pudo cargar la vista previa del archivo.</p>
-            </div>
-          </div>
-        </div>
-      </div>
   </AppLayout>
 </template>
 
 <script>
 import AppLayout from '../components/AppLayout.vue';
 import api from '../services/api.js';
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { Dialog } from '@capacitor/dialog';
+import { FileOpener } from '@capacitor-community/file-opener';
 
 export default {
   name: 'DescargasView',
@@ -249,14 +195,7 @@ export default {
       searchQuery: '',
       files: [],
       errorMsg: '',
-      successMsg: '',
-      // Preview modal state
-      previewVisible: false,
-      previewLoading: false,
-      previewBlobUrl: null,
-      previewFileName: '',
-      previewFileUri: null,
-      previewError: ''
+      successMsg: ''
     };
   },
   computed: {
@@ -287,7 +226,6 @@ export default {
   beforeUnmount() {
     window.removeEventListener('online', this._onWindowOnline);
     window.removeEventListener('offline', this._onWindowOffline);
-    this.cleanPreviewUrl();
   },
   methods: {
     isExcel(filename) {
@@ -369,161 +307,57 @@ export default {
       }
     },
 
-    // ---- OPEN / PREVIEW ----
+    // ---- OPEN / VIEW ----
     async openFile(file) {
       this.errorMsg = '';
       this.successMsg = '';
 
       if (file.isNative) {
-        if (this.isPdf(file.name)) {
-          await this.previewNativePdf(file);
-        } else {
-          await this.openNativeFile(file);
-        }
+        await this.openNativeFile(file);
       } else {
-        if (this.isPdf(file.name)) {
-          this.showBrowserPreview(file);
-        } else {
-          alert(`En el dispositivo nativo, se abrirá "${file.name}" con la aplicación de hojas de cálculo instalada.`);
-        }
+        window.open(file.uri || file.name, '_blank');
       }
     },
 
-    async previewNativePdf(file) {
-      this.previewFileName = file.name;
-      this.previewVisible = true;
-      this.previewLoading = true;
-      this.previewError = '';
-      this.previewFileUri = null;
-      this.cleanPreviewUrl();
-
-      // Get file URI for fallback (Abrir externamente)
-      try {
-        const uriResult = await Filesystem.getUri({
-          path: file.name,
-          directory: Directory.Documents
-        });
-        this.previewFileUri = uriResult.uri;
-      } catch (e) {
-        // proceed without URI fallback
-      }
-
-      // Read as base64 → blob → iframe
-      try {
-        const fileData = await Filesystem.readFile({
-          path: file.name,
-          directory: Directory.Documents
-        });
-        const blob = this.base64ToBlob(fileData.data, 'application/pdf');
-        this.previewBlobUrl = URL.createObjectURL(blob);
-      } catch (err) {
-        console.error('Error reading PDF:', err);
-        this.previewError = err.message || 'Error desconocido al leer el archivo.';
-      } finally {
-        this.previewLoading = false;
-      }
+    getContentType(filename) {
+      const ext = filename.split('.').pop().toLowerCase();
+      const types = {
+        pdf: 'application/pdf',
+        xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        xls: 'application/vnd.ms-excel',
+        doc: 'application/msword',
+        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        txt: 'text/plain'
+      };
+      return types[ext] || 'application/octet-stream';
     },
 
     async openNativeFile(file) {
-      this.previewError = '';
       try {
-        const uriResult = await Filesystem.getUri({
-          path: file.name,
-          directory: Directory.Documents
-        });
-        const uri = uriResult.uri;
-
-        // Try opening externally via URI navigation
-        this.openFileExternally(uri, file.name);
-      } catch (e) {
-        if (e.message && !e.message.includes('cancel')) {
-          console.error('Error opening file:', e);
-          this.errorMsg = `No se pudo abrir "${file.name}": ${e.message}`;
-        }
-      }
-    },
-
-    openFileExternally(uri, fileName) {
-      this.cleanPreviewUrl();
-      this.previewVisible = false;
-      this.errorMsg = '';
-      this.successMsg = '';
-
-      try {
-        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-          // On native: try to open with system handler via Share (with just the URI)
-          Share.share({
-            title: fileName,
-            url: uri,
-            dialogTitle: `Abrir ${fileName}`
-          }).catch(() => {});
-          this.successMsg = `Abriendo "${fileName}"...`;
-        } else {
-          // Web fallback: open in new tab / download
+        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
+          const uri = (await Filesystem.getUri({ path: file.name, directory: Directory.Documents })).uri;
           window.open(uri, '_blank');
+          return;
+        }
+        const contentType = this.getContentType(file.name);
+        try {
+          const cacheName = `view_${Date.now()}_${file.name}`;
+          const { data } = await Filesystem.readFile({ path: file.name, directory: Directory.Documents });
+          await Filesystem.writeFile({ path: cacheName, data, directory: Directory.Cache });
+          const { uri } = await Filesystem.getUri({ path: cacheName, directory: Directory.Cache });
+          await FileOpener.open({ filePath: uri, contentType });
+        } catch (innerErr) {
+          console.warn('readFile from Documents failed, trying Share fallback:', innerErr);
+          const uri = (await Filesystem.getUri({ path: file.name, directory: Directory.Documents })).uri;
+          await Share.share({ title: file.name, url: uri, dialogTitle: `Abrir ${file.name}` });
         }
       } catch (e) {
-        this.errorMsg = `No se pudo abrir "${fileName}": ${e.message || 'Error desconocido'}`;
+        console.error('Error opening file:', e);
+        this.errorMsg = `No se pudo abrir "${file.name}": ${e.message || 'Error desconocido'}`;
       }
-    },
-
-    showBrowserPreview(file) {
-      this.previewFileName = file.name;
-      this.previewVisible = true;
-      this.previewLoading = false;
-      const html = `<!DOCTYPE html>
-<html lang="es-MX">
-<head><meta charset="UTF-8"><title>${file.name}</title>
-<style>
-  body { font-family: 'Plus Jakarta Sans', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f8fafc; color: #1e293b; }
-  .card { text-align: center; padding: 40px; background: white; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); max-width: 400px; }
-  .icon { font-size: 3rem; margin-bottom: 12px; }
-  .title { font-weight: 700; font-size: 1.1rem; margin-bottom: 8px; }
-  .meta { font-size: 0.85rem; color: #64748b; }
-  .badge { display: inline-block; margin-top: 12px; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: #dbeafe; color: #2563eb; }
-</style></head>
-<body>
-<div class="card">
-  <i class="bi bi-file-earmark-text" style="font-size: 2rem;"></i>
-  <div class="title">${file.name}</div>
-  <div class="meta">${this.formatBytes(file.size)} · ${this.formatDate(file.mtime)}</div>
-  <div class="badge">Vista previa no disponible</div>
-  <p style="margin-top:16px;font-size:0.82rem;color:#94a3b8;">Descarga el archivo desde la sección de Dictámenes para ver su contenido aquí.</p>
-</div>
-</body></html>`;
-      this.cleanPreviewUrl();
-      const blob = new Blob([html], { type: 'text/html' });
-      this.previewBlobUrl = URL.createObjectURL(blob);
-    },
-
-    base64ToBlob(base64, mimeType) {
-      const byteChars = atob(base64);
-      const byteArrays = [];
-      const sliceSize = 512;
-      for (let offset = 0; offset < byteChars.length; offset += sliceSize) {
-        const slice = byteChars.slice(offset, offset + sliceSize);
-        const byteNums = new Array(slice.length);
-        for (let i = 0; i < slice.length; i++) {
-          byteNums[i] = slice.charCodeAt(i);
-        }
-        byteArrays.push(new Uint8Array(byteNums));
-      }
-      return new Blob(byteArrays, { type: mimeType });
-    },
-
-    cleanPreviewUrl() {
-      if (this.previewBlobUrl) {
-        URL.revokeObjectURL(this.previewBlobUrl);
-        this.previewBlobUrl = null;
-      }
-    },
-
-    closePreview() {
-      this.previewVisible = false;
-      this.previewFileName = '';
-      this.previewError = '';
-      this.previewFileUri = null;
-      this.cleanPreviewUrl();
     },
 
     // ---- SHARE ----
@@ -564,7 +398,13 @@ export default {
     async deleteFile(file) {
       this.errorMsg = '';
       this.successMsg = '';
-      if (confirm(`¿Eliminar "${file.name}" del dispositivo?\n\nEsta acción no se puede deshacer.`)) {
+      const confirmResult = await Dialog.confirm({
+        title: 'Eliminar archivo',
+        message: `¿Eliminar "${file.name}" del dispositivo?\n\nEsta acción no se puede deshacer.`,
+        okButtonTitle: 'Eliminar',
+        cancelButtonTitle: 'Cancelar'
+      });
+      if (confirmResult.value) {
         try {
           if (file.isNative) {
             await Filesystem.deleteFile({
@@ -862,116 +702,7 @@ export default {
   }
 }
 
-/* ===== PDF Preview Modal ===== */
-.dl-preview-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.65);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  animation: dlFadeIn 0.2s ease;
-}
-@keyframes dlFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.dl-preview-modal {
-  width: 100%;
-  max-width: 900px;
-  height: 85vh;
-  background: #fff;
-  border-radius: 20px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  animation: dlSlideUp 0.25s ease;
-}
-@keyframes dlSlideUp {
-  from { transform: translateY(30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-.dl-preview-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 20px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-  gap: 12px;
-}
-.dl-preview-btn-external {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #eff6ff;
-  color: #2563eb;
-  border: none;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.15s;
-  text-decoration: none;
-}
-.dl-preview-btn-external:hover { background: #dbeafe; }
-.dl-preview-btn-close {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fef2f2;
-  color: #ef4444;
-  border: none;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.dl-preview-btn-close:hover { background: #fecaca; }
-.dl-preview-btn-action {
-  display: inline-flex;
-  align-items: center;
-  padding: 10px 20px;
-  border-radius: 10px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  background: #2563eb;
-  color: #fff;
-  transition: all 0.2s ease;
-  font-family: inherit;
-}
-.dl-preview-btn-action:hover {
-  background: #1d4ed8;
-}
-.dl-preview-btn-action-secondary {
-  background: #f1f5f9;
-  color: #475569;
-}
-.dl-preview-btn-action-secondary:hover {
-  background: #e2e8f0;
-  color: #1e293b;
-}
-.dl-preview-body {
-  flex: 1;
-  overflow: hidden;
-  background: #f1f5f9;
-}
-.dl-preview-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
+
 
 /* ===== Responsive Mobile ===== */
 @media (max-width: 991.98px) {
@@ -991,10 +722,6 @@ export default {
     padding: 12px;
   }
 
-  .dl-preview-modal {
-    height: 90vh;
-    border-radius: 16px;
-  }
 }
 
 /* Desktop */

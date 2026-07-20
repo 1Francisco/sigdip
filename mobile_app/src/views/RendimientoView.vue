@@ -5,14 +5,7 @@
         <h2 class="h4 fw-bold mb-1">Rendimiento de Médicos</h2>
         <p class="text-secondary small mb-0">Reportes de actividad y productividad en campo</p>
       </div>
-      <div v-if="isOnline && !loading" class="d-flex gap-2">
-        <button class="btn btn-sm btn-danger rounded-pill px-3 btn-export-all-pdf" @click="exportAllReport('pdf')">
-          <i class="bi bi-file-earmark-pdf me-1"></i> Exportar Todo (PDF)
-        </button>
-        <button class="btn btn-sm btn-success rounded-pill px-3 btn-export-all-excel" @click="exportAllReport('excel')">
-          <i class="bi bi-file-earmark-excel me-1"></i> Exportar Todo (Excel)
-        </button>
-      </div>
+
     </div>
 
     <!-- Alerta Offline -->
@@ -41,39 +34,6 @@
       </div>
 
       <div v-else>
-        <!-- KPIs Row -->
-        <div class="row g-2 mb-4">
-          <div class="col-4 col-md-2">
-            <div class="card border-0 shadow-sm p-2 text-center h-100 rounded-3">
-              <div class="text-primary fw-bold fs-5">{{ kpis.total_inspecciones }}</div>
-              <small class="text-muted text-uppercase" style="font-size: 0.6rem; font-weight: 700;">Inspecciones</small>
-            </div>
-          </div>
-          <div class="col-4 col-md-2">
-            <div class="card border-0 shadow-sm p-2 text-center h-100 rounded-3">
-              <div class="text-success fw-bold fs-5">{{ kpis.total_visitas }}</div>
-              <small class="text-muted text-uppercase" style="font-size: 0.6rem; font-weight: 700;">Visitas</small>
-            </div>
-          </div>
-          <div class="col-4 col-md-2">
-            <div class="card border-0 shadow-sm p-2 text-center h-100 rounded-3">
-              <div class="text-info fw-bold fs-5">{{ kpis.medicos_activos }}</div>
-              <small class="text-muted text-uppercase" style="font-size: 0.6rem; font-weight: 700;">Médicos Act.</small>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm p-2 text-center h-100 rounded-3">
-              <div class="text-dark fw-bold fs-5">{{ kpis.total_animales }}</div>
-              <small class="text-muted text-uppercase" style="font-size: 0.6rem; font-weight: 700;">Animales Probados</small>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm p-2 text-center h-100 rounded-3">
-              <div class="text-danger fw-bold fs-5">{{ kpis.total_reactores }}</div>
-              <small class="text-muted text-uppercase" style="font-size: 0.6rem; font-weight: 700;">Reactores</small>
-            </div>
-          </div>
-        </div>
 
         <!-- Botón Filtros / Limpiar -->
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -111,7 +71,7 @@
                 <option value="B">Zona B</option>
               </select>
             </div>
-            <div class="col-6 col-md-3">
+            <div v-if="currentTab === 'medicos'" class="col-6 col-md-3">
               <label class="form-label small fw-semibold text-secondary mb-1">Localidad</label>
               <select v-model="filterParams.localidad" class="form-select form-select-sm select-localidad">
                 <option value="">Todas</option>
@@ -125,15 +85,7 @@
                 <option v-for="m in filterOptions.medicos" :key="m.id" :value="m.id">{{ m.name }}</option>
               </select>
             </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label small fw-semibold text-secondary mb-1">Fecha Desde</label>
-              <input type="date" v-model="filterParams.fecha_desde" class="form-control form-control-sm input-fecha-desde">
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label small fw-semibold text-secondary mb-1">Fecha Hasta</label>
-              <input type="date" v-model="filterParams.fecha_hasta" class="form-control form-control-sm input-fecha-hasta">
-            </div>
-            <div class="col-12 col-md-6 d-flex align-items-end justify-content-end gap-2 mt-2 mt-md-0">
+            <div class="col-12 col-md-3 d-flex align-items-end justify-content-end gap-2 mt-2 mt-md-0">
               <button class="btn btn-sm btn-primary rounded-pill px-4 flex-grow-1 flex-md-grow-0 btn-apply-filters" @click="fetchData">
                 <i class="bi bi-funnel"></i> Aplicar Filtros
               </button>
@@ -150,16 +102,7 @@
               </a>
             </li>
 
-            <li class="nav-item">
-              <a class="nav-link tab-cuarentena" :class="{ active: currentTab === 'cuarentena' }" @click="currentTab = 'cuarentena'">
-                <i class="bi bi-shield-exclamation"></i> Cuarentenas
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link tab-mes" :class="{ active: currentTab === 'mes' }" @click="currentTab = 'mes'">
-                <i class="bi bi-calendar-month"></i> Mes
-              </a>
-            </li>
+
             <li class="nav-item">
               <a class="nav-link tab-mensual" :class="{ active: currentTab === 'mensual' }" @click="currentTab = 'mensual'">
                 <i class="bi bi-table"></i> Detalle Mensual
@@ -300,155 +243,13 @@
 
 
 
-          <!-- 4. TABS: CUARENTENA -->
-          <div v-if="currentTab === 'cuarentena'" class="pane-cuarentena">
-            <div class="row g-4">
-              <!-- Columna: Definitivas -->
-              <div class="col-12 col-lg-6">
-                <div class="card border-0 shadow-sm h-100 p-0 overflow-hidden">
-                  <div class="card-header bg-white fw-bold py-3 px-4 d-flex align-items-center mb-0 border-bottom">
-                    <span class="badge bg-danger fs-6 me-2">D</span>
-                    <span class="text-dark">Definitivas</span>
-                    <span class="ms-auto badge bg-secondary rounded-pill">{{ totalCuarentenasD }}</span>
-                  </div>
-                  <div class="card-body p-0 text-start">
-                    <div v-if="cuarentenasD.length === 0" class="text-center text-muted py-5">
-                      <i class="bi bi-shield-exclamation display-5 d-block mb-2"></i>
-                      <p class="mb-0 small">Sin cuarentenas definitivas</p>
-                    </div>
-                    <div v-else>
-                      <div v-for="grupo in cuarentenasD" :key="grupo.tipo" class="border-bottom p-3">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                          <span class="badge bg-danger fs-6 px-3 py-1">{{ grupo.tipo }}</span>
-                          <span class="fw-bold text-dark">{{ grupo.total }} inspecciones</span>
-                          <span class="badge ms-auto" :class="getZonaClass(getZonaLetra(grupo.tipo))">Zona {{ getZonaLetra(grupo.tipo) }}</span>
-                        </div>
-                        <div class="ps-2">
-                          <div v-for="det in grupo.detalle" :key="det.clave_cuarentena" class="d-flex align-items-center gap-2 py-1 small">
-                            <span class="text-muted" style="min-width: 100px; font-family: monospace;">{{ det.clave_cuarentena }}</span>
-                            <div class="progress flex-grow-1" style="height: 6px; max-width: 150px; background-color: #e2e8f0; border-radius: 3px; overflow: hidden;">
-                              <div class="progress-bar bg-danger" :style="{ width: getProgressWidth(det.total, grupo.total) + '%' }"></div>
-                            </div>
-                            <span class="fw-semibold text-dark">{{ det.total }}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              <!-- Columna: Precautorias -->
-              <div class="col-12 col-lg-6">
-                <div class="card border-0 shadow-sm h-100 p-0 overflow-hidden">
-                  <div class="card-header bg-white fw-bold py-3 px-4 d-flex align-items-center mb-0 border-bottom">
-                    <span class="badge bg-warning text-dark fs-6 me-2">P</span>
-                    <span class="text-dark">Precautorias</span>
-                    <span class="ms-auto badge bg-secondary rounded-pill">{{ totalCuarentenasP }}</span>
-                  </div>
-                  <div class="card-body p-0 text-start">
-                    <div v-if="cuarentenasP.length === 0" class="text-center text-muted py-5">
-                      <i class="bi bi-shield-exclamation display-5 d-block mb-2"></i>
-                      <p class="mb-0 small">Sin cuarentenas precautorias</p>
-                    </div>
-                    <div v-else>
-                      <div v-for="grupo in cuarentenasP" :key="grupo.tipo" class="border-bottom p-3">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                          <span class="badge bg-warning text-dark fs-6 px-3 py-1">{{ grupo.tipo }}</span>
-                          <span class="fw-bold text-dark">{{ grupo.total }} inspecciones</span>
-                          <span class="badge ms-auto" :class="getZonaClass(getZonaLetra(grupo.tipo))">Zona {{ getZonaLetra(grupo.tipo) }}</span>
-                        </div>
-                        <div class="ps-2">
-                          <div v-for="det in grupo.detalle" :key="det.clave_cuarentena" class="d-flex align-items-center gap-2 py-1 small">
-                            <span class="text-muted" style="min-width: 100px; font-family: monospace;">{{ det.clave_cuarentena }}</span>
-                            <div class="progress flex-grow-1" style="height: 6px; max-width: 150px; background-color: #e2e8f0; border-radius: 3px; overflow: hidden;">
-                              <div class="progress-bar bg-warning" :style="{ width: getProgressWidth(det.total, grupo.total) + '%' }"></div>
-                            </div>
-                            <span class="fw-semibold text-dark">{{ det.total }}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Fallback Sin Cuarentena -->
-            <div v-if="totalSinCuarentena > 0" class="alert alert-secondary border-0 shadow-sm rounded-4 mt-4 mb-0 d-flex align-items-center gap-3 text-start">
-              <i class="bi bi-info-circle-fill fs-5 text-secondary"></i>
-              <span><strong>{{ totalSinCuarentena }}</strong> inspecciones sin clave de cuarentena asignada.</span>
-            </div>
-          </div>
-
-          <!-- 5. TABS: MES -->
-          <div v-if="currentTab === 'mes'" class="pane-mes">
-            <div class="card border-0 shadow-sm rounded-4 mb-4">
-              <div class="card-header bg-white fw-bold py-3 text-start">
-                <span><i class="bi bi-graph-up me-2 text-primary"></i> Tendencia Mensual</span>
-              </div>
-              <div class="card-body p-0 text-start">
-                <div v-if="meses.length === 0" class="text-center p-5 text-muted">
-                  Sin datos mensuales registrados.
-                </div>
-                <div v-else class="table-responsive">
-                  <table class="table table-hover align-middle mb-0 table-tendencia-mensual">
-                    <thead class="table-light">
-                      <tr>
-                        <th class="ps-4">Mes</th>
-                        <th class="text-center">Inspecciones</th>
-                        <th class="text-center">Año Anterior</th>
-                        <th class="text-center">Var. Mensual</th>
-                        <th class="pe-4 text-center">Var. YoY</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="mes in processedMeses" :key="mes.mes">
-                        <td class="ps-4 fw-semibold text-capitalize">
-                          {{ capitalizeFirst(formatMonthName(mes.mes)) }} {{ mes.mes.split('-')[0] }}
-                        </td>
-                        <td class="text-center">
-                          <span class="badge bg-primary rounded-pill fs-6">{{ mes.total }}</span>
-                        </td>
-                        <td class="text-center">
-                          <span v-if="mes.total_anterior > 0" class="badge bg-secondary rounded-pill">{{ mes.total_anterior }}</span>
-                          <span v-else class="text-muted">—</span>
-                        </td>
-                        <td class="text-center">
-                          <span v-if="mes.varPct !== null" class="badge rounded-pill" :class="mes.varPct >= 0 ? 'bg-success' : 'bg-danger'">
-                            <i class="bi" :class="mes.varPct >= 0 ? 'bi-arrow-up' : 'bi-arrow-down'"></i>
-                            {{ mes.varPct >= 0 ? '+' : '' }}{{ mes.varPct }}%
-                          </span>
-                          <span v-else class="text-muted">—</span>
-                        </td>
-                        <td class="pe-4 text-center">
-                          <span v-if="mes.yoy !== null" class="badge rounded-pill" :class="mes.yoy >= 0 ? 'bg-success' : 'bg-danger'">
-                            <i class="bi" :class="mes.yoy >= 0 ? 'bi-arrow-up' : 'bi-arrow-down'"></i>
-                            {{ mes.yoy >= 0 ? '+' : '' }}{{ mes.yoy }}%
-                          </span>
-                          <span v-else class="text-muted">—</span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <!-- 6. TABS: DETALLE MENSUAL -->
           <div v-if="currentTab === 'mensual'" class="pane-mensual">
             <div class="card border-0 shadow-sm rounded-4 mb-4">
-              <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
+              <div class="card-header bg-white fw-bold py-3">
                 <span><i class="bi bi-calendar-month text-primary me-2"></i> Detalle Mensual ({{ selectedYear }})</span>
-                <div class="d-flex gap-2">
-                  <button class="btn btn-sm btn-danger rounded-pill px-3 btn-export-mensual-pdf" @click="exportMensualReport('pdf')">
-                    <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
-                  </button>
-                  <button class="btn btn-sm btn-success rounded-pill px-3 btn-export-mensual-excel" @click="exportMensualReport('excel')">
-                    <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
-                  </button>
-                </div>
               </div>
               <div class="card-body p-0 text-start">
                 <div v-if="mensualRows.length === 0" class="text-center p-5 text-muted">
@@ -500,9 +301,6 @@
                           <button class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF este mes" @click="downloadRowFile(row, 'pdf')">
                             <i class="bi bi-file-earmark-pdf"></i>
                           </button>
-                          <button class="btn btn-sm px-1 py-0 text-success" title="Descargar Excel este mes" @click="downloadRowFile(row, 'excel')">
-                            <i class="bi bi-file-earmark-excel"></i>
-                          </button>
                         </td>
                       </tr>
                       <!-- Fila de Totales Generales -->
@@ -543,18 +341,18 @@
 
 <script>
 import AppLayout from '../components/AppLayout.vue';
-import ChartCard from '../components/ChartCard.vue';
 import api from '../services/api.js';
 import { CONFIG } from '../config.js';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Dialog } from '@capacitor/dialog';
+import { FileOpener } from '@capacitor-community/file-opener';
 
 export default {
   name: 'RendimientoView',
   components: {
-    AppLayout,
-    ChartCard
+    AppLayout
   },
   data() {
     return {
@@ -587,8 +385,6 @@ export default {
       },
       filterParams: {
         year: '',
-        fecha_desde: '',
-        fecha_hasta: '',
         estado: '',
         zona: '',
         localidad: '',
@@ -599,73 +395,6 @@ export default {
   computed: {
     hasActiveFilters() {
       return Object.values(this.filterParams).some(val => val !== '');
-    },
-    // Chart Medicos
-    chartMedicosLabels() {
-      return this.medicosRendimiento.map(m => m.name);
-    },
-    chartMedicosDatasets() {
-      return [
-        {
-          label: 'Inspecciones',
-          data: this.medicosRendimiento.map(m => m.total_inspecciones),
-          backgroundColor: '#2563eb',
-          borderRadius: 6
-        }
-      ];
-    },
-    // Chart Actividades
-    hasActividadData() {
-      return this.actividades.some(a => a.total > 0);
-    },
-    chartActividadesLabels() {
-      return ['PPC', 'PCC'];
-    },
-    chartActividadesDatasets() {
-      const ppc = this.actividades.find(a => a.tipo === 'PPC')?.total || 0;
-      const pcc = this.actividades.find(a => a.tipo === 'PCC')?.total || 0;
-      return [
-        {
-          data: [ppc, pcc],
-          backgroundColor: ['#2563eb', '#10b981']
-        }
-      ];
-    },
-    // Chart Zonas
-    chartZonasLabels() {
-      return this.zonas.map(z => 'Zona ' + z.zona);
-    },
-    chartZonasDatasets() {
-      return [
-        {
-          data: this.zonas.map(z => z.total),
-          backgroundColor: ['#2563eb', '#f59e0b', '#ef4444', '#10b981']
-        }
-      ];
-    },
-    // Chart Meses (Trend)
-    chartMesesLabels() {
-      return this.meses.map(m => this.formatMonthName(m.mes));
-    },
-    chartMesesDatasets() {
-      return [
-        {
-          label: 'Año Seleccionado',
-          data: this.meses.map(m => m.total),
-          borderColor: '#2563eb',
-          backgroundColor: 'rgba(37, 99, 235, 0.1)',
-          fill: true,
-          tension: 0.3
-        },
-        {
-          label: 'Año Anterior',
-          data: this.meses.map(m => m.total_anterior),
-          borderColor: '#94a3b8',
-          backgroundColor: 'transparent',
-          borderDash: [5, 5],
-          tension: 0.3
-        }
-      ];
     },
     totalInspeccionesMensual() {
       return this.mensualRows.reduce((sum, r) => sum + (r.total_inspecciones || 0), 0);
@@ -693,33 +422,6 @@ export default {
     },
     totalReactoresPCCMensual() {
       return this.mensualRows.reduce((sum, r) => sum + (r.reactores_pcc || 0), 0);
-    },
-    totalCuarentenasD() {
-      return this.cuarentenasD.reduce((sum, item) => sum + (item.total || 0), 0);
-    },
-    totalCuarentenasP() {
-      return this.cuarentenasP.reduce((sum, item) => sum + (item.total || 0), 0);
-    },
-    processedMeses() {
-      let prevTotal = null;
-      return this.meses.map(mes => {
-        let varPct = null;
-        if (prevTotal !== null && prevTotal > 0) {
-          varPct = Math.round(((mes.total - prevTotal) / prevTotal * 100) * 10) / 10;
-        }
-        prevTotal = mes.total;
-        
-        let yoy = null;
-        if (mes.total_anterior > 0) {
-          yoy = Math.round(((mes.total - mes.total_anterior) / mes.total_anterior * 100) * 10) / 10;
-        }
-        
-        return {
-          ...mes,
-          varPct,
-          yoy
-        };
-      });
     }
   },
   created() {
@@ -771,8 +473,6 @@ export default {
     clearFilters() {
       this.filterParams = {
         year: '',
-        fecha_desde: '',
-        fecha_hasta: '',
         estado: '',
         zona: '',
         localidad: '',
@@ -887,24 +587,41 @@ export default {
 
               // Mostrar alerta amigable indicando ubicación
               if (downloadSaved) {
-                alert(`Descarga completada. El archivo "${filename}" se guardó en la carpeta de Descargas de tu teléfono.`);
+                await Dialog.alert({ title: 'Descarga completada', message: `El archivo "${filename}" se guardó en la carpeta de Descargas de tu teléfono.` });
               } else {
-                alert(`Descarga completada. El archivo "${filename}" se guardó en los Documentos de tu teléfono.`);
+                await Dialog.alert({ title: 'Descarga completada', message: `El archivo "${filename}" se guardó en los Documentos de tu teléfono.` });
               }
 
-              // Intentar abrir el menú de compartir/abrir nativo silenciosamente
-              try {
-                await Share.share({
-                  title: filename,
-                  url: docResult.uri,
-                  dialogTitle: `Abrir ${filename}`
-                });
-              } catch (shareErr) {
-                console.warn('Error al compartir/abrir archivo automáticamente:', shareErr);
+              // Preguntar al usuario qué desea hacer
+              const result = await Dialog.confirm({
+                title: 'Descarga completada',
+                message: `"${filename}" guardado.\n\n¿Abrir archivo para leerlo?`,
+                okButtonTitle: 'Ver',
+                cancelButtonTitle: 'Compartir'
+              });
+              if (result.value) {
+                try {
+                  const cacheName = `view_${Date.now()}_${filename}`;
+                  await Filesystem.writeFile({ path: cacheName, data: base64data, directory: Directory.Cache });
+                  const { uri } = await Filesystem.getUri({ path: cacheName, directory: Directory.Cache });
+                  await FileOpener.open({ filePath: uri, contentType: 'application/pdf' });
+                } catch (openErr) {
+                  console.warn('Error al abrir el archivo:', openErr);
+                }
+              } else {
+                try {
+                  await Share.share({
+                    title: filename,
+                    url: docResult.uri,
+                    dialogTitle: `Compartir ${filename}`
+                  });
+                } catch (shareErr) {
+                  console.warn('Error al compartir archivo:', shareErr);
+                }
               }
             } catch (writeErr) {
               console.error('Error writing file locally:', writeErr);
-              alert('Error al guardar el archivo en el teléfono: ' + writeErr.message);
+              await Dialog.alert({ title: 'Error', message: 'Error al guardar el archivo en el teléfono: ' + writeErr.message });
             }
           };
         } else {
@@ -920,7 +637,7 @@ export default {
         }
       } catch (e) {
         console.error('Error downloading report:', e);
-        alert('Error al descargar el reporte. Verifique la conexión.');
+        await Dialog.alert({ title: 'Error', message: 'Error al descargar el reporte. Verifique la conexión.' });
       }
     },
     downloadRowFile(row, type) {
@@ -936,30 +653,8 @@ export default {
       
       this.downloadBlob(url, filename);
     },
-    exportMensualReport(type) {
-      const year = this.filterParams.year || this.selectedYear;
-      const medicoId = this.filterParams.medico_id || '';
-      const zona = this.filterParams.zona || '';
-      const estado = this.filterParams.estado || '';
-      
-      const filename = `rendimiento_mensual_${year}.${type === 'pdf' ? 'pdf' : 'xlsx'}`;
-      const url = `${CONFIG.API_BASE_URL}/reportes/rendimiento/mensual/${type}?year=${year}&medico_id=${medicoId}&zona=${zona}&estado=${estado}`;
-      
-      this.downloadBlob(url, filename);
-    },
-    exportAllReport(type) {
-      const queryParams = new URLSearchParams();
-      Object.entries(this.filterParams).forEach(([key, val]) => {
-        if (val !== undefined && val !== null && val !== '') {
-          queryParams.append(key, val);
-        }
-      });
-      const queryStr = queryParams.toString();
-      const filename = `rendimiento_consolidado.${type === 'pdf' ? 'pdf' : 'xlsx'}`;
-      const url = `${CONFIG.API_BASE_URL}/reportes/rendimiento/${type}${queryStr ? `?${queryStr}` : ''}`;
-      
-      this.downloadBlob(url, filename);
-    },
+
+
     getZonaLetra(tipo) {
       if (!tipo) return '';
       return tipo.substring(0, 1);

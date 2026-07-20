@@ -153,78 +153,7 @@ class ReportesRendimientoTest extends TestCase
         $response->assertSee('Detalle de Rendimiento');
     }
 
-    public function test_rendimiento_tab_actividades()
-    {
-        $productor = Productor::factory()->create();
-        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
 
-        Inspeccion::factory()->create([
-            'predio_id' => $predio->id,
-            'tipo_prueba' => 'PPC',
-            'fecha' => now()->format('Y-m-d'),
-        ]);
-        Inspeccion::factory()->create([
-            'predio_id' => $predio->id,
-            'tipo_prueba' => 'PCC',
-            'fecha' => now()->format('Y-m-d'),
-        ]);
-
-        $this->actingAs($this->admin)
-            ->get(route('reportes.rendimiento', ['tab' => 'actividades']))
-            ->assertStatus(200)
-            ->assertSee('Distribución por Tipo de Prueba');
-    }
-
-    public function test_rendimiento_tab_zona()
-    {
-        $productorA = Productor::factory()->create(['zona' => 'A']);
-        $predioA = Predio::factory()->create(['productor_id' => $productorA->id]);
-
-        Inspeccion::factory()->create([
-            'predio_id' => $predioA->id,
-            'fecha' => now()->format('Y-m-d'),
-        ]);
-
-        $this->actingAs($this->admin)
-            ->get(route('reportes.rendimiento', ['tab' => 'zona']))
-            ->assertStatus(200)
-            ->assertSee('Distribución por Zona');
-    }
-
-    public function test_rendimiento_tab_cuarentena()
-    {
-        $productor = Productor::factory()->create([
-            'zona' => 'A',
-            'clave_cuarentena' => 'AD01',
-        ]);
-        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
-
-        Inspeccion::factory()->create([
-            'predio_id' => $predio->id,
-            'fecha' => now()->format('Y-m-d'),
-        ]);
-
-        $this->actingAs($this->admin)
-            ->get(route('reportes.rendimiento', ['tab' => 'cuarentena']))
-            ->assertStatus(200)
-            ->assertSee('Cuarentena');
-    }
-
-    public function test_rendimiento_tab_mes()
-    {
-        $productor = Productor::factory()->create();
-        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
-
-        Inspeccion::factory()->create([
-            'predio_id' => $predio->id,
-            'fecha' => now()->format('Y-m-d'),
-        ]);
-
-        $this->actingAs($this->admin)
-            ->get(route('reportes.rendimiento', ['tab' => 'mes']))
-            ->assertStatus(200)
-            ->assertSee('Tendencia Mensual');
-    }
 
     public function test_rendimiento_detalle_medico()
     {

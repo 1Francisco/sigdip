@@ -1,6 +1,7 @@
 import { mount } from 'cypress/vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import VisitasView from '../../src/views/VisitasView.vue'
+import api from '../../src/services/api.js'
 import userAdmin from '../fixtures/user-admin.json'
 import userMedico from '../fixtures/user-medico.json'
 
@@ -172,6 +173,8 @@ describe('VisitasView', () => {
         inyeccion: false,
         inspeccion: null,
       }))
+
+      cy.stub(api, 'checkRealConnectivity').resolves(true)
 
       cy.intercept('GET', '**/api/visitas*', {
         statusCode: 200,

@@ -139,7 +139,10 @@ class InspeccionExport implements FromCollection, ShouldAutoSize, WithHeadings, 
             'font' => [
                 'bold' => true,
                 'name' => 'Arial',
-                'size' => 10,
+                'size' => 9,
+                'color' => [
+                    'rgb' => 'FFFFFF',
+                ],
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -149,7 +152,7 @@ class InspeccionExport implements FromCollection, ShouldAutoSize, WithHeadings, 
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
                 'startColor' => [
-                    'rgb' => 'D9D9D9',
+                    'rgb' => '1155CC',
                 ],
             ],
             'borders' => [

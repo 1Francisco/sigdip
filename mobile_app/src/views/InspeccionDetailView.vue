@@ -109,6 +109,8 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { App } from '@capacitor/app';
 import { Share } from '@capacitor/share';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Dialog } from '@capacitor/dialog';
+import { FileOpener } from '@capacitor-community/file-opener';
 
 export default {
   name: 'InspeccionDetailView',
@@ -209,19 +211,36 @@ export default {
               }
 
               if (downloadSaved) {
-                alert(`Descarga completada. El archivo "${fileName}" se guardó en la carpeta de Descargas de tu teléfono.`);
+                await Dialog.alert({ title: 'Descarga completada', message: `El archivo "${fileName}" se guardó en la carpeta de Descargas de tu teléfono.` });
               } else {
-                alert(`Descarga completada. El archivo "${fileName}" se guardó en los Documentos de tu teléfono.`);
+                await Dialog.alert({ title: 'Descarga completada', message: `El archivo "${fileName}" se guardó en los Documentos de tu teléfono.` });
               }
 
-              try {
-                await Share.share({
-                  title: fileName,
-                  url: result.uri,
-                  dialogTitle: `Abrir ${fileName}`
-                });
-              } catch (shareErr) {
-                console.warn('Error al abrir PDF automáticamente:', shareErr);
+              const resultDialog = await Dialog.confirm({
+                title: 'Descarga completada',
+                message: `"${fileName}" guardado.\n\n¿Abrir archivo para leerlo?`,
+                okButtonTitle: 'Ver',
+                cancelButtonTitle: 'Compartir'
+              });
+              if (resultDialog.value) {
+                try {
+                  const cacheName = `view_${Date.now()}_${fileName}`;
+                  await Filesystem.writeFile({ path: cacheName, data: base64data, directory: Directory.Cache });
+                  const { uri } = await Filesystem.getUri({ path: cacheName, directory: Directory.Cache });
+                  await FileOpener.open({ filePath: uri, contentType: 'application/pdf' });
+                } catch (openErr) {
+                  console.warn('Error al abrir el archivo:', openErr);
+                }
+              } else {
+                try {
+                  await Share.share({
+                    title: fileName,
+                    url: result.uri,
+                    dialogTitle: `Compartir ${fileName}`
+                  });
+                } catch (shareErr) {
+                  console.warn('Error al compartir archivo:', shareErr);
+                }
               }
             } catch (err) {
               console.error('Error saving PDF native:', err);

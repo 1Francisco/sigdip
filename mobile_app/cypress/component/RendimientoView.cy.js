@@ -121,27 +121,13 @@ describe('RendimientoView Component Tests', () => {
 
     cy.wait('@getRendimiento')
 
-    // Verificar KPIs
-    cy.contains('15').should('be.visible')
-    cy.contains('20').should('be.visible')
+
     
     // Verificar listado de Médicos
     cy.contains('Dr. Juan Perez').should('exist')
     cy.contains('85').should('exist')
 
 
-
-    // Cambiar a pestaña Cuarentenas
-    cy.get('.tab-cuarentena').click()
-    cy.contains('Definitivas').should('be.visible')
-    cy.contains('Precautorias').should('be.visible')
-    cy.contains('D1').should('be.visible')
-    cy.contains('12').should('be.visible')
-
-    // Cambiar a pestaña Mes (Tendencia Mensual)
-    cy.get('.tab-mes').click()
-    cy.contains('Tendencia Mensual').should('be.visible')
-    cy.get('.table-tendencia-mensual').should('exist')
 
     // Cambiar a pestaña Detalle Mensual
     cy.get('.tab-mensual').click()

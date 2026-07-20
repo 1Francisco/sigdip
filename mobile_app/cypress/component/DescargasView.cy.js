@@ -143,9 +143,10 @@ describe('DescargasView', () => {
       cy.get('.dl-file-name').first().should('contain', 'dictamen_nuevo')
     })
 
-    it('abre y cierra preview modal de PDF', () => {
+    it('abre PDF en nueva ventana al hacer clic en Ver', () => {
       cy.window().then((win) => {
         win.localStorage.setItem('local_downloads_mock', JSON.stringify(mockFiles))
+        cy.stub(win, 'open').as('windowOpen')
       })
 
       const router = buildRouter()
@@ -154,11 +155,7 @@ describe('DescargasView', () => {
 
       cy.contains('dictamen_DP-2026-001', { timeout: 5000 }).should('be.visible')
       cy.contains('Ver').first().click()
-      cy.get('.dl-preview-modal', { timeout: 5000 }).should('be.visible')
-      cy.contains('dictamen_DP-2026-001').should('be.visible')
-
-      cy.get('.dl-preview-btn-close').click()
-      cy.get('.dl-preview-modal').should('not.exist')
+      cy.get('@windowOpen').should('be.calledOnce')
     })
 
     it('elimina archivo con confirmacion', () => {

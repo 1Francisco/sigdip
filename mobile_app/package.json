@@ -13,11 +13,14 @@
     "cy:run:e2e": "cypress run --e2e"
   },
   "dependencies": {
+    "@capacitor-community/file-opener": "^8.0.1",
     "@capacitor/android": "^8.3.3",
     "@capacitor/app": "^8.1.0",
+    "@capacitor/browser": "^8.0.4",
     "@capacitor/camera": "^8.2.0",
     "@capacitor/cli": "^8.3.3",
     "@capacitor/core": "^8.3.3",
+    "@capacitor/dialog": "^8.0.1",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/geolocation": "^8.2.0",
     "@capacitor/keyboard": "^8.0.3",

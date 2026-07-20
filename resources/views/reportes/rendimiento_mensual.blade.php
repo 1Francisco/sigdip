@@ -95,36 +95,11 @@
     </div>
 </div>
 
-<!-- Pestañas / Tabs -->
 <ul class="nav nav-pills nav-pills-premium mb-4" id="reportTabs" role="tablist">
     <li class="nav-item" role="presentation">
         <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'medicos'])) }}"
            class="nav-link">
             <i class="bi bi-person-badge"></i> Médicos
-        </a>
-    </li>
-    <li class="nav-item" role="presentation">
-        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'actividades'])) }}"
-           class="nav-link">
-            <i class="bi bi-activity"></i> Actividades
-        </a>
-    </li>
-    <li class="nav-item" role="presentation">
-        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'zona'])) }}"
-           class="nav-link">
-            <i class="bi bi-geo-alt"></i> Zona
-        </a>
-    </li>
-    <li class="nav-item" role="presentation">
-        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'cuarentena'])) }}"
-           class="nav-link">
-            <i class="bi bi-shield-exclamation"></i> Cuarentena
-        </a>
-    </li>
-    <li class="nav-item" role="presentation">
-        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'mes'])) }}"
-           class="nav-link">
-            <i class="bi bi-calendar-month"></i> Mes
         </a>
     </li>
     <li class="nav-item" role="presentation">
@@ -146,16 +121,8 @@
 .table-mensual .col-download { width: 12%; min-width: 100px; white-space: nowrap; }
 </style>
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
+    <div class="card-header bg-white fw-bold py-3">
         <span><i class="bi bi-calendar-month me-2 text-primary"></i> Detalle Mensual por Médico</span>
-        <div class="d-flex gap-2">
-            <a href="{{ route('reportes.rendimiento.mensual.pdf', request()->query()) }}" class="btn btn-sm btn-danger rounded-pill px-3">
-                <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
-            </a>
-            <a href="{{ route('reportes.rendimiento.mensual.excel', request()->query()) }}" class="btn btn-sm btn-success rounded-pill px-3">
-                <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
-            </a>
-        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -219,10 +186,6 @@
                                 <a href="{{ route('reportes.rendimiento.pdf', ['medico_id' => $row->veterinario_id, 'fecha_desde' => $firstDay, 'fecha_hasta' => $lastDay]) }}"
                                    class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF este mes">
                                     <i class="bi bi-file-earmark-pdf"></i>
-                                </a>
-                                <a href="{{ route('reportes.rendimiento.excel', ['medico_id' => $row->veterinario_id, 'fecha_desde' => $firstDay, 'fecha_hasta' => $lastDay]) }}"
-                                   class="btn btn-sm px-1 py-0 text-success" title="Descargar Excel este mes">
-                                    <i class="bi bi-file-earmark-excel"></i>
                                 </a>
                             </td>
                         </tr>
