@@ -207,7 +207,8 @@
                   v-for="visita in paginatedVisitas" 
                   :key="visita.id" 
                   class="producer-mobile-card shadow-sm mb-3 position-relative"
-                  style="border-left-color: #2563eb;"
+                  style="border-left-color: #2563eb; cursor: pointer;"
+                  @click="$router.push('/visitas/' + visita.id)"
                 >
                 <div class="card-fields-box">
                   <!-- Fecha Field -->
@@ -290,7 +291,7 @@
                   <div class="d-flex gap-2 flex-wrap justify-content-end">
                     <template v-if="visita._syncStatus === 'pendiente'">
                       <button
-                        @click="syncPendingVisita(visita)"
+                        @click.stop="syncPendingVisita(visita)"
                         class="btn btn-sm btn-warning d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 fw-semibold text-dark"
                         style="border-radius: 10px; font-size: 0.82rem; height: 40px;"
                         :disabled="syncingVisita === visita.codigo"
@@ -299,7 +300,7 @@
                         {{ syncingVisita === visita.codigo ? 'Sincronizando...' : 'Sincronizar' }}
                       </button>
                       <button
-                        @click="eliminarPendiente(visita)"
+                        @click.stop="eliminarPendiente(visita)"
                         class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center bg-transparent border-danger text-danger"
                         title="Eliminar localmente"
                         style="width: 40px; height: 40px; border-radius: 10px;"
@@ -310,7 +311,7 @@
                     <template v-else>
                       <button 
                         v-if="!visita.inspeccion?.id"
-                        @click="iniciarDictamen(visita)" 
+                        @click.stop="iniciarDictamen(visita)" 
                         class="btn btn-sm btn-primary d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 fw-semibold" 
                         style="border-radius: 10px; background: #2563eb; font-size: 0.82rem; height: 40px;"
                       >
@@ -318,14 +319,14 @@
                       </button>
                       <button 
                         v-else
-                        @click="$router.push('/inspecciones/' + visita.inspeccion.id)" 
+                        @click.stop="$router.push('/inspecciones/' + visita.inspeccion.id)" 
                         class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 fw-semibold bg-transparent text-primary" 
                         style="border-radius: 10px; font-size: 0.82rem; height: 40px;"
                       >
                         <i class="bi bi-eye"></i> Dictamen
                       </button>
                       <button 
-                        @click="openEdit(visita)" 
+                        @click.stop="openEdit(visita)" 
                         class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center bg-transparent border-secondary text-secondary" 
                         title="Editar / Reprogramar"
                         style="width: 40px; height: 40px; border-radius: 10px;"
@@ -333,7 +334,7 @@
                         <i class="bi bi-pencil"></i>
                       </button>
                       <button 
-                        @click="$router.push('/visitas/' + visita.id)" 
+                        @click.stop="$router.push('/visitas/' + visita.id)" 
                         class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center bg-transparent border-secondary text-secondary" 
                         title="Ver Detalle"
                         style="width: 40px; height: 40px; border-radius: 10px;"
@@ -342,7 +343,7 @@
                       </button>
                       <button 
                         v-if="visita.estado !== 'cancelada'"
-                        @click="cancelar(visita)" 
+                        @click.stop="cancelar(visita)" 
                         class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center bg-transparent border-danger text-danger" 
                         title="Cancelar Visita"
                         style="width: 40px; height: 40px; border-radius: 10px;"

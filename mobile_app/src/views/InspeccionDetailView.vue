@@ -249,8 +249,13 @@ export default {
           };
         } else {
           const url = URL.createObjectURL(blob);
-          window.open(url, '_blank');
-          setTimeout(() => URL.revokeObjectURL(url), 10000);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(url), 15000);
         }
       } catch (e) {
         this.errorMsg = e.message || 'No se pudo abrir el PDF.';

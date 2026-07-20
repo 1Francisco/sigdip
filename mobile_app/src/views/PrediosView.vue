@@ -36,7 +36,7 @@
         </div>
 
         <div class="mobile-cards-grid">
-          <article v-for="predio in paginatedPredios" :key="predio.id" class="predio-mobile-card shadow-sm">
+          <article v-for="predio in paginatedPredios" :key="predio.id" class="predio-mobile-card shadow-sm" style="cursor: pointer;" @click="$router.push('/predios/' + predio.id)">
             <div class="predio-content">
               <div class="field-block">
                 <span class="field-label">RANCHO</span>
@@ -61,10 +61,7 @@
 
             <div class="predio-mobile-footer">
               <span class="footer-actions-label">Acciones</span>
-              <button class="btn-icon-square-gray" @click="$router.push('/predios/' + predio.id)" title="Ver predio">
-                <i class="bi bi-eye"></i>
-              </button>
-              <button class="btn-icon-square-gray" @click="editPredio(predio)" title="Editar predio">
+              <button class="btn-icon-square-gray" @click.stop="editPredio(predio)" title="Editar predio">
                 <i class="bi bi-pencil"></i>
               </button>
             </div>

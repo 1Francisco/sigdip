@@ -270,7 +270,7 @@
                         </thead>
                         <tbody>
                             @foreach($detalleMedico as $ins)
-                            <tr>
+                            <tr style="cursor: pointer;" onclick="window.location.href='{{ route('inspecciones.show', $ins->id) }}'">
                                 <td data-label="Fecha">{{ $ins->fecha?->format('d/m/Y') }}</td>
                                 <td data-label="Folio">
                                     @if(empty($ins->folio) || $ins->folio === $ins->clave_interna)

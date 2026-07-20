@@ -44,6 +44,10 @@
 @section('content')
 @php
     $rows = collect($rows);
+    $yearsArray = $years->values()->toArray();
+    $currentIdx = array_search((int) $year, $yearsArray);
+    $prevYear = $currentIdx !== false && $currentIdx < count($yearsArray) - 1 ? $yearsArray[$currentIdx + 1] : null;
+    $nextYear = $currentIdx !== false && $currentIdx > 0 ? $yearsArray[$currentIdx - 1] : null;
 @endphp
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body bg-light border-bottom py-3 px-4">
@@ -228,6 +232,20 @@
                 </tbody>
             </table>
         </div>
+    </div>
+    <div class="card-footer bg-white py-3 d-flex justify-content-between align-items-center">
+        <a href="{{ $prevYear ? route('reportes.rendimiento.mensual', array_merge(request()->query(), ['year' => $prevYear])) : '#' }}"
+           class="btn btn-outline-primary rounded-3 px-3 d-flex align-items-center gap-2 {{ !$prevYear ? 'disabled' : '' }}">
+            <i class="bi bi-chevron-left"></i> {{ $prevYear ?? '' }}
+        </a>
+        <div class="text-center">
+            <div class="fw-bold fs-6 text-dark">{{ $year }}</div>
+            <small class="text-secondary">{{ count($yearsArray) }} años disponibles</small>
+        </div>
+        <a href="{{ $nextYear ? route('reportes.rendimiento.mensual', array_merge(request()->query(), ['year' => $nextYear])) : '#' }}"
+           class="btn btn-outline-primary rounded-3 px-3 d-flex align-items-center gap-2 {{ !$nextYear ? 'disabled' : '' }}">
+            {{ $nextYear ?? '' }} <i class="bi bi-chevron-right"></i>
+        </a>
     </div>
 </div>
 @endsection

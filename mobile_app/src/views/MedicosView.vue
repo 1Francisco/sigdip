@@ -140,7 +140,7 @@
             <!-- 2. MOBILE CARDS VIEW (Mobile only) -->
             <div class="mobile-cards d-lg-none">
               <div class="mobile-cards-grid">
-                <article v-for="medico in paginatedMedicos" :key="medico.id" class="medico-mobile-card shadow-sm">
+                <article v-for="medico in paginatedMedicos" :key="medico.id" class="medico-mobile-card shadow-sm" style="cursor: pointer;" @click="$router.push('/medicos/editar/' + medico.id)">
                   <div class="medico-content">
                     <div class="field-block">
                       <span class="field-label">MÉDICO VERIFICADOR</span>
@@ -168,21 +168,21 @@
                     <span class="footer-actions-label">Acciones</span>
                     <div class="d-flex gap-2">
                       <button 
-                        @click="$router.push('/medicos/asignar/' + medico.id)" 
+                        @click.stop="$router.push('/medicos/asignar/' + medico.id)" 
                         class="btn-icon-square-green" 
                         title="Asignar productores"
                       >
                         <i class="bi bi-person-plus"></i>
                       </button>
                       <button 
-                        @click="$router.push('/medicos/editar/' + medico.id)" 
+                        @click.stop="$router.push('/medicos/editar/' + medico.id)" 
                         class="btn-icon-square-blue" 
                         title="Editar médico"
                       >
                         <i class="bi bi-pencil"></i>
                       </button>
                       <button 
-                        @click="deleteMedico(medico)" 
+                        @click.stop="deleteMedico(medico)" 
                         class="btn-icon-square-red" 
                         title="Eliminar médico"
                       >

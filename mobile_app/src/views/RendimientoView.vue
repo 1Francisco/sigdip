@@ -219,7 +219,7 @@
                        </tr>
                      </thead>
                      <tbody>
-                       <tr v-for="ins in detalleMedico" :key="ins.id">
+                        <tr v-for="ins in detalleMedico" :key="ins.id" style="cursor: pointer;" @click="$router.push('/inspecciones/' + ins.id)">
                          <td>{{ formatDate(ins.fecha) }}</td>
                          <td>
                            <span v-if="!ins.folio || ins.folio === ins.clave_interna" class="text-muted fst-italic">{{ ins.clave_interna || '—' }}</span>
@@ -333,6 +333,18 @@
               </div>
             </div>
           </div>
+          <div v-if="mensualRows.length > 0" class="d-flex justify-content-between align-items-center p-3 bg-white border-top rounded-bottom">
+            <button class="pagination-custom-btn prev-btn d-flex align-items-center justify-content-center gap-2 px-3 py-2" :disabled="!prevYear" @click="prevYearNav">
+              <i class="bi bi-chevron-left"></i> <span class="d-none d-sm-inline">{{ prevYear }}</span>
+            </button>
+            <div class="text-center">
+              <div class="fw-bold fs-6 text-dark">{{ currentYearLabel }}</div>
+              <small class="text-secondary">{{ totalYearsAvailable }} años disponibles</small>
+            </div>
+            <button class="pagination-custom-btn next-btn d-flex align-items-center justify-content-center gap-2 px-3 py-2" :disabled="!nextYear" @click="nextYearNav">
+              <span class="d-none d-sm-inline">{{ nextYear }}</span> <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -422,6 +434,27 @@ export default {
     },
     totalReactoresPCCMensual() {
       return this.mensualRows.reduce((sum, r) => sum + (r.reactores_pcc || 0), 0);
+    },
+    availableYears() {
+      return this.filterOptions.years || [];
+    },
+    currentYearIndex() {
+      const y = this.filterParams.year || this.selectedYear;
+      return this.availableYears.indexOf(y);
+    },
+    prevYear() {
+      const idx = this.currentYearIndex;
+      return idx >= 0 && idx < this.availableYears.length - 1 ? this.availableYears[idx + 1] : null;
+    },
+    nextYear() {
+      const idx = this.currentYearIndex;
+      return idx > 0 ? this.availableYears[idx - 1] : null;
+    },
+    currentYearLabel() {
+      return this.filterParams.year || this.selectedYear || this.availableYears[0] || '';
+    },
+    totalYearsAvailable() {
+      return this.availableYears.length;
     }
   },
   created() {
@@ -480,6 +513,18 @@ export default {
       };
       this.detalleMedico = null;
       this.fetchData();
+    },
+    prevYearNav() {
+      if (this.prevYear) {
+        this.filterParams.year = this.prevYear;
+        this.fetchData();
+      }
+    },
+    nextYearNav() {
+      if (this.nextYear) {
+        this.filterParams.year = this.nextYear;
+        this.fetchData();
+      }
     },
     formatMonthName(mesStr) {
       if (!mesStr) return '';
@@ -770,5 +815,37 @@ export default {
 }
 .table-tendencia-mensual {
   min-width: 800px;
+}
+/* Year Navigation */
+.pagination-custom-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  border: none;
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+.pagination-custom-btn:hover:not(:disabled) {
+  background-color: #e2e8f0;
+}
+.pagination-custom-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.next-btn {
+  background-color: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #2563eb;
+}
+.next-btn:hover:not(:disabled) {
+  background-color: #eff6ff;
+  border-color: #2563eb;
 }
 </style>

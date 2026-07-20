@@ -170,14 +170,15 @@
                   v-for="inspeccion in paginatedInspecciones" 
                   :key="inspeccion.id" 
                   class="producer-mobile-card shadow-sm mb-3 position-relative"
-                  style="border-left-color: #2563eb;"
+                  style="border-left-color: #2563eb; cursor: pointer;"
+                  @click="viewInspeccion(inspeccion)"
                 >
                 <div class="card-fields-box">
                   <!-- Folio Field -->
                   <div class="card-field">
                     <span class="field-label">FOLIO</span>
                     <span class="field-value producer-name-bold text-secondary fst-italic" v-if="isBorrador(inspeccion)">{{ inspeccion.clave_interna || inspeccion.folio || 'Sin Folio (Borrador)' }}</span>
-                    <span class="field-value producer-name-bold text-primary" v-else @click="viewInspeccion(inspeccion)">{{ inspeccion.clave_interna || inspeccion.folio }}</span>
+                    <span class="field-value producer-name-bold text-primary" v-else @click.stop="viewInspeccion(inspeccion)">{{ inspeccion.clave_interna || inspeccion.folio }}</span>
                   </div>
 
                   <!-- Fecha Field -->
@@ -221,7 +222,7 @@
                   <div class="d-flex gap-2">
                     <button 
                       v-if="isBorrador(inspeccion) || isAdmin"
-                      @click="editInspeccion(inspeccion)" 
+                      @click.stop="editInspeccion(inspeccion)" 
                       class="btn btn-sm btn-primary d-flex align-items-center justify-content-center" 
                       title="Editar / Finalizar"
                       style="width: 44px; height: 44px; border-radius: 12px; background: #2563eb;"
@@ -230,7 +231,7 @@
                     </button>
                     <button 
                       v-if="!inspeccion.__localDraft"
-                      @click="openPdf(inspeccion)" 
+                      @click.stop="openPdf(inspeccion)" 
                       class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center bg-transparent border-danger text-danger" 
                       title="Ver PDF"
                       style="width: 44px; height: 44px; border-radius: 12px;"
@@ -239,7 +240,7 @@
                     </button>
                     <button 
                       v-if="!inspeccion.__localDraft"
-                      @click="viewInspeccion(inspeccion)" 
+                      @click.stop="viewInspeccion(inspeccion)" 
                       class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center bg-transparent border-primary text-primary" 
                       title="Detalles"
                       style="width: 44px; height: 44px; border-radius: 12px;"
@@ -287,6 +288,16 @@
       </div>
     </PullToRefresh>
   </AppLayout>
+
+  <div v-if="showDownloadModal" class="download-modal-overlay" @click="showDownloadModal = false">
+    <div class="download-modal-card" @click.stop>
+      <div class="download-modal-icon">
+        <i :class="downloadModalSuccess ? 'bi bi-check-circle-fill text-success' : 'bi bi-exclamation-circle-fill text-danger'" style="font-size: 3rem;"></i>
+      </div>
+      <p class="download-modal-message">{{ downloadModalMessage }}</p>
+      <button class="btn btn-primary px-4 rounded-3" @click="showDownloadModal = false">Cerrar</button>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -295,10 +306,7 @@ import PullToRefresh from '../components/PullToRefresh.vue';
 import api from '../services/api.js';
 import db from '../services/db.js';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { App } from '@capacitor/app';
-import { Share } from '@capacitor/share';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { Dialog } from '@capacitor/dialog';
 import { FileOpener } from '@capacitor-community/file-opener';
 
 export default {
@@ -323,7 +331,10 @@ export default {
         fecha_desde: '',
         fecha_hasta: '',
         estado: ''
-      }
+      },
+      showDownloadModal: false,
+      downloadModalMessage: '',
+      downloadModalSuccess: true
     };
   },
   computed: {
@@ -403,10 +414,13 @@ export default {
       this.$router.replace({ query: {} });
       this.downloadSábana();
     }
+
+    LocalNotifications.addListener('localNotificationActionPerformed', this._onNotificationPerformed).then(l => this._notificationListener = l);
   },
   beforeUnmount() {
     window.removeEventListener('online', this._onWindowOnline);
     window.removeEventListener('offline', this._onWindowOffline);
+    this._notificationListener?.remove();
   },
   methods: {
     async loadAll() {
@@ -582,7 +596,6 @@ export default {
                 recursive: true
               });
               // Also save to public Downloads folder (Android)
-              let downloadSaved = false;
               try {
                 await Filesystem.writeFile({
                   path: fileName,
@@ -590,13 +603,12 @@ export default {
                   directory: Directory.Downloads,
                   recursive: true
                 });
-                downloadSaved = true;
-                this.successMsg = `PDF guardado en Descargas del dispositivo.`;
+                this.showModal(true, 'PDF descargado exitosamente en Descargas.');
               } catch (_) {
-                this.successMsg = `PDF guardado en Documentos: ${fileName}`;
+                this.showModal(true, 'PDF descargado exitosamente en Documentos.');
               }
 
-              // Programar notificación de descarga completa
+               // Programar notificación de descarga completa
               try {
                 const permission = await LocalNotifications.checkPermissions();
                 if (permission.display !== 'granted') {
@@ -611,7 +623,8 @@ export default {
                       sound: true,
                       extra: {
                         uri: result.uri,
-                        filename: fileName
+                        filename: fileName,
+                        contentType: 'application/pdf'
                       }
                     }
                   ]
@@ -619,46 +632,24 @@ export default {
               } catch (notiErr) {
                 console.warn('Error scheduling local notification:', notiErr);
               }
-
-               // Preguntar al usuario qué desea hacer
-              const resultDialog = await Dialog.confirm({
-                title: 'Descarga completada',
-                message: `"${fileName}" guardado.\n\n¿Abrir archivo para leerlo?`,
-                okButtonTitle: 'Ver',
-                cancelButtonTitle: 'Compartir'
-              });
-              if (resultDialog.value) {
-                try {
-                  const cacheName = `view_${Date.now()}_${fileName}`;
-                  await Filesystem.writeFile({ path: cacheName, data: base64data, directory: Directory.Cache });
-                  const { uri } = await Filesystem.getUri({ path: cacheName, directory: Directory.Cache });
-                  await FileOpener.open({ filePath: uri, contentType: 'application/pdf' });
-                } catch (openErr) {
-                  console.warn('Error al abrir el archivo:', openErr);
-                }
-              } else {
-                try {
-                  await Share.share({
-                    title: fileName,
-                    url: result.uri,
-                    dialogTitle: `Compartir ${fileName}`
-                  });
-                } catch (shareErr) {
-                  console.warn('Error al compartir archivo:', shareErr);
-                }
-              }
             } catch (err) {
               console.error('Error saving PDF native:', err);
-              this.errorMsg = 'No se pudo guardar el PDF en el dispositivo: ' + err.message;
+              this.showModal(false, 'No se pudo guardar el PDF: ' + err.message);
             }
           };
         } else {
           const url = URL.createObjectURL(blob);
-          window.open(url, '_blank');
-          setTimeout(() => URL.revokeObjectURL(url), 10000);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(url), 15000);
+          this.showModal(true, 'PDF descargado con éxito.');
         }
       } catch (e) {
-        this.errorMsg = e.message || 'No se pudo abrir el PDF.';
+        this.showModal(false, e.message || 'No se pudo abrir el PDF.');
       }
     },
     async downloadSábana() {
@@ -683,7 +674,6 @@ export default {
                 recursive: true
               });
               // Also save to public Downloads folder (Android)
-              let downloadSaved = false;
               try {
                 await Filesystem.writeFile({
                   path: fileName,
@@ -691,13 +681,12 @@ export default {
                   directory: Directory.Downloads,
                   recursive: true
                 });
-                downloadSaved = true;
-                this.successMsg = `Sábana Excel guardada con éxito en Descargas del dispositivo.`;
+                this.showModal(true, 'Sábana Excel descargada exitosamente en Descargas.');
               } catch (_) {
-                this.successMsg = `Sábana Excel guardada con éxito en Documentos: ${fileName}`;
+                this.showModal(true, 'Sábana Excel descargada exitosamente en Documentos.');
               }
 
-              // Programar notificación de descarga completa
+               // Programar notificación de descarga completa
               try {
                 const permission = await LocalNotifications.checkPermissions();
                 if (permission.display !== 'granted') {
@@ -712,7 +701,8 @@ export default {
                       sound: true,
                       extra: {
                         uri: result.uri,
-                        filename: fileName
+                        filename: fileName,
+                        contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                       }
                     }
                   ]
@@ -720,45 +710,9 @@ export default {
               } catch (notiErr) {
                 console.warn('Error scheduling local notification:', notiErr);
               }
-
-              // Alerta
-              if (downloadSaved) {
-                await Dialog.alert({ title: 'Descarga completada', message: `El archivo "${fileName}" se guardó en la carpeta de Descargas de tu teléfono.` });
-              } else {
-                await Dialog.alert({ title: 'Descarga completada', message: `El archivo "${fileName}" se guardó en los Documentos de tu teléfono.` });
-              }
-
-              // Preguntar al usuario qué desea hacer
-              const resultDialog = await Dialog.confirm({
-                title: 'Descarga completada',
-                message: `"${fileName}" guardado.\n\n¿Abrir archivo para leerlo?`,
-                okButtonTitle: 'Ver',
-                cancelButtonTitle: 'Compartir'
-              });
-              if (resultDialog.value) {
-                try {
-                  const cacheName = `view_${Date.now()}_${fileName}`;
-                  await Filesystem.writeFile({ path: cacheName, data: base64data, directory: Directory.Cache });
-                  const { uri } = await Filesystem.getUri({ path: cacheName, directory: Directory.Cache });
-                  const contentType = fileName.endsWith('.xlsx') ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf';
-                  await FileOpener.open({ filePath: uri, contentType });
-                } catch (openErr) {
-                  console.warn('Error al abrir el archivo:', openErr);
-                }
-              } else {
-                try {
-                  await Share.share({
-                    title: fileName,
-                    url: result.uri,
-                    dialogTitle: `Compartir ${fileName}`
-                  });
-                } catch (shareErr) {
-                  console.warn('Error al compartir archivo:', shareErr);
-                }
-              }
             } catch (err) {
               console.error('Error saving file native:', err);
-              this.errorMsg = 'No se pudo guardar el archivo en el dispositivo móvil: ' + err.message;
+              this.showModal(false, 'No se pudo guardar el archivo: ' + err.message);
             } finally {
               this.loading = false;
             }
@@ -773,12 +727,38 @@ export default {
           link.click();
           document.body.removeChild(link);
           setTimeout(() => URL.revokeObjectURL(url), 15000);
-          this.successMsg = 'Sábana Excel descargada con éxito.';
+          this.showModal(true, 'Sábana Excel descargada con éxito.');
           this.loading = false;
         }
       } catch (e) {
-        this.errorMsg = e.message || 'No se pudo descargar la sábana Excel.';
+        this.showModal(false, e.message || 'No se pudo descargar la sábana Excel.');
         this.loading = false;
+      }
+    },
+    async _onNotificationPerformed(event) {
+      const data = event?.notification?.extra;
+      if (!data?.filename) return;
+      const cacheName = `view_${Date.now()}_${data.filename}`;
+      try {
+        const { data: fileData } = await Filesystem.readFile({
+          path: data.filename,
+          directory: Directory.Documents
+        });
+        await Filesystem.writeFile({
+          path: cacheName,
+          data: fileData,
+          directory: Directory.Cache
+        });
+        const { uri } = await Filesystem.getUri({
+          path: cacheName,
+          directory: Directory.Cache
+        });
+        await FileOpener.open({
+          filePath: uri,
+          contentType: data.contentType || 'application/pdf'
+        });
+      } catch (err) {
+        console.warn('Error al abrir archivo desde notificación:', err);
       }
     },
     getLocalPredioName(predioId) {
@@ -794,6 +774,11 @@ export default {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
       }
+    },
+    showModal(success, message) {
+      this.downloadModalSuccess = success;
+      this.downloadModalMessage = message;
+      this.showDownloadModal = true;
     }
   }
 };
@@ -1384,5 +1369,39 @@ export default {
     display: flex;
     justify-content: center;
   }
+}
+
+/* Download Modal */
+.download-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.download-modal-card {
+  background: white;
+  border-radius: 20px;
+  padding: 32px 28px 24px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.download-modal-icon {
+  margin-bottom: 16px;
+}
+
+.download-modal-message {
+  font-size: 1rem;
+  color: #1e293b;
+  margin-bottom: 24px;
+  font-weight: 500;
+  line-height: 1.4;
 }
 </style>

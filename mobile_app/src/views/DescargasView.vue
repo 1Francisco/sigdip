@@ -315,7 +315,19 @@ export default {
       if (file.isNative) {
         await this.openNativeFile(file);
       } else {
-        window.open(file.uri || file.name, '_blank');
+        // En la web, descargar el archivo si tiene un URI real o alertar si es simulado
+        if (file.uri) {
+          const link = document.createElement('a');
+          link.href = file.uri;
+          link.download = file.name;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          this.successMsg = `Archivo "${file.name}" descargado con éxito.`;
+        } else {
+          // Si no tiene URI, es un archivo simulado (mock) de desarrollo
+          alert(`Este es un archivo simulado para demostración ("${file.name}"). Para exportar y abrir reportes reales, utiliza las opciones de descarga en las secciones de "Dictámenes" o "Rendimiento".`);
+        }
       }
     },
 
@@ -338,8 +350,7 @@ export default {
     async openNativeFile(file) {
       try {
         if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
-          const uri = (await Filesystem.getUri({ path: file.name, directory: Directory.Documents })).uri;
-          window.open(uri, '_blank');
+          alert(`Este es un archivo simulado para demostración ("${file.name}").`);
           return;
         }
         const contentType = this.getContentType(file.name);

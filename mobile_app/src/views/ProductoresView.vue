@@ -120,6 +120,8 @@
                   v-for="p in paginatedProductores" 
                   :key="p.id" 
                   class="producer-mobile-card shadow-sm mb-3 position-relative"
+                  style="cursor: pointer;"
+                  @click="$router.push('/productores/' + p.id)"
                 >
                 <!-- Productor Field -->
                 <div class="card-field">
@@ -149,9 +151,9 @@
                 <!-- Predios Field -->
                 <div class="card-field">
                   <span class="field-label">Predios</span>
-                  <span class="field-value text-primary-link" @click="openRanchoModal(p)">
-                    {{ p.prediosCount }} ranchos
-                  </span>
+                    <span class="field-value text-primary-link" @click.stop="openRanchoModal(p)">
+                      {{ p.prediosCount }} ranchos
+                    </span>
                 </div>
 
                 <!-- Actions Footer -->
@@ -159,21 +161,21 @@
                   <div class="footer-actions-label">Acciones</div>
                   <div class="d-flex gap-2">
                     <button 
-                      @click="openRanchoModal(p)" 
+                      @click.stop="openRanchoModal(p)" 
                       class="btn-icon-square-blue" 
                       title="Añadir Rancho"
                     >
                       <i class="bi bi-house-add"></i>
                     </button>
                     <button 
-                      @click="$router.push('/productores/editar/' + p.id)" 
+                      @click.stop="$router.push('/productores/editar/' + p.id)" 
                       class="btn-icon-square-gray" 
                       title="Editar Productor"
                     >
                       <i class="bi bi-pencil"></i>
                     </button>
                     <button 
-                      @click="$router.push('/productores/' + p.id)" 
+                      @click.stop="$router.push('/productores/' + p.id)" 
                       class="btn-icon-square-gray" 
                       title="Ver Productor"
                     >
