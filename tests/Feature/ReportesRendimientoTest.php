@@ -169,7 +169,7 @@ class ReportesRendimientoTest extends TestCase
             ->get(route('reportes.rendimiento', ['medico_id' => $medico->id]))
             ->assertStatus(200);
 
-        $response->assertSee('Últimas inspecciones');
+        $response->assertSee('Últimas lecturas');
     }
 
     public function test_rendimiento_excel_with_filters()
