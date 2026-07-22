@@ -1,5 +1,7 @@
 <template>
-  <router-view />
+  <keep-alive :include="keepAliveViews">
+    <router-view />
+  </keep-alive>
 </template>
 
 <script>
@@ -12,6 +14,23 @@ import { Share } from '@capacitor/share';
 
 export default {
   name: 'App',
+  data() {
+    return {
+      keepAliveViews: [
+        'DashboardView',
+        'InspeccionesView',
+        'ProductoresView',
+        'PrediosView',
+        'VisitasView',
+        'MedicosView',
+        'RendimientoView',
+        'DescargasView',
+        'SyncView',
+        'AnimalesListView',
+        'AretesCensoListView',
+      ],
+    };
+  },
   async mounted() {
     // 1. Asegurar que la sesión actual esté cacheada para login offline
     api.ensureOfflineCache();

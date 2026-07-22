@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\Predio;
 use App\Models\Productor;

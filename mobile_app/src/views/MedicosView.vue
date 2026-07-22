@@ -5,7 +5,7 @@
       <div class="welcome-header mb-4 text-start d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
         <div>
           <h2 class="h4 fw-bold mb-1 text-dark">Médicos Verificadores</h2>
-          <p class="text-secondary small mb-0">Administra el personal autorizado para realizar inspecciones</p>
+          <p class="text-secondary small mb-0">Administra el personal autorizado para realizar lecturas</p>
         </div>
         
         <!-- Web Badges -->

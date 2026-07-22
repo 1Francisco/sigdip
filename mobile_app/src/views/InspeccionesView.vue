@@ -4,7 +4,7 @@
       <!-- Top Action Bar (Premium Web Replica) -->
       <div class="welcome-header mb-4 text-start d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
         <div>
-          <h2 class="h4 fw-bold mb-1 text-dark">Inspecciones Pecuarias</h2>
+          <h2 class="h4 fw-bold mb-1 text-dark">Lecturas Pecuarias</h2>
           <p class="text-secondary small mb-0">Historial de registros and seguimiento</p>
         </div>
         
@@ -75,11 +75,11 @@
           <!-- Empty State -->
           <div v-if="!loading && inspecciones.length === 0" class="text-center p-5 text-muted">
             <i class="bi bi-clipboard-x display-6 d-block mb-2 text-muted"></i>
-            <p class="mb-0 small text-secondary">No hay inspecciones para mostrar</p>
+            <p class="mb-0 small text-secondary">No hay lecturas para mostrar</p>
           </div>
           <div v-else-if="!loading && inspeccionesFiltradas.length === 0" class="text-center p-5 text-muted">
             <i class="bi bi-search display-6 d-block mb-2 text-muted"></i>
-            <p class="mb-0 small text-secondary">No hay inspecciones que coincidan con los filtros</p>
+            <p class="mb-0 small text-secondary">No hay lecturas que coincidan con los filtros</p>
             <button @click="limpiarFiltros" class="btn btn-sm btn-outline-secondary rounded-pill px-3 mt-3">
               <i class="bi bi-x-lg"></i> Limpiar filtros
             </button>
@@ -500,7 +500,7 @@ export default {
         }
       } catch (e) {
         if (this.inspecciones.length === 0) {
-          this.errorMsg = 'No se pudieron cargar las inspecciones.';
+          this.errorMsg = 'No se pudieron cargar las lecturas.';
         }
       } finally {
         this.loading = false;

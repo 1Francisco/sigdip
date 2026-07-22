@@ -10,7 +10,6 @@ use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
 use App\Models\Visita;
-use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -125,7 +124,7 @@ class ModelTest extends TestCase
 
     // --- Auto-zona desde clave_cuarentena ---
 
-    public function test_auto_deriva_zona_A_desde_clave_AD()
+    public function test_auto_deriva_zona_a_desde_clave_ad()
     {
         $productor = Productor::create([
             'nombre' => 'Test',
@@ -138,7 +137,7 @@ class ModelTest extends TestCase
         $this->assertEquals('A', $productor->zona);
     }
 
-    public function test_auto_deriva_zona_B_desde_clave_BD()
+    public function test_auto_deriva_zona_b_desde_clave_bd()
     {
         $productor = Productor::create([
             'nombre' => 'Test',

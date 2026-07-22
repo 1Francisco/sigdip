@@ -98,7 +98,7 @@
           </div>
           <h5 class="fw-bold text-dark mb-2">{{ searchQuery ? 'Sin resultados' : 'No hay descargas' }}</h5>
           <p class="text-secondary mb-4 px-2">
-            {{ searchQuery ? 'No se encontraron archivos que coincidan con tu búsqueda.' : 'Descarga dictámenes en PDF o la sábana Excel desde la sección de Inspecciones para verlos aquí.' }}
+            {{ searchQuery ? 'No se encontraron archivos que coincidan con tu búsqueda.' : 'Descarga dictámenes en PDF o la sábana Excel desde la sección de Lecturas para verlos aquí.' }}
           </p>
           <button 
             v-if="!searchQuery"

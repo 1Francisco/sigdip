@@ -126,16 +126,24 @@ class PredioController extends Controller
             ->with('success', 'Datos del predio actualizados.');
     }
 
-    public function show(Predio $predio)
+    public function show(Request $request, Predio $predio)
     {
         $user = auth()->user();
         if ($user && ! $user->hasRole('Administrador') && $predio->productor->medico_id !== $user->id) {
             abort(403, 'No tienes permiso para ver este predio.');
         }
 
-        $predio->load(['productor', 'animales']);
+        $predio->load('productor');
 
-        return view('predios.show', compact('predio'));
+        $animalSearch = $request->get('animal_search');
+        $animales = $predio->animales()
+            ->when($animalSearch, fn($q) => $q->where(function($q) use ($animalSearch) {
+                $q->where('numero_arete_siniiga', 'like', "%{$animalSearch}%")
+                  ->orWhere('raza', 'like', "%{$animalSearch}%");
+            }))
+            ->paginate(10);
+
+        return view('predios.show', compact('predio', 'animales'));
     }
 
     public function destroy(Predio $predio)

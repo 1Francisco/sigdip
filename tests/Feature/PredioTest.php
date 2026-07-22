@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Animal;
 use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
@@ -118,5 +119,17 @@ class PredioTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee($predioAsignado->nombre_rancho);
         $response->assertDontSee($predioOtro->nombre_rancho);
+    }
+
+    public function test_show_paginates_animals()
+    {
+        $predio = Predio::factory()->create(['productor_id' => $this->productor->id]);
+        Animal::factory()->count(15)->create(['predio_id' => $predio->id]);
+
+        $response = $this->actingAs($this->admin)->get(route('predios.show', $predio));
+
+        $response->assertStatus(200);
+        $response->assertViewHas('animales');
+        $this->assertCount(10, $response->viewData('animales'));
     }
 }

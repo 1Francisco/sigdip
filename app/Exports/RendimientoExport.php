@@ -96,7 +96,7 @@ class RendimientoExport implements FromCollection, ShouldAutoSize, WithHeadings,
         });
 
         return $data->filter(function ($row) {
-            return $row['total_inspecciones'] > 0 || !$this->medicoId || $this->medicoId == $row['user_id'];
+            return $row['total_inspecciones'] > 0 || ! $this->medicoId || $this->medicoId == $row['user_id'];
         })->map(function ($row) {
             return [
                 $row['name'],

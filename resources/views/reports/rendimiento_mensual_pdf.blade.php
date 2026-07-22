@@ -26,14 +26,14 @@
     </div>
 
     <h1>Rendimiento Mensual {{ $year }}</h1>
-    <p class="subtitle">Sistema Integral de Gestión de Dictámenes de Inspección Pecuaria</p>
+    <p class="subtitle">Sistema Integral de Gestión de Dictámenes de Lectura Pecuaria</p>
 
     <table>
         <thead>
             <tr>
                 <th class="text-left">Médico</th>
                 <th>Mes</th>
-                <th>Inspecciones</th>
+                <th>Lecturas</th>
                 <th>PPC</th>
                 <th>PCC</th>
                 <th>Predios</th>

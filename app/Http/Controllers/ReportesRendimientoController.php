@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Visita;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
@@ -154,7 +155,7 @@ class ReportesRendimientoController extends Controller
         return $pdf->download("rendimiento_mensual_{$year}.pdf");
     }
 
-    private function getMensualData($year, $medicoId, $zona, $estado): \Illuminate\Support\Collection
+    private function getMensualData($year, $medicoId, $zona, $estado): Collection
     {
         $medicos = User::role('Medico_Campo')->orderBy('name')->get();
         $driver = DB::connection()->getDriverName();

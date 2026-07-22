@@ -4,7 +4,7 @@
       <!-- Welcome Header -->
       <div class="welcome-header mb-4 text-start">
         <h2 class="h4 fw-bold mb-1">{{ isAdmin ? 'Resumen Administrativo' : 'Dashboard' }}</h2>
-        <p class="text-secondary small mb-0">{{ isAdmin ? 'Estado actual de las inspecciones pecuarias' : ('Bienvenido, ' + userName) }}</p>
+        <p class="text-secondary small mb-0">{{ isAdmin ? 'Estado actual de las lecturas pecuarias' : ('Bienvenido, ' + userName) }}</p>
       </div>
 
       <!-- Offline Cache Warning for Admin -->
@@ -26,7 +26,7 @@
               <div class="decor-icon-white">
                 <i class="bi bi-clipboard-data"></i>
               </div>
-              <h6 class="text-white-50 small text-uppercase fw-bold ls-wide text-start mb-1">TOTAL INSPECCIONES</h6>
+              <h6 class="text-white-50 small text-uppercase fw-bold ls-wide text-start mb-1">TOTAL LECTURAS</h6>
               <h2 class="display-6 fw-bold mb-0 text-start text-white">{{ adminStats.totalInspecciones }}</h2>
             </div>
           </div>
@@ -53,7 +53,7 @@
         <div class="row g-4 mb-4">
           <div class="col-12 col-lg-8">
             <ChartCard
-              title="Inspecciones por Localidad"
+              title="Lecturas por Localidad"
               type="bar"
               iconClass="bi bi-bar-chart-fill"
               :height="280"
@@ -142,7 +142,7 @@
           </div>
           <div class="small-stat-card shadow-sm">
             <div class="value">{{ totalInspeccionesDoc }}</div>
-            <div class="label">Mis Inspecciones</div>
+            <div class="label">Mis Lecturas</div>
           </div>
           <div class="small-stat-card shadow-sm">
             <div class="value">{{ totalAnimalesDoc }}</div>
@@ -519,7 +519,7 @@ export default {
     },
     chartLocalidadesDatasets() {
       return [{
-        label: 'Inspecciones',
+        label: 'Lecturas',
         data: (this.adminStats.inspeccionesPorLocalidad || []).map(item => item.total),
         backgroundColor: '#2563eb',
         borderRadius: 8,

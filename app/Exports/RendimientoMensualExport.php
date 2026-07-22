@@ -138,7 +138,7 @@ class RendimientoMensualExport implements FromCollection, ShouldAutoSize, WithHe
         $export = collect();
         foreach ($rows as $row) {
             $parts = explode('-', $row->mes);
-            $mesNombre = Carbon::createFromFormat('Y-m-d', $row->mes . '-01')->locale('es')->translatedFormat('F Y');
+            $mesNombre = Carbon::createFromFormat('Y-m-d', $row->mes.'-01')->locale('es')->translatedFormat('F Y');
 
             $export->push([
                 'medico' => $row->medico_nombre,

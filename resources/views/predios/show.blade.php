@@ -57,14 +57,22 @@
     <div class="col-lg-6">
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold">Animales ({{ $predio->animales->count() }})</h5>
+                <h5 class="mb-0 fw-bold">Animales ({{ $animales->total() }})</h5>
                 <a href="{{ route('inspecciones.create', ['predio_id' => $predio->id]) }}" class="btn btn-sm btn-success">
                     <i class="bi bi-file-text"></i> Nuevo Dictamen
                 </a>
             </div>
-            <div class="card-body p-0">
-                @if ($predio->animales->count() > 0)
-                <div class="table-responsive">
+        <div class="card-body p-0">
+            <form method="GET" class="input-group input-group-sm p-3 pb-0">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" name="animal_search" class="form-control border-start-0" placeholder="Buscar por arete o raza..." value="{{ request('animal_search') }}">
+                <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+                @if(request('animal_search'))
+                    <a href="{{ route('predios.show', $predio->id) }}" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></a>
+                @endif
+            </form>
+            @if ($animales->total() > 0)
+            <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="bg-light">
                             <tr>
@@ -75,7 +83,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($predio->animales as $animal)
+                            @foreach ($animales as $animal)
                             <tr>
                                 <td><code>{{ $animal->numero_arete_siniiga }}</code></td>
                                 <td>{{ $animal->raza }}</td>
@@ -93,6 +101,11 @@
                 </div>
                 @endif
             </div>
+            @if ($animales->total() > 0)
+            <div class="card-footer bg-white py-3">
+                {{ $animales->links() }}
+            </div>
+            @endif
         </div>
     </div>
 </div>

@@ -3,14 +3,14 @@
 @section('title', 'Vista Previa del Dictamen')
 @section('header_title', 'Vista Previa Oficial')
 @section('header_subtitle', $inspeccion->clave_interna ?: 'Sin Folio')
-@section('back_url', route('inspecciones.index'))
+@section('back_url', request()->headers->get('referer', route('inspecciones.index')))
 
 @section('content')
 <div class="row justify-content-center">
     <div class="col-lg-11">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <a href="{{ route('inspecciones.index') }}" class="btn btn-light shadow-sm">
-                <i class="bi bi-arrow-left"></i> Volver al Listado
+            <a href="{{ route('inspecciones.index') }}" class="btn btn-light shadow-sm" onclick="history.back(); return false;">
+                <i class="bi bi-arrow-left"></i> Volver
             </a>
             <div class="d-flex gap-2">
                 <a href="{{ route('reportes.pdf', $inspeccion->id) }}" class="btn btn-danger shadow-sm px-4">

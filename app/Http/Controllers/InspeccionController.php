@@ -104,6 +104,15 @@ class InspeccionController extends Controller
         $selected_productor_id = $request->productor_id ?? ($visita ? $visita->predio->productor_id : null);
         $selected_predio_id = $request->predio_id ?? ($visita ? $visita->predio_id : null);
 
+        if ($selected_predio_id && ! $selected_productor_id) {
+            $predioObj = Predio::with('productor')->find($selected_predio_id);
+            if ($predioObj && $predioObj->productor) {
+                if (! $user || $user->hasRole('Administrador') || $predioObj->productor->medico_id === $user->id) {
+                    $selected_productor_id = $predioObj->productor_id;
+                }
+            }
+        }
+
         $claveInterna = null;
         if ($selected_productor_id) {
             $productor = Productor::find($selected_productor_id);

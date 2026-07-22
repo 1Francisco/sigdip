@@ -2,7 +2,7 @@
   <div class="app-container bg-light">
     <header class="app-header shadow-sm">
       <div class="d-flex align-items-center gap-2">
-        <button class="btn-back" @click="$router.push('/inspecciones')">
+        <button class="btn-back" @click="goBack()">
           <i class="bi bi-arrow-left fs-4 text-white"></i>
         </button>
         <div>
@@ -10,7 +10,7 @@
           <div class="subtitle">{{ inspeccion?.clave_interna || 'Sin folio' }}</div>
         </div>
       </div>
-      <button class="btn-close-form" @click="$router.push('/inspecciones')">
+      <button class="btn-close-form" @click="goBack()">
         <i class="bi bi-x-lg text-white"></i>
       </button>
     </header>
@@ -44,7 +44,7 @@
             <button v-if="inspeccion.estado === 'borrador'" class="btn btn-primary rounded-pill px-3" @click="continueInspection">
               Continuar edición
             </button>
-            <button class="btn btn-outline-secondary rounded-pill px-3" @click="$router.push('/inspecciones')">
+            <button class="btn btn-outline-secondary rounded-pill px-3" @click="goBack()">
               Volver
             </button>
           </div>
@@ -150,6 +150,13 @@ export default {
       if (resultado === 'Positivo') return 'bg-danger text-white';
       if (resultado === 'Sospechoso') return 'bg-warning text-dark';
       return 'bg-success text-white';
+    },
+    goBack() {
+      if (window.history.length > 1) {
+        this.$router.back();
+      } else {
+        this.$router.push('/inspecciones');
+      }
     },
     continueInspection() {
       this.$router.push(`/inspeccion/${this.inspeccion.predio_id}?inspeccion_id=${this.inspeccion.id}${this.inspeccion.visita_id ? `&visita_id=${this.inspeccion.visita_id}` : ''}`);

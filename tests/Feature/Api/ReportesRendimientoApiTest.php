@@ -36,14 +36,14 @@ class ReportesRendimientoApiTest extends TestCase
                 'filters' => [
                     'years',
                     'localidades',
-                    'medicos'
+                    'medicos',
                 ],
                 'kpis' => [
                     'total_inspecciones',
                     'total_visitas',
                     'medicos_activos',
                     'total_animales',
-                    'total_reactores'
+                    'total_reactores',
                 ],
                 'medicosRendimiento',
                 'actividades',
@@ -55,7 +55,7 @@ class ReportesRendimientoApiTest extends TestCase
                 'meses',
                 'mensualRows',
                 'selectedYear',
-                'detalleMedico'
+                'detalleMedico',
             ]);
     }
 

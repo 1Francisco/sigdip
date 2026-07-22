@@ -2,7 +2,7 @@
 
 @section('title', 'Dashboard Administrativo')
 @section('header_title', 'Resumen Administrativo')
-@section('header_subtitle', 'Estado actual de las inspecciones pecuarias')
+@section('header_subtitle', 'Estado actual de las lecturas pecuarias')
 
 @section('content')
 @if($isAdmin)
@@ -15,7 +15,7 @@
             <div class="position-absolute end-0 bottom-0 opacity-10" style="font-size: 5rem; transform: translate(20%, 20%)">
                 <i class="bi bi-clipboard-data"></i>
             </div>
-            <h6 class="text-white-50 small text-uppercase fw-bold ls-wide">Total Inspecciones</h6>
+            <h6 class="text-white-50 small text-uppercase fw-bold ls-wide">Total Lecturas</h6>
             <h2 class="display-5 fw-bold mb-0">{{ $totalInspecciones }}</h2>
         </div>
     </div>
@@ -40,7 +40,7 @@
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Inspecciones por Localidad</span>
+                <span>Lecturas por Localidad</span>
                 <i class="bi bi-three-dots text-secondary"></i>
             </div>
             <div class="card-body">
@@ -139,7 +139,7 @@
             <div class="card p-4 border-0 shadow-sm text-center bg-primary text-white h-100 hover-lift">
                 <i class="bi bi-file-earmark-plus-fill display-4 mb-3"></i>
                 <h3 class="fw-bold mb-1">NUEVO DICTAMEN</h3>
-                <p class="text-white-50 mb-0">Crear una inspección de prueba desde cero</p>
+                <p class="text-white-50 mb-0">Crear una lectura de prueba desde cero</p>
             </div>
         </a>
     </div>
@@ -247,7 +247,7 @@
         data: {
             labels: {!! json_encode($inspeccionesPorLocalidad->pluck('localidad'), JSON_UNESCAPED_UNICODE) !!},
             datasets: [{
-                label: 'Inspecciones',
+                label: 'Lecturas',
                 data: {!! json_encode($inspeccionesPorLocalidad->pluck('total')) !!},
                 backgroundColor: '#2563eb',
                 borderRadius: 8,

@@ -2,7 +2,7 @@
 
 @section('title', 'Gestión de Médicos')
 @section('header_title', 'Médicos Verificadores')
-@section('header_subtitle', 'Administra el personal autorizado para realizar inspecciones')
+@section('header_subtitle', 'Administra el personal autorizado para realizar lecturas')
 
 @section('content')
 @if(session('success'))

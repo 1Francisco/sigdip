@@ -459,7 +459,7 @@
                         <th style="width:9%;">RAZA</th>
                         <th style="width:5%;">SEXO</th>
                         <th style="width:5%;">FIERRO</th>
-                        <th style="width:6%;">N/S/P/E/NA</th>
+                        <th style="width:6%;">N/S/P/NA</th>
                         <th style="width:3%;">No.</th>
                         <th style="width:3%;">1</th>
                         <th style="width:16%;">IDENTIFICACIÓN OFICIAL/SINIIGA</th>
@@ -467,7 +467,7 @@
                         <th style="width:9%;">RAZA</th>
                         <th style="width:5%;">SEXO</th>
                         <th style="width:5%;">FIERRO</th>
-                        <th style="width:6%;">N/S/P/E/NA</th>
+                        <th style="width:6%;">N/S/P/NA</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -490,7 +490,7 @@
                             <td>{{ $det->raza }}</td>
                             <td style="font-weight:bold;">{{ substr($det->sexo, 0, 1) }}</td>
                             <td>{{ $det->fierro ?? '---' }}</td>
-                            <td style="font-weight:bold; color:{{ $det->resultado_prueba === 'No Aplica' ? '#666' : (in_array($det->resultado_prueba, ['Negativo', 'Exento']) ? '#000' : 'red') }};">{{ $det->resultado_prueba === 'No Aplica' ? 'NA' : (in_array($det->resultado_prueba, ['Negativo', 'Positivo', 'Sospechoso', 'Exento']) ? substr($det->resultado_prueba, 0, 1) : '') }}</td>
+                            <td style="font-weight:bold; color:{{ $det->resultado_prueba === 'No Aplica' ? '#666' : (in_array($det->resultado_prueba, ['Negativo']) ? '#000' : 'red') }};">{{ $det->resultado_prueba === 'No Aplica' ? 'NA' : (in_array($det->resultado_prueba, ['Negativo', 'Positivo', 'Sospechoso']) ? substr($det->resultado_prueba, 0, 1) : '') }}</td>
                         @else
                             <td>{{ $start_num + $i }}</td>
                             <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
@@ -506,7 +506,7 @@
                             <td>{{ $det->raza }}</td>
                             <td style="font-weight:bold;">{{ substr($det->sexo, 0, 1) }}</td>
                             <td>{{ $det->fierro ?? '---' }}</td>
-                            <td style="font-weight:bold; color:{{ $det->resultado_prueba === 'No Aplica' ? '#666' : (in_array($det->resultado_prueba, ['Negativo', 'Exento']) ? '#000' : 'red') }};">{{ $det->resultado_prueba === 'No Aplica' ? 'NA' : (in_array($det->resultado_prueba, ['Negativo', 'Positivo', 'Sospechoso', 'Exento']) ? substr($det->resultado_prueba, 0, 1) : '') }}</td>
+                            <td style="font-weight:bold; color:{{ $det->resultado_prueba === 'No Aplica' ? '#666' : (in_array($det->resultado_prueba, ['Negativo']) ? '#000' : 'red') }};">{{ $det->resultado_prueba === 'No Aplica' ? 'NA' : (in_array($det->resultado_prueba, ['Negativo', 'Positivo', 'Sospechoso']) ? substr($det->resultado_prueba, 0, 1) : '') }}</td>
                         @else
                             <td>{{ $start_num + $perColumn + $i }}</td>
                             <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
@@ -517,7 +517,10 @@
             </table>
 
             <div style="font-size:6px; margin-top:2px;">
-                ( RI ) REIDENTIFICADO &nbsp;&nbsp;&nbsp;&nbsp; ( IN ) INCREMENTO NATURAL &nbsp;&nbsp;&nbsp;&nbsp; ( IC ) INCREMENTO POR COMPRA
+                ( RA ) REARETADO &nbsp;&nbsp;&nbsp;&nbsp; ( IN ) INCREMENTO NATURAL
+            </div>
+            <div style="font-size:6px; margin-top:2px;">
+                ( N ) NEGATIVO &nbsp;&nbsp;&nbsp;&nbsp; ( S ) SOSPECHOSO &nbsp;&nbsp;&nbsp;&nbsp; ( P ) POSITIVO &nbsp;&nbsp;&nbsp;&nbsp; ( N/A ) NO APLICA
             </div>
 
         @else
@@ -561,7 +564,7 @@
                         <th style="width:9%;">RAZA</th>
                         <th style="width:5%;">SEXO</th>
                         <th style="width:5%;">FIERRO</th>
-                        <th style="width:6%;">N/S/P/E/NA</th>
+                        <th style="width:6%;">N/S/P/NA</th>
                         <th style="width:3%;">No.</th>
                         <th style="width:3%;">1</th>
                         <th style="width:16%;">IDENTIFICACIÓN OFICIAL/SINIIGA</th>
@@ -569,7 +572,7 @@
                         <th style="width:9%;">RAZA</th>
                         <th style="width:5%;">SEXO</th>
                         <th style="width:5%;">FIERRO</th>
-                        <th style="width:6%;">N/S/P/E/NA</th>
+                        <th style="width:6%;">N/S/P/NA</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -592,7 +595,7 @@
                             <td>{{ $det->raza }}</td>
                             <td style="font-weight:bold;">{{ substr($det->sexo, 0, 1) }}</td>
                             <td>{{ $det->fierro ?? '---' }}</td>
-                            <td style="font-weight:bold; color:{{ $det->resultado_prueba === 'No Aplica' ? '#666' : (in_array($det->resultado_prueba, ['Negativo', 'Exento']) ? '#000' : 'red') }};">{{ $det->resultado_prueba === 'No Aplica' ? 'NA' : (in_array($det->resultado_prueba, ['Negativo', 'Positivo', 'Sospechoso', 'Exento']) ? substr($det->resultado_prueba, 0, 1) : '') }}</td>
+                            <td style="font-weight:bold; color:{{ $det->resultado_prueba === 'No Aplica' ? '#666' : (in_array($det->resultado_prueba, ['Negativo']) ? '#000' : 'red') }};">{{ $det->resultado_prueba === 'No Aplica' ? 'NA' : (in_array($det->resultado_prueba, ['Negativo', 'Positivo', 'Sospechoso']) ? substr($det->resultado_prueba, 0, 1) : '') }}</td>
                         @else
                             <td>{{ $start_num + $i }}</td>
                             <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
@@ -608,7 +611,7 @@
                             <td>{{ $det->raza }}</td>
                             <td style="font-weight:bold;">{{ substr($det->sexo, 0, 1) }}</td>
                             <td>{{ $det->fierro ?? '---' }}</td>
-                            <td style="font-weight:bold; color:{{ $det->resultado_prueba === 'No Aplica' ? '#666' : (in_array($det->resultado_prueba, ['Negativo', 'Exento']) ? '#000' : 'red') }};">{{ $det->resultado_prueba === 'No Aplica' ? 'NA' : (in_array($det->resultado_prueba, ['Negativo', 'Positivo', 'Sospechoso', 'Exento']) ? substr($det->resultado_prueba, 0, 1) : '') }}</td>
+                            <td style="font-weight:bold; color:{{ $det->resultado_prueba === 'No Aplica' ? '#666' : (in_array($det->resultado_prueba, ['Negativo']) ? '#000' : 'red') }};">{{ $det->resultado_prueba === 'No Aplica' ? 'NA' : (in_array($det->resultado_prueba, ['Negativo', 'Positivo', 'Sospechoso']) ? substr($det->resultado_prueba, 0, 1) : '') }}</td>
                         @else
                             <td>{{ $start_num + $perColumn + $i }}</td>
                             <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
@@ -619,7 +622,10 @@
             </table>
 
             <div style="font-size:6px; margin-top:2px;">
-                ( RI ) REIDENTIFICADO &nbsp;&nbsp;&nbsp;&nbsp; ( IN ) INCREMENTO NATURAL &nbsp;&nbsp;&nbsp;&nbsp; ( IC ) INCREMENTO POR COMPRA
+                ( RA ) REARETADO &nbsp;&nbsp;&nbsp;&nbsp; ( IN ) INCREMENTO NATURAL
+            </div>
+            <div style="font-size:6px; margin-top:2px;">
+                ( N ) NEGATIVO &nbsp;&nbsp;&nbsp;&nbsp; ( S ) SOSPECHOSO &nbsp;&nbsp;&nbsp;&nbsp; ( P ) POSITIVO &nbsp;&nbsp;&nbsp;&nbsp; ( N/A ) NO APLICA
             </div>
         @endif
     @endforeach

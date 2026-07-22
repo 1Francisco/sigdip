@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exports\RendimientoExport;
+use App\Exports\RendimientoMensualExport;
 use App\Http\Controllers\Controller;
 use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\Predio;
 use App\Models\User;
 use App\Models\Visita;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use App\Exports\RendimientoExport;
-use App\Exports\RendimientoMensualExport;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use setasign\Fpdi\Fpdi;
 
@@ -22,7 +22,7 @@ class ReportesRendimientoApiController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        if (!$user || !$user->hasRole('Administrador')) {
+        if (! $user || ! $user->hasRole('Administrador')) {
             return response()->json(['success' => false, 'message' => 'No autorizado.'], 403);
         }
 
@@ -56,10 +56,10 @@ class ReportesRendimientoApiController extends Controller
         $medicos = User::role('Medico_Campo')
             ->orderBy('name')
             ->get()
-            ->map(fn($m) => [
+            ->map(fn ($m) => [
                 'id' => $m->id,
                 'name' => $m->name,
-                'email' => $m->email
+                'email' => $m->email,
             ]);
 
         // 4. KPIs
@@ -137,7 +137,7 @@ class ReportesRendimientoApiController extends Controller
             'totalSinCuarentena' => $totalSinCuarentena,
             'meses' => $meses,
             'mensualRows' => $mensualRows,
-            'selectedYear' => $mensualYear
+            'selectedYear' => $mensualYear,
         ]);
     }
 
@@ -273,7 +273,7 @@ class ReportesRendimientoApiController extends Controller
                 'primera_inspeccion' => $stats?->primera_inspeccion,
                 'ultima_inspeccion' => $stats?->ultima_inspeccion,
             ];
-        })->filter(fn ($m) => $m['total_inspecciones'] > 0 || !$medicoId || $medicoId == $m['id'])->values();
+        })->filter(fn ($m) => $m['total_inspecciones'] > 0 || ! $medicoId || $medicoId == $m['id'])->values();
     }
 
     private function getActividadesData($fechaDesde, $fechaHasta, $estado, $zona, $medicoId, $localidad = null): array
@@ -341,7 +341,7 @@ class ReportesRendimientoApiController extends Controller
             $letter = substr($tipo, 1, 1);
             $target = $letter === 'P' ? $cuarentenasP : $cuarentenasD;
 
-            if (!$target->has($tipo)) {
+            if (! $target->has($tipo)) {
                 $target[$tipo] = ['tipo' => $tipo, 'total' => 0, 'detalle' => []];
             }
             $current = $target[$tipo];
@@ -443,7 +443,7 @@ class ReportesRendimientoApiController extends Controller
 
         foreach ($rawRows as $row) {
             $key = $row->veterinario_id.'|'.$row->mes;
-            if (!$grouped->has($key)) {
+            if (! $grouped->has($key)) {
                 $grouped[$key] = [
                     'veterinario_id' => $row->veterinario_id,
                     'mes' => $row->mes,
@@ -456,7 +456,7 @@ class ReportesRendimientoApiController extends Controller
                     'total_animales' => 0,
                     'total_reactores' => 0,
                     'reactores_ppc' => 0,
-                    'reactores_pcc' => 0
+                    'reactores_pcc' => 0,
                 ];
             }
             $existing = $grouped[$key];
@@ -539,7 +539,7 @@ class ReportesRendimientoApiController extends Controller
     public function exportExcel(Request $request)
     {
         $user = $request->user();
-        if (!$user || !$user->hasRole('Administrador')) {
+        if (! $user || ! $user->hasRole('Administrador')) {
             return response()->json(['success' => false, 'message' => 'No autorizado.'], 403);
         }
 
@@ -559,7 +559,7 @@ class ReportesRendimientoApiController extends Controller
     public function exportExcelMensual(Request $request)
     {
         $user = $request->user();
-        if (!$user || !$user->hasRole('Administrador')) {
+        if (! $user || ! $user->hasRole('Administrador')) {
             return response()->json(['success' => false, 'message' => 'No autorizado.'], 403);
         }
 
@@ -580,7 +580,7 @@ class ReportesRendimientoApiController extends Controller
     public function exportPdfMensual(Request $request)
     {
         $user = $request->user();
-        if (!$user || !$user->hasRole('Administrador')) {
+        if (! $user || ! $user->hasRole('Administrador')) {
             return response()->json(['success' => false, 'message' => 'No autorizado.'], 403);
         }
 
@@ -687,7 +687,7 @@ class ReportesRendimientoApiController extends Controller
     public function exportPdf(Request $request)
     {
         $user = $request->user();
-        if (!$user || !$user->hasRole('Administrador')) {
+        if (! $user || ! $user->hasRole('Administrador')) {
             return response()->json(['success' => false, 'message' => 'No autorizado.'], 403);
         }
 

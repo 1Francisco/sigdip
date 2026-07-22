@@ -2,13 +2,11 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\Inspeccion;
 use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
 use App\Models\Visita;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 

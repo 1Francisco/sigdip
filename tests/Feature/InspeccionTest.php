@@ -502,4 +502,46 @@ class InspeccionTest extends TestCase
         $response->assertRedirect(route('inspecciones.index'));
         $this->assertDatabaseMissing('inspecciones', ['id' => $inspeccion->id]);
     }
+
+    public function test_create_with_predio_id_as_admin_resolves_productor_id()
+    {
+        $response = $this->actingAs($this->admin)->get(route('inspecciones.create', ['predio_id' => $this->predio->id]));
+
+        $response->assertStatus(200);
+        $response->assertViewHas('selected_productor_id', $this->predio->productor_id);
+        $response->assertViewHas('selected_predio_id', $this->predio->id);
+    }
+
+    public function test_create_with_predio_id_as_medico_resolves_productor_id_if_assigned()
+    {
+        $medico = User::factory()->create();
+        $medico->assignRole('Medico_Campo');
+
+        // Assign productor to this medico
+        $productor = Productor::factory()->create(['medico_id' => $medico->id]);
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+
+        $response = $this->actingAs($medico)->get(route('inspecciones.create', ['predio_id' => $predio->id]));
+
+        $response->assertStatus(200);
+        $response->assertViewHas('selected_productor_id', $productor->id);
+        $response->assertViewHas('selected_predio_id', $predio->id);
+    }
+
+    public function test_create_with_predio_id_as_medico_does_not_resolve_productor_id_if_not_assigned()
+    {
+        $medico = User::factory()->create();
+        $medico->assignRole('Medico_Campo');
+
+        // Assign productor to a different user
+        $otroMedico = User::factory()->create();
+        $productor = Productor::factory()->create(['medico_id' => $otroMedico->id]);
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+
+        $response = $this->actingAs($medico)->get(route('inspecciones.create', ['predio_id' => $predio->id]));
+
+        $response->assertStatus(200);
+        $response->assertViewHas('selected_productor_id', null);
+        $response->assertViewHas('selected_predio_id', $predio->id);
+    }
 }

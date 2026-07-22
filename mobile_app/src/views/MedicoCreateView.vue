@@ -97,7 +97,7 @@
             </li>
             <li class="d-flex align-items-start gap-2 text-secondary small">
               <i class="bi bi-check2-circle text-success fs-5 flex-shrink-0"></i>
-              <span>Podrá sincronizar datos y crear inspecciones offline.</span>
+              <span>Podrá sincronizar datos y crear lecturas offline.</span>
             </li>
           </ul>
         </div>

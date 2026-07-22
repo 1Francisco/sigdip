@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\InspeccionController as InspeccionDetallesControlle
 use App\Http\Controllers\Api\InspeccionesApiController;
 use App\Http\Controllers\Api\MedicosApiController;
 use App\Http\Controllers\Api\ProductoresApiController;
+use App\Http\Controllers\Api\ReportesRendimientoApiController;
 use App\Http\Controllers\Api\SyncController;
 use App\Http\Controllers\Api\VisitasApiController;
 use App\Http\Controllers\InspeccionController;
@@ -94,11 +95,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/inspecciones/{id}/sync-detalles', [InspeccionDetallesController::class, 'sync']);
     Route::get('/reportes/sábana-excel', [ReporteController::class, 'exportExcel']);
     Route::get('/censo/buscar-arete/{numero}', [InspeccionController::class, 'buscarArete']);
-    Route::get('/reportes/rendimiento', [\App\Http\Controllers\Api\ReportesRendimientoApiController::class, 'index']);
-    Route::get('/reportes/rendimiento/excel', [\App\Http\Controllers\Api\ReportesRendimientoApiController::class, 'exportExcel']);
-    Route::get('/reportes/rendimiento/pdf', [\App\Http\Controllers\Api\ReportesRendimientoApiController::class, 'exportPdf']);
-    Route::get('/reportes/rendimiento/mensual/excel', [\App\Http\Controllers\Api\ReportesRendimientoApiController::class, 'exportExcelMensual']);
-    Route::get('/reportes/rendimiento/mensual/pdf', [\App\Http\Controllers\Api\ReportesRendimientoApiController::class, 'exportPdfMensual']);
+    Route::get('/reportes/rendimiento', [ReportesRendimientoApiController::class, 'index']);
+    Route::get('/reportes/rendimiento/excel', [ReportesRendimientoApiController::class, 'exportExcel']);
+    Route::get('/reportes/rendimiento/pdf', [ReportesRendimientoApiController::class, 'exportPdf']);
+    Route::get('/reportes/rendimiento/mensual/excel', [ReportesRendimientoApiController::class, 'exportExcelMensual']);
+    Route::get('/reportes/rendimiento/mensual/pdf', [ReportesRendimientoApiController::class, 'exportPdfMensual']);
 
     // Médicos desde la App Móvil
     Route::get('/medicos', [MedicosApiController::class, 'index']);

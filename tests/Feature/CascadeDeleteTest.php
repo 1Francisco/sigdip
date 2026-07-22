@@ -9,7 +9,6 @@ use App\Models\Inspeccion;
 use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
-use App\Models\Visita;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;

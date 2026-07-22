@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

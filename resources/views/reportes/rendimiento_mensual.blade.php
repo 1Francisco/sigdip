@@ -135,7 +135,7 @@
                     <tr>
                         <th class="ps-4 col-medico">Médico</th>
                         <th class="col-mes">Mes</th>
-                        <th class="text-center col-num">Inspecciones</th>
+                                <th class="text-center col-num">Lecturas</th>
                         <th class="text-center col-num">PPC</th>
                         <th class="text-center col-num">PCC</th>
                         <th class="text-center col-num">Predios</th>

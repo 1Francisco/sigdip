@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Listado de Inspecciones')
-@section('header_title', 'Inspecciones Pecuarias')
+@section('title', 'Listado de Lecturas')
+@section('header_title', 'Lecturas Pecuarias')
 @section('header_subtitle', 'Historial de registros y seguimiento')
 
 @section('content')

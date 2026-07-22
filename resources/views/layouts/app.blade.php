@@ -452,7 +452,7 @@
                 <i class="bi bi-house-door"></i> Predios
             </a>
             <a class="nav-link {{ request()->is('inspecciones*') ? 'active' : '' }}" href="{{ route('inspecciones.index') }}">
-                <i class="bi bi-clipboard-check"></i> Inspecciones
+                <i class="bi bi-clipboard-check"></i> Lecturas
             </a>
             <a class="nav-link {{ request()->routeIs('visitas.*') ? 'active' : '' }}" href="{{ route('visitas.index') }}">
                 <i class="bi bi-calendar-event"></i> Agenda / Visitas

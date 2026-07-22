@@ -22,7 +22,7 @@
             <i class="bi bi-house-door"></i> Predios
           </a>
           <a class="nav-link" :class="{ active: isActive('/inspecciones') || isActive('/inspeccion') }" @click.prevent="navigate('/inspecciones')">
-            <i class="bi bi-clipboard-check"></i> Inspecciones
+            <i class="bi bi-clipboard-check"></i> Lecturas
           </a>
           <a class="nav-link" :class="{ active: isActive('/visitas') }" @click.prevent="navigate('/visitas')">
             <i class="bi bi-calendar-event"></i> Agenda / Visitas
@@ -55,7 +55,7 @@
             <i class="bi bi-calendar-event"></i> Agenda / Visitas
           </a>
           <a class="nav-link" :class="{ active: isActive('/inspecciones') || isActive('/inspeccion') }" @click.prevent="navigate('/inspecciones')">
-            <i class="bi bi-clipboard-check"></i> Inspecciones
+            <i class="bi bi-clipboard-check"></i> Lecturas
           </a>
           <a class="nav-link" :class="{ active: isActive('/inspeccion') && !$route.path.includes('/editar') }" @click.prevent="navigate('/inspeccion')">
             <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen

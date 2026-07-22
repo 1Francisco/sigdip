@@ -2,12 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
-use App\Models\Visita;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -152,8 +150,6 @@ class ReportesRendimientoTest extends TestCase
         $response->assertSee($medico->name);
         $response->assertSee('Detalle de Rendimiento');
     }
-
-
 
     public function test_rendimiento_detalle_medico()
     {

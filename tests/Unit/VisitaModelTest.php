@@ -3,9 +3,8 @@
 namespace Tests\Unit;
 
 use App\Models\Inspeccion;
-use App\Models\Predio;
-use App\Models\User;
 use App\Models\Visita;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -31,7 +30,7 @@ class VisitaModelTest extends TestCase
             'fecha_programada' => '2026-07-15',
         ]);
 
-        $this->assertInstanceOf(\Carbon\Carbon::class, $visita->fecha_programada);
+        $this->assertInstanceOf(Carbon::class, $visita->fecha_programada);
         $this->assertEquals('2026-07-15', $visita->fecha_programada->format('Y-m-d'));
     }
 

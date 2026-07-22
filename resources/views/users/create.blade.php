@@ -63,7 +63,7 @@
                 </p>
                 <ul class="text-secondary list-unstyled">
                     <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Podrá iniciar sesión en la Aplicación Móvil.</li>
-                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Podrá sincronizar datos y crear inspecciones offline.</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Podrá sincronizar datos y crear lecturas offline.</li>
                     <li class="mb-2"><i class="bi bi-x-circle text-danger me-2"></i><strong>NO</strong> podrá ingresar a este panel web administrativo.</li>
                 </ul>
             </div>

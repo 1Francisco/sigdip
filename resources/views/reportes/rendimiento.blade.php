@@ -133,7 +133,7 @@
         <!-- Gráfica de barras -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white fw-bold py-3">
-                <span><i class="bi bi-bar-chart-fill me-2 text-primary"></i> Inspecciones por Médico</span>
+                <span><i class="bi bi-bar-chart-fill me-2 text-primary"></i> Lecturas por Médico</span>
             </div>
             <div class="card-body">
                 <div style="overflow-x: auto; overflow-y: hidden;">
@@ -156,7 +156,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="ps-4">Médico</th>
-                                <th class="text-center">Inspecciones</th>
+                                <th class="text-center">Lecturas</th>
                                 <th class="text-center">Visitas</th>
                                 <th class="text-center">Completadas</th>
                                 <th class="text-center">Predios</th>
@@ -249,7 +249,7 @@
         @if($medicoId && $detalleMedico)
         <div class="card border-0 shadow-sm mt-4">
             <div class="card-header bg-white fw-bold py-3">
-                <i class="bi bi-list-ul me-2 text-primary"></i> Últimas inspecciones
+                                <i class="bi bi-list-ul me-2 text-primary"></i> Últimas lecturas
                 @php $medicoSel = $medicos->firstWhere('id', $medicoId); @endphp
                 @if($medicoSel)
                     <span class="text-secondary fw-normal"> — {{ $medicoSel->name }}</span>
@@ -310,7 +310,7 @@ new Chart(document.getElementById('chartMedicos'), {
     data: {
         labels: medicosData.map(m => m.name),
         datasets: [{
-            label: 'Inspecciones',
+            label: 'Lecturas',
             data: medicosData.map(m => m.total),
             backgroundColor: medicosData.map(m => {
                 const ef = m.eficiencia;
@@ -328,7 +328,7 @@ new Chart(document.getElementById('chartMedicos'), {
             tooltip: {
                 callbacks: {
                     label: function(ctx) {
-                        return 'Inspecciones: ' + ctx.raw;
+                        return 'Lecturas: ' + ctx.raw;
                     },
                     afterLabel: function(ctx) {
                         const m = medicosData[ctx.dataIndex];

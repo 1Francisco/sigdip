@@ -56,7 +56,11 @@
               <i class="bi bi-eye me-1"></i> Ver todos
             </button>
           </div>
-          <div v-if="!animales.length" class="text-muted">Sin animales registrados.</div>
+          <div class="input-group mb-3">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input v-model="searchAnimal" type="text" class="form-control border-start-0" placeholder="Buscar por arete o raza...">
+          </div>
+          <div v-if="!filteredAnimales.length" class="text-muted">{{ animales.length ? 'Sin resultados de búsqueda.' : 'Sin animales registrados.' }}</div>
           <div v-else class="table-responsive">
             <table class="table table-sm table-borderless align-middle mb-0">
               <thead>
@@ -68,7 +72,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="animal in animales" :key="animal.id" class="clickable-row" @click="$router.push(`/animales/${animal.id}`)">
+                <tr v-for="animal in filteredAnimales" :key="animal.id" class="clickable-row" @click="$router.push(`/animales/${animal.id}`)">
                   <td class="fw-semibold">{{ animal.numero_arete_siniiga }}</td>
                   <td>{{ animal.raza || '—' }}</td>
                   <td>{{ animal.sexo || '—' }}</td>
@@ -106,12 +110,21 @@ export default {
     return {
       loading: false,
       errorMsg: '',
-      predio: null
+      predio: null,
+      searchAnimal: ''
     };
   },
   computed: {
     animales() {
       return this.predio?.animales || [];
+    },
+    filteredAnimales() {
+      if (!this.searchAnimal) return this.animales;
+      const q = this.searchAnimal.toLowerCase();
+      return this.animales.filter(a =>
+        (a.numero_arete_siniiga && a.numero_arete_siniiga.toLowerCase().includes(q)) ||
+        (a.raza && a.raza.toLowerCase().includes(q))
+      );
     }
   },
   async mounted() {

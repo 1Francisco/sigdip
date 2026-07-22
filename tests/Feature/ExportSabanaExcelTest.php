@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Animal;
 use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\Predio;
@@ -77,13 +78,13 @@ class ExportSabanaExcelTest extends TestCase
     {
         DetalleInspeccion::factory()->count(5)->create([
             'inspeccion_id' => $this->inspeccion->id,
-            'animal_id' => \App\Models\Animal::factory()->create(['predio_id' => $this->predio->id])->id,
+            'animal_id' => Animal::factory()->create(['predio_id' => $this->predio->id])->id,
             'resultado_prueba' => 'Negativo',
         ]);
 
         $detalle = DetalleInspeccion::factory()->create([
             'inspeccion_id' => $this->inspeccion->id,
-            'animal_id' => \App\Models\Animal::factory()->create(['predio_id' => $this->predio->id])->id,
+            'animal_id' => Animal::factory()->create(['predio_id' => $this->predio->id])->id,
             'resultado_prueba' => 'Positivo',
         ]);
         $this->assertDatabaseHas('detalles_inspeccion', ['id' => $detalle->id, 'resultado_prueba' => 'Positivo']);

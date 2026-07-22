@@ -132,8 +132,8 @@
                      <thead class="table-light">
                        <tr>
                          <th class="ps-4">Médico</th>
-                         <th class="text-center">Inspecciones</th>
-                         <th class="text-center">Visitas</th>
+                          <th class="text-center">Lecturas</th>
+                          <th class="text-center">Visitas</th>
                          <th class="text-center">Completadas</th>
                          <th class="text-center">Predios</th>
                          <th class="text-center">Animales</th>
@@ -199,12 +199,12 @@
              <!-- Detalle por médico seleccionado -->
              <div v-if="filterParams.medico_id && detalleMedico" class="card border-0 shadow-sm rounded-4 mb-4 select-medico-details">
                <div class="card-header bg-white fw-bold py-3 text-start border-bottom">
-                 <i class="bi bi-list-ul me-2 text-primary"></i> Últimas inspecciones
+                  <i class="bi bi-list-ul me-2 text-primary"></i> Últimas lecturas
                  <span class="text-secondary fw-normal"> — {{ getSelectedMedicoName() }}</span>
                </div>
                <div class="card-body p-0 text-start">
                  <div v-if="detalleMedico.length === 0" class="text-center p-5 text-muted">
-                   No hay inspecciones registradas para este médico.
+                    No hay lecturas registradas para este médico.
                  </div>
                  <div v-else class="table-responsive">
                    <table class="table table-hover align-middle mb-0 table-medico-inspecciones">
@@ -261,8 +261,8 @@
                       <tr>
                         <th class="ps-4 col-medico">Médico</th>
                         <th class="col-mes">Mes</th>
-                        <th class="text-center col-num">Inspecciones</th>
-                        <th class="text-center col-num">PPC</th>
+                         <th class="text-center col-num">Lecturas</th>
+                         <th class="text-center col-num">PPC</th>
                         <th class="text-center col-num">PCC</th>
                         <th class="text-center col-num">Predios</th>
                         <th class="text-center col-num">Visitas</th>
