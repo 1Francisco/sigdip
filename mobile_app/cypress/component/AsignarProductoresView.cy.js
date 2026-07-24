@@ -41,7 +41,7 @@ describe('AsignarProductoresView', () => {
 
   function setupDefaultIntercepts() {
     cy.intercept('POST', '**/api/logout', { statusCode: 200, body: { message: 'ok' } }).as('logout')
-    cy.intercept('GET', 'http://192.168.1.91:8000/api/usuarios/1/productores-asignables', {
+    cy.intercept('GET', '**/api/usuarios/1/productores-asignables', {
       statusCode: 200,
       body: fakeAsignablesResponse,
     }).as('getAsignables')
@@ -87,7 +87,7 @@ describe('AsignarProductoresView', () => {
   it('muestra mensaje de error si falla la API', () => {
     setupAdminLogin()
     cy.intercept('POST', '**/api/logout', { statusCode: 200, body: { message: 'ok' } }).as('logout')
-    cy.intercept('GET', 'http://192.168.1.91:8000/api/usuarios/1/productores-asignables', {
+    cy.intercept('GET', '**/api/usuarios/1/productores-asignables', {
       statusCode: 500,
       body: { message: 'Server error' },
     }).as('getAsignablesFail')

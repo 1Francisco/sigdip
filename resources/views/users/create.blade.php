@@ -31,6 +31,32 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-4">
+                            <label class="form-label fw-bold">Zona</label>
+                            <select name="zona" class="form-select @error('zona') is-invalid @enderror" required>
+                                <option value="">Seleccionar zona...</option>
+                                <option value="A" {{ old('zona') == 'A' ? 'selected' : '' }}>Zona A</option>
+                                <option value="B" {{ old('zona') == 'B' ? 'selected' : '' }}>Zona B</option>
+                            </select>
+                            @error('zona')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label fw-bold">Actividad</label>
+                            <select name="actividad" class="form-select @error('actividad') is-invalid @enderror" required>
+                                <option value="">Seleccionar actividad...</option>
+                                <option value="Buffer" {{ old('actividad') == 'Buffer' ? 'selected' : '' }}>Buffer</option>
+                                <option value="Barrido" {{ old('actividad') == 'Barrido' ? 'selected' : '' }}>Barrido</option>
+                                <option value="Seguimiento" {{ old('actividad') == 'Seguimiento' ? 'selected' : '' }}>Seguimiento</option>
+                            </select>
+                            @error('actividad')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
                             <label class="form-label fw-bold">Contraseña</label>
                             <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" placeholder="Mínimo 8 caracteres" required>
                             @error('password')

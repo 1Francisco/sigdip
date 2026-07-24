@@ -52,10 +52,11 @@
                       <small class="text-muted">UPP: {{ prod.upp || 'N/A' }} | Predios: {{ prod.predios_count }}</small>
                     </div>
                     <button
-                      class="btn btn-sm btn-outline-danger rounded-circle"
+                      class="btn btn-outline-danger rounded-circle"
                       title="Desasignar"
                       @click="desasignar(prod)"
                       :disabled="saving"
+                      style="width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"
                     >
                       <i class="bi bi-x-lg"></i>
                     </button>

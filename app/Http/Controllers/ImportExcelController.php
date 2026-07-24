@@ -722,8 +722,6 @@ class ImportExcelController extends Controller
 
             $productoresCreados = 0;
             $aretesCreados = 0;
-            $claveCuarentenaGlobal = null;
-
             // Extraer datos usando un índice numérico para mirar adelante
             $productorIds = [];
 
@@ -796,9 +794,7 @@ class ImportExcelController extends Controller
                         }
                     }
 
-                    if ($colMap['cuarentena'] && ! empty($row[$colMap['cuarentena']])) {
-                        $claveCuarentenaGlobal = trim($row[$colMap['cuarentena']]);
-                    }
+                    $claveCuarentena = $colMap['cuarentena'] ? trim($row[$colMap['cuarentena']] ?? '') : null;
 
                     $curpVal = $colMap['curp'] ? trim($row[$colMap['curp']] ?? '') : null;
 
@@ -840,7 +836,7 @@ class ImportExcelController extends Controller
                             'domicilio' => $colMap['domicilio'] ? trim($row[$colMap['domicilio']] ?? '') : $productor->domicilio,
                             'municipio' => $colMap['municipio'] ? trim($row[$colMap['municipio']] ?? '') : $productor->municipio,
                             'localidad' => $colMap['localidad'] ? trim($row[$colMap['localidad']] ?? '') : $productor->localidad,
-                            'clave_cuarentena' => $claveCuarentenaGlobal,
+                            'clave_cuarentena' => $claveCuarentena,
                         ]);
                     } else {
                         $productor = Productor::create([
@@ -855,7 +851,7 @@ class ImportExcelController extends Controller
                             'localidad' => $colMap['localidad'] ? trim($row[$colMap['localidad']] ?? '') : '',
                             'medico_id' => $medicoId,
                             'zona' => $zona,
-                            'clave_cuarentena' => $claveCuarentenaGlobal,
+                            'clave_cuarentena' => $claveCuarentena,
                         ]);
                     }
 

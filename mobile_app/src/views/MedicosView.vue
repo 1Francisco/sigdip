@@ -140,7 +140,7 @@
             <!-- 2. MOBILE CARDS VIEW (Mobile only) -->
             <div class="mobile-cards d-lg-none">
               <div class="mobile-cards-grid">
-                <article v-for="medico in paginatedMedicos" :key="medico.id" class="medico-mobile-card shadow-sm" style="cursor: pointer;" @click="$router.push('/medicos/editar/' + medico.id)">
+                <article v-for="medico in paginatedMedicos" :key="medico.id" class="medico-mobile-card shadow-sm item-card" style="cursor: pointer;" @click="$router.push('/medicos/editar/' + medico.id)">
                   <div class="medico-content">
                     <div class="field-block">
                       <span class="field-label">MÉDICO VERIFICADOR</span>

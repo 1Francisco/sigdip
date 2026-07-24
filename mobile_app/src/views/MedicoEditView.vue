@@ -40,6 +40,26 @@
               >
             </div>
 
+            <div class="row">
+              <div class="col-6 form-group-custom">
+                <label class="form-label-custom">Zona</label>
+                <select v-model="form.zona" class="form-control-custom" required>
+                  <option value="">Seleccionar...</option>
+                  <option value="A">Zona A</option>
+                  <option value="B">Zona B</option>
+                </select>
+              </div>
+              <div class="col-6 form-group-custom">
+                <label class="form-label-custom">Actividad</label>
+                <select v-model="form.actividad" class="form-control-custom" required>
+                  <option value="">Seleccionar...</option>
+                  <option value="Buffer">Buffer</option>
+                  <option value="Barrido">Barrido</option>
+                  <option value="Seguimiento">Seguimiento</option>
+                </select>
+              </div>
+            </div>
+
             <div class="form-group-custom">
               <label class="form-label-custom">Nueva Contraseña <small class="text-muted">(dejar en blanco para mantener la actual)</small></label>
               <input 
@@ -102,6 +122,8 @@ export default {
       form: {
         name: '',
         email: '',
+        zona: '',
+        actividad: '',
         password: '',
         password_confirmation: ''
       },
@@ -149,6 +171,8 @@ export default {
         if (res.data) {
           this.form.name = res.data.name;
           this.form.email = res.data.email;
+          this.form.zona = res.data.zona || '';
+          this.form.actividad = res.data.actividad || '';
         }
       } catch (e) {
         this.errorMsg = e.message || 'No se pudieron cargar los datos del médico.';
@@ -178,6 +202,8 @@ export default {
         const payload = {
           name: this.form.name,
           email: this.form.email,
+          zona: this.form.zona,
+          actividad: this.form.actividad,
         };
         if (this.form.password) {
           payload.password = this.form.password;
@@ -411,6 +437,14 @@ export default {
   font-size: 0.95rem;
   color: #1e293b;
   background: white;
+}
+
+select.form-control-custom {
+  appearance: auto;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+  background: white;
+  cursor: pointer;
 }
 
 .btn-cancel-custom {

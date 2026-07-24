@@ -206,7 +206,7 @@
                 <div 
                   v-for="visita in paginatedVisitas" 
                   :key="visita.id" 
-                  class="producer-mobile-card shadow-sm mb-3 position-relative"
+                  class="producer-mobile-card shadow-sm mb-3 position-relative item-card"
                   style="border-left-color: #2563eb; cursor: pointer;"
                   @click="$router.push('/visitas/' + visita.id)"
                 >

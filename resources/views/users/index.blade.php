@@ -38,6 +38,8 @@
                     <tr>
                         <th class="ps-4">Nombre Completo</th>
                         <th>Correo de Acceso</th>
+                        <th>Zona</th>
+                        <th>Actividad</th>
                         <th class="text-center">Productores Asignados</th>
                         <th>Fecha de Registro</th>
                         <th class="text-end pe-4">Acciones</th>
@@ -58,6 +60,8 @@
                             </div>
                         </td>
                         <td>{{ $medico->email }}</td>
+                        <td><span class="badge bg-secondary-subtle text-secondary border">{{ $medico->zona ?? 'N/A' }}</span></td>
+                        <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">{{ $medico->actividad ?? 'N/A' }}</span></td>
                         <td class="text-center">
                             <a href="{{ route('usuarios.show', $medico) }}" class="text-decoration-none">
                                 <span class="badge bg-info-soft text-info rounded-pill px-3 py-1">
@@ -89,7 +93,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-secondary">
+                        <td colspan="7" class="text-center py-5 text-secondary">
                             <i class="bi bi-inbox fs-1 mb-3 d-block text-light"></i>
                             No hay médicos verificadores registrados en el sistema.
                         </td>

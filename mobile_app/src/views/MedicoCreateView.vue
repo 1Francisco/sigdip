@@ -36,6 +36,26 @@
               >
             </div>
 
+            <div class="row">
+              <div class="col-6 form-group-custom">
+                <label class="form-label-custom">Zona</label>
+                <select v-model="form.zona" class="form-control-custom" required>
+                  <option value="">Seleccionar...</option>
+                  <option value="A">Zona A</option>
+                  <option value="B">Zona B</option>
+                </select>
+              </div>
+              <div class="col-6 form-group-custom">
+                <label class="form-label-custom">Actividad</label>
+                <select v-model="form.actividad" class="form-control-custom" required>
+                  <option value="">Seleccionar...</option>
+                  <option value="Buffer">Buffer</option>
+                  <option value="Barrido">Barrido</option>
+                  <option value="Seguimiento">Seguimiento</option>
+                </select>
+              </div>
+            </div>
+
             <div class="form-group-custom">
               <label class="form-label-custom">Contraseña</label>
               <input 
@@ -121,6 +141,8 @@ export default {
       form: {
         name: '',
         email: '',
+        zona: '',
+        actividad: '',
         password: '',
         password_confirmation: ''
       },
@@ -166,7 +188,9 @@ export default {
         await api.storeMedico({
           name: this.form.name,
           email: this.form.email,
-          password: this.form.password
+          password: this.form.password,
+          zona: this.form.zona,
+          actividad: this.form.actividad
         });
         this.successMsg = 'Médico Verificador registrado correctamente.';
         setTimeout(() => {
@@ -428,6 +452,14 @@ export default {
 .form-control-custom:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+}
+
+select.form-control-custom {
+  appearance: auto;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+  background: white;
+  cursor: pointer;
 }
 
 .form-group-custom:focus-within .form-label-custom {

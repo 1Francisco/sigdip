@@ -54,10 +54,12 @@ class UserTest extends TestCase
             'email' => 'nuevo@test.com',
             'password' => 'password',
             'password_confirmation' => 'password',
+            'zona' => 'A',
+            'actividad' => 'Barrido',
         ]);
 
         $response->assertStatus(200);
-        $this->assertDatabaseHas('users', ['email' => 'nuevo@test.com']);
+        $this->assertDatabaseHas('users', ['email' => 'nuevo@test.com', 'zona' => 'A', 'actividad' => 'Barrido']);
     }
 
     public function test_edit()
@@ -85,11 +87,13 @@ class UserTest extends TestCase
         $response = $this->actingAs($this->admin)->patch(route('usuarios.update', $usuario), [
             'name' => 'Actualizado',
             'email' => 'actualizado@test.com',
+            'zona' => 'B',
+            'actividad' => 'Buffer',
         ]);
 
         $response->assertSessionHasNoErrors();
         $response->assertRedirect(route('usuarios.index'));
-        $this->assertDatabaseHas('users', ['id' => $usuario->id, 'name' => 'Actualizado']);
+        $this->assertDatabaseHas('users', ['id' => $usuario->id, 'name' => 'Actualizado', 'zona' => 'B', 'actividad' => 'Buffer']);
     }
 
     public function test_destroy()

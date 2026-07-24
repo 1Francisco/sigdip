@@ -25,12 +25,20 @@
 
                 <table class="table table-borderless text-start mb-0">
                     <tr>
-                        <td class="text-muted ps-0" style="width: 140px;">Rol</td>
+                        <td class="text-muted ps-0">Rol</td>
                         <td class="fw-bold">
                             @foreach ($usuario->roles as $role)
                                 <span class="badge bg-primary">{{ $role->name }}</span>
                             @endforeach
                         </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted ps-0">Zona</td>
+                        <td class="fw-bold">{{ $usuario->zona ?? 'No asignada' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted ps-0">Actividad</td>
+                        <td class="fw-bold">{{ $usuario->actividad ?? 'No asignada' }}</td>
                     </tr>
                     <tr>
                         <td class="text-muted ps-0">Productores Asignados</td>

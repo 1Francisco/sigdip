@@ -211,6 +211,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/reportes/sabana-excel',
+    name: 'SabanaExcel',
+    component: () => import('../views/SabanaExcelView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard'
   }

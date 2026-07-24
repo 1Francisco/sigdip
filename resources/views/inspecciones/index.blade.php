@@ -30,7 +30,7 @@
         <h5 class="mb-0 fw-bold">Dictámenes Registrados</h5>
         <div class="d-flex gap-2">
             @hasanyrole('Administrador|Medico_Campo')
-            <a href="{{ route('reportes.excel') }}" class="btn btn-outline-success">
+            <a href="{{ route('reportes.excel.download') }}" class="btn btn-outline-success">
                 <i class="bi bi-file-earmark-excel"></i> Descargar Sábana
             </a>
             @endhasanyrole

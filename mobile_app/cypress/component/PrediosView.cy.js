@@ -178,7 +178,7 @@ describe('PrediosView', () => {
       mount(PrediosView, { global: { plugins: [router] } })
 
       cy.wait('@getPrediosPaged', { timeout: 10000 })
-      cy.contains('Showing 1 to 10 of 15 results', { timeout: 5000 }).should('be.visible')
+      cy.contains('Mostrando 1 a 10 de 15 registros', { timeout: 5000 }).should('be.visible')
     })
 
     it('cierra sesion desde menu lateral', () => {

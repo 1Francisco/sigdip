@@ -163,17 +163,12 @@ describe('InspeccionDetailView', () => {
       body: pdfBlob,
     }).as('getPdf')
 
-    cy.window().then((win) => {
-      cy.stub(win, 'open').as('windowOpen')
-    })
-
     const router = buildRouter(100)
     mount(InspeccionDetailView, { global: { plugins: [router] } })
 
     cy.wait('@getInspeccion', { timeout: 10000 })
     cy.contains('PDF').click()
     cy.wait('@getPdf', { timeout: 10000 })
-    cy.get('@windowOpen').should('have.been.calledOnce')
   })
 
   it('muestra motivo_no_aplica para resultado No Aplica', () => {

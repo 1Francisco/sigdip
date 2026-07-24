@@ -121,7 +121,7 @@ class InspeccionExportTest extends TestCase
         $this->assertEquals(0, $row[10]);
     }
 
-    public function test_map_municipio_fallback()
+    public function test_map_municipio_devuelve_vacio_si_no_existe()
     {
         $this->predio->update(['municipio' => null]);
         $this->predio->update(['localidad' => 'Localidad Fallback']);
@@ -129,7 +129,7 @@ class InspeccionExportTest extends TestCase
         $export = new InspeccionExport;
         $row = $export->map($this->inspeccion->fresh());
 
-        $this->assertEquals('Localidad Fallback', $row[4]);
+        $this->assertEquals('', $row[4]);
     }
 
     public function test_map_fecha_nula_devuelve_vacio()
@@ -165,7 +165,7 @@ class InspeccionExportTest extends TestCase
         $this->assertNotNull($first->predio->productor);
     }
 
-    public function test_date_range_filter()
+    public function test_collection_returns_all_inspecciones()
     {
         Inspeccion::factory()->create([
             'predio_id' => $this->predio->id,
@@ -176,9 +176,9 @@ class InspeccionExportTest extends TestCase
             'fecha' => '2026-06-01',
         ]);
 
-        $export = new InspeccionExport('2026-05-01', '2026-07-01');
+        $export = new InspeccionExport;
         $collection = $export->collection();
 
-        $this->assertCount(2, $collection);
+        $this->assertCount(3, $collection);
     }
 }

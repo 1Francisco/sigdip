@@ -41,10 +41,12 @@ class MedicoApiTest extends TestCase
             'name' => 'Nuevo Médico',
             'email' => 'medico@test.com',
             'password' => 'password',
+            'zona' => 'A',
+            'actividad' => 'Barrido',
         ]);
 
         $response->assertStatus(201);
-        $this->assertDatabaseHas('users', ['email' => 'medico@test.com']);
+        $this->assertDatabaseHas('users', ['email' => 'medico@test.com', 'zona' => 'A', 'actividad' => 'Barrido']);
     }
 
     public function test_show()
@@ -57,7 +59,10 @@ class MedicoApiTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonPath('data.id', $medico->id)
             ->assertJsonPath('data.name', $medico->name)
-            ->assertJsonPath('data.email', $medico->email);
+            ->assertJsonPath('data.email', $medico->email)
+            ->assertJsonStructure([
+                'data' => ['zona', 'actividad'],
+            ]);
     }
 
     public function test_update()
@@ -68,6 +73,8 @@ class MedicoApiTest extends TestCase
         $response = $this->putJson("/api/medicos/{$medico->id}", [
             'name' => 'Médico Actualizado',
             'email' => 'actualizado@test.com',
+            'zona' => 'B',
+            'actividad' => 'Buffer',
         ]);
 
         $response->assertStatus(200);
@@ -75,6 +82,8 @@ class MedicoApiTest extends TestCase
             'id' => $medico->id,
             'name' => 'Médico Actualizado',
             'email' => 'actualizado@test.com',
+            'zona' => 'B',
+            'actividad' => 'Buffer',
         ]);
     }
 
@@ -87,6 +96,8 @@ class MedicoApiTest extends TestCase
             'name' => $medico->name,
             'email' => $medico->email,
             'password' => 'nuevapassword',
+            'zona' => 'A',
+            'actividad' => 'Cuarentenas Definitivas',
         ]);
 
         $response->assertStatus(200);

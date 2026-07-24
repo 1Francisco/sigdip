@@ -31,9 +31,6 @@
           <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3 w-100">
             <h5 class="mb-0 fw-bold fs-5 text-dark text-center text-lg-start w-100 w-lg-auto">Dictámenes Registrados</h5>
             <div class="d-flex flex-column flex-lg-row gap-2 w-100 w-lg-auto">
-              <button v-if="isAdmin || isMedico" @click="downloadSábana()" class="btn btn-outline-success btn-sm-custom d-flex align-items-center justify-content-center gap-1.5 px-3 py-2 fw-semibold border-success text-success bg-transparent rounded-3 w-100 w-lg-auto">
-                <i class="bi bi-file-earmark-excel"></i> Descargar Sábana
-              </button>
               <button @click="$router.push('/inspeccion')" class="btn btn-primary btn-sm-custom d-flex align-items-center justify-content-center gap-1-5 px-3 py-2 bg-primary text-white border-0 rounded-3 w-100 w-lg-auto">
                 <i class="bi bi-plus-lg"></i> Nuevo Dictamen
               </button>
@@ -51,10 +48,16 @@
               </div>
             </div>
             <div class="filter-group filter-date">
-              <input type="date" v-model="filtro.fecha_desde" class="filter-input" placeholder="Desde" title="Fecha desde">
+              <div class="date-wrapper">
+                <span v-if="!filtro.fecha_desde" class="date-placeholder">Desde</span>
+                <input type="date" v-model="filtro.fecha_desde" class="filter-input">
+              </div>
             </div>
             <div class="filter-group filter-date">
-              <input type="date" v-model="filtro.fecha_hasta" class="filter-input" placeholder="Hasta" title="Fecha hasta">
+              <div class="date-wrapper">
+                <span v-if="!filtro.fecha_hasta" class="date-placeholder">Hasta</span>
+                <input type="date" v-model="filtro.fecha_hasta" class="filter-input">
+              </div>
             </div>
             <div class="filter-group filter-estado">
               <select v-model="filtro.estado" class="filter-select">
@@ -169,7 +172,7 @@
                 <div 
                   v-for="inspeccion in paginatedInspecciones" 
                   :key="inspeccion.id" 
-                  class="producer-mobile-card shadow-sm mb-3 position-relative"
+                  class="producer-mobile-card shadow-sm mb-3 position-relative item-card"
                   style="border-left-color: #2563eb; cursor: pointer;"
                   @click="viewInspeccion(inspeccion)"
                 >
@@ -1307,6 +1310,23 @@ export default {
 .filter-input[type="date"]:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.date-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.date-placeholder {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 0.88rem;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 1;
 }
 
 .filter-select {

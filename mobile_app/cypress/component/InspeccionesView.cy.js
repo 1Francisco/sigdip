@@ -90,7 +90,7 @@ describe('InspeccionesView', () => {
       router.push('/inspecciones')
       mount(InspeccionesView, { global: { plugins: [router] } })
 
-      cy.contains('Inspecciones Pecuarias', { timeout: 5000 }).should('be.visible')
+      cy.contains('Lecturas Pecuarias', { timeout: 5000 }).should('be.visible')
       cy.contains('Dictámenes Registrados').should('be.visible')
     })
 
@@ -155,7 +155,7 @@ describe('InspeccionesView', () => {
       mount(InspeccionesView, { global: { plugins: [router] } })
 
       cy.wait('@getInspeccionesError', { timeout: 10000 })
-      cy.contains('Inspecciones Pecuarias', { timeout: 5000 }).should('be.visible')
+      cy.contains('Lecturas Pecuarias', { timeout: 5000 }).should('be.visible')
     })
 
     it('muestra empty state sin inspecciones', () => {
@@ -170,7 +170,7 @@ describe('InspeccionesView', () => {
       mount(InspeccionesView, { global: { plugins: [router] } })
 
       cy.wait('@getInspeccionesEmpty', { timeout: 10000 })
-      cy.contains('No hay inspecciones para mostrar', { timeout: 5000 }).should('be.visible')
+      cy.contains('No hay lecturas para mostrar', { timeout: 5000 }).should('be.visible')
     })
 
     it('muestra badge de conectividad', () => {
@@ -237,7 +237,7 @@ describe('InspeccionesView', () => {
 
       cy.wait('@getInspecciones', { timeout: 10000 })
       cy.get('.filter-input[placeholder*="Buscar"]').type('NOEXISTE', { force: true })
-      cy.contains('No hay inspecciones que coincidan con los filtros').should('be.visible')
+      cy.contains('No hay lecturas que coincidan con los filtros').should('be.visible')
     })
 
     it('limpia filtros con boton Limpiar', () => {

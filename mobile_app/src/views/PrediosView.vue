@@ -36,7 +36,7 @@
         </div>
 
         <div class="mobile-cards-grid">
-          <article v-for="predio in paginatedPredios" :key="predio.id" class="predio-mobile-card shadow-sm" style="cursor: pointer;" @click="$router.push('/predios/' + predio.id)">
+          <article v-for="predio in paginatedPredios" :key="predio.id" class="predio-mobile-card shadow-sm item-card" style="cursor: pointer;" @click="$router.push('/predios/' + predio.id)">
             <div class="predio-content">
               <div class="field-block">
                 <span class="field-label">RANCHO</span>
@@ -138,7 +138,7 @@
 
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-4 border-top">
           <div class="text-secondary small">
-            Showing <strong class="text-dark">{{ startResult }}</strong> to <strong class="text-dark">{{ endResult }}</strong> of <strong class="text-dark">{{ totalResults }}</strong> results
+            Mostrando <strong class="text-dark">{{ startResult }}</strong> a <strong class="text-dark">{{ endResult }}</strong> de <strong class="text-dark">{{ totalResults }}</strong> registros
           </div>
           <div class="pagination-box">
             <button class="pagination-btn" :disabled="currentPage === 1" @click="currentPage--">

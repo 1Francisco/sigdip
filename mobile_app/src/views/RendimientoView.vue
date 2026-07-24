@@ -848,4 +848,8 @@ export default {
   background-color: #eff6ff;
   border-color: #2563eb;
 }
+.card:active {
+  transform: none !important;
+  box-shadow: none !important;
+}
 </style>

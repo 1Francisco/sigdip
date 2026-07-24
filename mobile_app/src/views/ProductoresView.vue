@@ -119,7 +119,7 @@
                 <div 
                   v-for="p in paginatedProductores" 
                   :key="p.id" 
-                  class="producer-mobile-card shadow-sm mb-3 position-relative"
+                  class="producer-mobile-card shadow-sm mb-3 position-relative item-card"
                   style="cursor: pointer;"
                   @click="$router.push('/productores/' + p.id)"
                 >
@@ -190,7 +190,7 @@
             <!-- 3. PAGINATION FOOTER: Precise design match to web screenshot -->
             <div class="pagination-container">
               <div class="pagination-info">
-                Showing <strong class="text-dark">{{ startResult }}</strong> to <strong class="text-dark">{{ endResult }}</strong> of <strong class="text-dark">{{ totalResults }}</strong> results
+                Mostrando <strong class="text-dark">{{ startResult }}</strong> a <strong class="text-dark">{{ endResult }}</strong> de <strong class="text-dark">{{ totalResults }}</strong> registros
               </div>
               <div class="pagination-buttons">
                 <button 

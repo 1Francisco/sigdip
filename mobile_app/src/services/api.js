@@ -376,8 +376,14 @@ export default {
     return await requestBlob(`/inspecciones/${id}/pdf`);
   },
 
-  async getSábanaExcel() {
-    return await requestBlob('/reportes/sábana-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  async getSábanaExcel(params = {}) {
+    const query = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
+    return await requestBlob('/reportes/sábana-excel' + query, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  },
+
+  async getSabanaData(params = {}) {
+    const query = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
+    return await request('GET', '/reportes/sabana-excel/data' + query);
   },
 
   // Gestión de Productores y Predios

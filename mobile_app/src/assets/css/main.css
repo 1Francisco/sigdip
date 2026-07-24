@@ -177,6 +177,24 @@ body {
   box-shadow: var(--shadow-md);
 }
 
+/* Contenedores estructurales: no escalar al presionar (evita que :active
+   del hijo propague scale a todo el contenedor padre) */
+.card-outer-mobile-flat:active,
+.custom-list-card:active,
+.chart-card-wrapper:active {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Items de lista clickables: feedback táctil sin escalar el contenedor padre */
+.item-card {
+  transition: transform 0.15s ease;
+}
+
+.item-card:active {
+  transform: scale(0.98);
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;

@@ -33,7 +33,7 @@ class SabanaExcelApiTest extends TestCase
     {
         Sanctum::actingAs($this->admin);
 
-        $response = $this->getJson('/api/reportes/s%C3%A1bana-excel');
+        $response = $this->getJson('/api/reportes/sabana-excel');
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -42,6 +42,16 @@ class SabanaExcelApiTest extends TestCase
     public function test_medico_descarga_sabana_excel_por_api()
     {
         Sanctum::actingAs($this->medico);
+
+        $response = $this->getJson('/api/reportes/sabana-excel');
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
+    public function test_api_fallback_con_acento_funciona()
+    {
+        Sanctum::actingAs($this->admin);
 
         $response = $this->getJson('/api/reportes/s%C3%A1bana-excel');
 

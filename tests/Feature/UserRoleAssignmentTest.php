@@ -30,6 +30,8 @@ class UserRoleAssignmentTest extends TestCase
             'email' => 'medico@test.com',
             'password' => 'password',
             'password_confirmation' => 'password',
+            'zona' => 'A',
+            'actividad' => 'Barrido',
         ]);
 
         $user = User::where('email', 'medico@test.com')->first();
@@ -44,6 +46,8 @@ class UserRoleAssignmentTest extends TestCase
             'email' => 'otro@test.com',
             'password' => 'password',
             'password_confirmation' => 'password',
+            'zona' => 'B',
+            'actividad' => 'Buffer',
         ]);
 
         $user = User::where('email', 'otro@test.com')->first();

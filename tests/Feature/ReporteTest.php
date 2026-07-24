@@ -57,9 +57,36 @@ class ReporteTest extends TestCase
         $response->assertStatus(404);
     }
 
-    public function test_export_excel()
+    public function test_sabana_web_view_loads_with_filters()
     {
-        $response = $this->actingAs($this->admin)->get(route('reportes.excel'));
+        $productor = Productor::factory()->create(['zona' => 'A']);
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $predio->id,
+            'veterinario_id' => $this->admin->id,
+            'tipo_prueba' => 'P.P.C.',
+            'fecha' => '2026-06-15',
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('reportes.sabana', [
+            'zona' => 'A',
+            'tipo_actividad' => 'P.P.C.',
+            'medico_id' => $this->admin->id,
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertSee('Sábana General de Dictámenes Pecuarios');
+        $response->assertSee('Filtros de Búsqueda y Generación');
+        $response->assertSee($inspeccion->folio);
+    }
+
+    public function test_export_excel_download()
+    {
+        $response = $this->actingAs($this->admin)->get(route('reportes.excel.download', [
+            'zona' => 'A',
+            'tipo_actividad' => 'P.P.C.',
+            'medico_id' => $this->admin->id,
+        ]));
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -96,7 +123,7 @@ class ReporteTest extends TestCase
             'veterinario_id' => $medico->id,
         ]);
 
-        $response = $this->actingAs($medico)->get(route('reportes.excel'));
+        $response = $this->actingAs($medico)->get(route('reportes.excel.download'));
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

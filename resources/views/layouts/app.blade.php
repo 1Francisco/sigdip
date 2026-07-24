@@ -469,7 +469,7 @@
             </a>
             @endrole
             @hasanyrole('Administrador|Medico_Campo')
-            <a class="nav-link" href="{{ route('reportes.excel') }}">
+            <a class="nav-link {{ request()->routeIs('reportes.sabana') || request()->routeIs('reportes.excel') ? 'active' : '' }}" href="{{ route('reportes.sabana') }}">
                 <i class="bi bi-file-earmark-excel"></i> Sábana Excel
             </a>
             @endhasanyrole

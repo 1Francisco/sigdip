@@ -89,7 +89,8 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::middleware('role:Administrador|Medico_Campo')->group(function () {
-        Route::get('/reportes/sábana-excel', [ReporteController::class, 'exportExcel'])->name('reportes.excel');
+        Route::get('/reportes/sabana-excel', [ReporteController::class, 'indexSabana'])->name('reportes.sabana');
+        Route::get('/reportes/sabana-excel/descargar', [ReporteController::class, 'exportExcel'])->name('reportes.excel.download');
     });
 
     // API para búsqueda de aretes (Autocompletado en Dictámenes)

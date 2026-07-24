@@ -115,7 +115,7 @@ describe('DashboardView', () => {
       mount(DashboardView, { global: { plugins: [router] } })
 
       cy.contains('Resumen Administrativo', { timeout: 5000 }).should('be.visible')
-      cy.contains('TOTAL INSPECCIONES').should('be.visible')
+      cy.contains('TOTAL LECTURAS').should('be.visible')
       cy.contains('150').should('be.visible')
       cy.contains('ANIMALES REGISTRADOS').should('be.visible')
       cy.contains('3200').should('be.visible')
@@ -128,7 +128,7 @@ describe('DashboardView', () => {
       router.push('/dashboard')
       mount(DashboardView, { global: { plugins: [router] } })
 
-      cy.contains('Inspecciones por Localidad').should('be.visible')
+      cy.contains('Lecturas por Localidad').should('be.visible')
       cy.get('.chart-card-wrapper').should('be.visible')
       cy.get('canvas').should('be.visible')
     })

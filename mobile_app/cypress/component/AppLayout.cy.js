@@ -42,7 +42,7 @@ describe('AppLayout', () => {
     cy.contains('Dashboard').should('be.visible')
     cy.contains('Productores').should('be.visible')
     cy.contains('Predios').should('be.visible')
-    cy.contains('Inspecciones').should('be.visible')
+    cy.contains('Lecturas').should('be.visible')
     cy.contains('Médicos').should('be.visible')
     cy.contains('Rendimiento').should('be.visible')
     cy.contains('Descargas').should('be.visible')

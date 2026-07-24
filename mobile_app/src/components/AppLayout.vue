@@ -33,15 +33,15 @@
           <a class="nav-link" :class="{ active: isActive('/reportes/rendimiento') }" @click.prevent="navigate('/reportes/rendimiento')">
             <i class="bi bi-bar-chart-fill"></i> Rendimiento
           </a>
+          <a class="nav-link" :class="{ active: isActive('/reportes/sabana-excel') }" @click.prevent="navigate('/reportes/sabana-excel')">
+            <i class="bi bi-file-earmark-excel"></i> Sábana Excel
+          </a>
           <hr class="mx-3 text-slate-200">
           <a class="nav-link" :class="{ active: isActive('/descargas') }" @click.prevent="navigate('/descargas')">
             <i class="bi bi-download"></i> Descargas
           </a>
-          <a class="nav-link" @click.prevent="navigate('/inspecciones?downloadExcel=true')">
-            <i class="bi bi-file-earmark-excel"></i> Sábana Excel
-          </a>
         </template>
-        <template v-else>
+  <template v-else>
           <a class="nav-link" :class="{ active: isActive('/dashboard') }" @click.prevent="navigate('/dashboard')">
             <i class="bi bi-grid-1x2-fill"></i> Dashboard
           </a>
@@ -60,11 +60,11 @@
           <a class="nav-link" :class="{ active: isActive('/inspeccion') && !$route.path.includes('/editar') }" @click.prevent="navigate('/inspeccion')">
             <i class="bi bi-file-earmark-plus"></i> Nuevo Dictamen
           </a>
+          <a class="nav-link" :class="{ active: isActive('/reportes/sabana-excel') }" @click.prevent="navigate('/reportes/sabana-excel')">
+            <i class="bi bi-file-earmark-excel"></i> Sábana Excel
+          </a>
           <a class="nav-link" :class="{ active: isActive('/descargas') }" @click.prevent="navigate('/descargas')">
             <i class="bi bi-download"></i> Descargas
-          </a>
-          <a class="nav-link" @click.prevent="navigate('/inspecciones?downloadExcel=true')">
-            <i class="bi bi-file-earmark-excel"></i> Sábana Excel
           </a>
           <a class="nav-link" :class="{ active: isActive('/sync') }" @click.prevent="navigate('/sync')">
             <i class="bi bi-arrow-repeat"></i> Sincronizar

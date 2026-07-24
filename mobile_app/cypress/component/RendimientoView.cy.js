@@ -210,7 +210,7 @@ describe('RendimientoView Component Tests', () => {
 
     // Ahora debe mostrarse el panel de últimas inspecciones
     cy.get('.select-medico-details').should('be.visible')
-    cy.contains('Últimas inspecciones').should('be.visible')
+    cy.contains('Últimas lecturas').should('be.visible')
     cy.contains('FOL-101').should('be.visible')
     cy.contains('Productor Test').should('be.visible')
   })

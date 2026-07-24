@@ -16,14 +16,20 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class InspeccionExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping, WithStyles
 {
-    private ?string $desde;
+    private ?string $zona;
 
-    private ?string $hasta;
+    private ?string $tipoActividad;
 
-    public function __construct(?string $desde = null, ?string $hasta = null)
-    {
-        $this->desde = $desde;
-        $this->hasta = $hasta;
+    private ?string $medicoId;
+
+    public function __construct(
+        ?string $zona = null,
+        ?string $tipoActividad = null,
+        ?string $medicoId = null
+    ) {
+        $this->zona = $zona;
+        $this->tipoActividad = $tipoActividad;
+        $this->medicoId = $medicoId;
     }
 
     /**
@@ -31,20 +37,14 @@ class InspeccionExport implements FromCollection, ShouldAutoSize, WithHeadings, 
      */
     public function collection()
     {
-        $query = Inspeccion::with(['predio.productor', 'detalles']);
+        $query = Inspeccion::with(['predio.productor', 'detalles', 'veterinario']);
 
         $user = auth()->user();
         if ($user && ! $user->hasRole('Administrador')) {
             $query->where('veterinario_id', $user->id);
         }
 
-        if ($this->desde) {
-            $query->whereDate('fecha', '>=', $this->desde);
-        }
-
-        if ($this->hasta) {
-            $query->whereDate('fecha', '<=', $this->hasta);
-        }
+        $query->applySabanaFilters($this->zona, $this->tipoActividad, $this->medicoId);
 
         return $query->get();
     }
@@ -105,7 +105,7 @@ class InspeccionExport implements FromCollection, ShouldAutoSize, WithHeadings, 
             $inspeccion->predio?->productor
                 ? trim($inspeccion->predio->productor->nombre.' '.$inspeccion->predio->productor->apellido_paterno.' '.$inspeccion->predio->productor->apellido_materno)
                 : '',
-            $inspeccion->predio?->municipio ?? $inspeccion->predio?->localidad,
+            $inspeccion->predio?->municipio ?? '',
             $inspeccion->predio?->localidad,
             $inspeccion->funcion_zootecnica,
             $inspeccion->fecha ? $inspeccion->fecha->format('d/m/Y') : '',
@@ -134,14 +134,14 @@ class InspeccionExport implements FromCollection, ShouldAutoSize, WithHeadings, 
         $sheet->mergeCells('L1:N2');
         $sheet->mergeCells('O1:O3');
 
-        // Apply style to headers
+        // Apply style to headers with explicit ARGB definitions to fix OpenXML rendering in Excel
         $headerStyle = [
             'font' => [
                 'bold' => true,
                 'name' => 'Arial',
                 'size' => 9,
                 'color' => [
-                    'rgb' => 'FFFFFF',
+                    'argb' => 'FFFFFFFF',
                 ],
             ],
             'alignment' => [
@@ -152,13 +152,16 @@ class InspeccionExport implements FromCollection, ShouldAutoSize, WithHeadings, 
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
                 'startColor' => [
-                    'rgb' => '1155CC',
+                    'argb' => 'FF1155CC',
+                ],
+                'endColor' => [
+                    'argb' => 'FF1155CC',
                 ],
             ],
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => '000000'],
+                    'color' => ['argb' => 'FF000000'],
                 ],
             ],
         ];

@@ -45,12 +45,16 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'zona' => 'required|in:A,B',
+            'actividad' => 'required|string',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'zona' => $request->zona,
+            'actividad' => $request->actividad,
         ]);
 
         // Asignar automáticamente el rol de Médico de Campo
@@ -92,10 +96,14 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,'.$usuario->id,
             'password' => 'nullable|string|min:8|confirmed',
+            'zona' => 'required|in:A,B',
+            'actividad' => 'required|string',
         ]);
 
         $usuario->name = $request->name;
         $usuario->email = $request->email;
+        $usuario->zona = $request->zona;
+        $usuario->actividad = $request->actividad;
 
         if ($request->filled('password')) {
             $usuario->password = Hash::make($request->password);

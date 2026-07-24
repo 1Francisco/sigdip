@@ -22,6 +22,8 @@ class MedicosApiController extends Controller
                 'id' => $u->id,
                 'name' => $u->name,
                 'email' => $u->email,
+                'zona' => $u->zona,
+                'actividad' => $u->actividad,
                 'created_at' => $u->created_at->format('d/m/Y'),
                 'productores_count' => $u->productores_count,
             ]);
@@ -41,12 +43,16 @@ class MedicosApiController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
+            'zona' => 'required|in:A,B',
+            'actividad' => 'required|string',
         ]);
 
         $medico = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
+            'zona' => $validated['zona'],
+            'actividad' => $validated['actividad'],
         ]);
 
         $medico->assignRole('Medico_Campo');
@@ -58,6 +64,8 @@ class MedicosApiController extends Controller
                 'id' => $medico->id,
                 'name' => $medico->name,
                 'email' => $medico->email,
+                'zona' => $medico->zona,
+                'actividad' => $medico->actividad,
                 'created_at' => $medico->created_at->format('d/m/Y'),
             ],
         ], 201);
@@ -76,6 +84,8 @@ class MedicosApiController extends Controller
                 'id' => $medico->id,
                 'name' => $medico->name,
                 'email' => $medico->email,
+                'zona' => $medico->zona,
+                'actividad' => $medico->actividad,
                 'created_at' => $medico->created_at->format('d/m/Y'),
             ],
         ]);
@@ -92,10 +102,14 @@ class MedicosApiController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,'.$medico->id,
             'password' => 'nullable|string|min:8',
+            'zona' => 'required|in:A,B',
+            'actividad' => 'required|string',
         ]);
 
         $medico->name = $validated['name'];
         $medico->email = $validated['email'];
+        $medico->zona = $validated['zona'];
+        $medico->actividad = $validated['actividad'];
 
         if (! empty($validated['password'])) {
             $medico->password = Hash::make($validated['password']);
@@ -110,6 +124,8 @@ class MedicosApiController extends Controller
                 'id' => $medico->id,
                 'name' => $medico->name,
                 'email' => $medico->email,
+                'zona' => $medico->zona,
+                'actividad' => $medico->actividad,
                 'created_at' => $medico->created_at->format('d/m/Y'),
             ],
         ]);
