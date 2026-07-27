@@ -59,7 +59,9 @@ class InspeccionController extends Controller
             $query->where('veterinario_id', auth()->id());
         }
 
-        $inspecciones = $query->paginate(10)->withQueryString();
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $inspecciones */
+        $inspecciones = $query->paginate(10);
+        $inspecciones = $inspecciones->withQueryString();
 
         return view('inspecciones.index', compact('inspecciones'));
     }
@@ -147,10 +149,10 @@ class InspeccionController extends Controller
             $visita = Visita::find($request->visita_id);
             if ($visita && $visita->fecha_programada) {
                 $hoy = Carbon::now()->startOfDay();
-                $fechaProg = $visita->fecha_programada->startOfDay();
+                $fechaProg = Carbon::parse($visita->fecha_programada)->startOfDay();
                 if ($hoy->lt($fechaProg)) {
                     if ($request->estado === 'sincronizado' || $request->inyeccion_realizada == 1) {
-                        return back()->withInput()->with('error', 'No se puede finalizar la inyección antes de la fecha programada de la visita ('.$visita->fecha_programada->format('d/m/Y').').');
+                        return back()->withInput()->with('error', 'No se puede finalizar la inyección antes de la fecha programada de la visita ('.$fechaProg->format('d/m/Y').').');
                     }
                 }
             }
@@ -407,20 +409,20 @@ class InspeccionController extends Controller
             if (! $visita->inyeccion) {
                 // Fase de Inyección
                 if ($visita->fecha_programada) {
-                    $fechaProg = $visita->fecha_programada->startOfDay();
+                    $fechaProg = Carbon::parse($visita->fecha_programada)->startOfDay();
                     if ($hoy->lt($fechaProg)) {
                         if ($request->estado === 'sincronizado' || $request->inyeccion_realizada == 1) {
-                            return back()->withInput()->with('error', 'No se puede finalizar la inyección antes de la fecha programada de la visita ('.$visita->fecha_programada->format('d/m/Y').').');
+                            return back()->withInput()->with('error', 'No se puede finalizar la inyección antes de la fecha programada de la visita ('.$fechaProg->format('d/m/Y').').');
                         }
                     }
                 }
             } else {
                 // Fase de Lectura
                 if ($inspeccion->fecha_lectura) {
-                    $fechaLectura = $inspeccion->fecha_lectura->startOfDay();
+                    $fechaLectura = Carbon::parse($inspeccion->fecha_lectura)->startOfDay();
                     if ($hoy->lt($fechaLectura)) {
                         if ($request->estado === 'sincronizado') {
-                            return back()->withInput()->with('error', 'No se puede finalizar el dictamen antes de la fecha programada de la lectura ('.$inspeccion->fecha_lectura->format('d/m/Y').').');
+                            return back()->withInput()->with('error', 'No se puede finalizar el dictamen antes de la fecha programada de la lectura ('.$fechaLectura->format('d/m/Y').').');
                         }
                     }
                 }

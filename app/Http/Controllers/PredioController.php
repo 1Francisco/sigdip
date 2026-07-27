@@ -32,7 +32,9 @@ class PredioController extends Controller
             });
         }
 
-        $predios = $query->paginate(10)->withQueryString();
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $predios */
+        $predios = $query->paginate(10);
+        $predios = $predios->withQueryString();
 
         return view('predios.index', compact('predios'));
     }

@@ -31,7 +31,9 @@ class AnimalController extends Controller
             });
         }
 
-        $animales = $query->latest()->paginate(20)->withQueryString();
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $animales */
+        $animales = $query->latest()->paginate(20);
+        $animales = $animales->withQueryString();
         $predios = Predio::with('productor')->get();
 
         return view('animales.index', compact('animales', 'predios'));

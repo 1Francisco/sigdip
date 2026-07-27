@@ -33,7 +33,9 @@ class AreteCensoController extends Controller
             });
         }
 
-        $aretes = $query->latest()->paginate(20)->withQueryString();
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $aretes */
+        $aretes = $query->latest()->paginate(20);
+        $aretes = $aretes->withQueryString();
         $productores = Productor::all();
         $predios = Predio::with('productor')->get();
 

@@ -30,7 +30,9 @@ class ProductorController extends Controller
             });
         }
 
-        $productores = $query->paginate(10)->withQueryString();
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $productores */
+        $productores = $query->paginate(10);
+        $productores = $productores->withQueryString();
 
         return view('productores.index', compact('productores'));
     }

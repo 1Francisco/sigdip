@@ -38,7 +38,9 @@ class VisitaController extends Controller
             $query->where('veterinario_id', auth()->id());
         }
 
-        $visitas = $query->paginate(10)->withQueryString();
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $visitas */
+        $visitas = $query->paginate(10);
+        $visitas = $visitas->withQueryString();
 
         return view('visitas.index', compact('visitas'));
     }
@@ -181,6 +183,6 @@ class VisitaController extends Controller
             'estado' => 'pendiente',
         ]);
 
-        return back()->with('success', 'Visita reprogramada con éxito para el '.$visita->fecha_programada->format('d/m/Y').'.');
+        return back()->with('success', 'Visita reprogramada con éxito para el '.\Carbon\Carbon::parse($visita->fecha_programada)->format('d/m/Y').'.');
     }
 }
