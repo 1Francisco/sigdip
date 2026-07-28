@@ -21,7 +21,7 @@ Backend Laravel 10 (PHP 8.1+) + app móvil Vue 3 / Capacitor 8 en `mobile_app/`.
 ## Arquitectura
 - Dos interfaces: web (`routes/web.php` — Blade + session auth) y API (`routes/api.php` — Sanctum tokens).
 - Roles Spatie: `Administrador`, `Medico_Campo` — usados vía middleware `role:` y en lógica de controladores.
-- Modelos clave: `Visita`, `Inspeccion`, `Productor`, `Predio`, `Animal`, `DetalleInspeccion`.
+- Modelos clave: `Visita`, `Inspeccion` (lectura/dictamen), `Productor`, `Predio`, `Animal`, `DetalleInspeccion` (detalle de lectura).
 - Exportaciones: PDF (DOMPDF) y Excel (Laravel Excel / PhpSpreadsheet).
 - Importación Excel con vista previa: `ImportExcelController`.
 
@@ -39,7 +39,7 @@ Backend Laravel 10 (PHP 8.1+) + app móvil Vue 3 / Capacitor 8 en `mobile_app/`.
 Herramientas auxiliares movidas a `scratch/` (ignorado por git) — `read_ini.php`, `search_data.php`, `locate_curp.php`, etc. Fuera del flujo Laravel.
 
 ## Web CRUD
-- CRUD completo para: `Productores`, `Predios`, `Visitas`, `Usuarios`, `Inspecciones`, `Animales`, `Aretes del Censo`.
+- CRUD completo para: `Productores`, `Predios`, `Visitas`, `Usuarios`, `Inspecciones` (lecturas/dictámenes), `Animales`, `Aretes del Censo`.
 - `AnimalController` y `AreteCensoController` solo accesibles por `Administrador` vía middleware `role:`.
 
 ## App Móvil
@@ -48,7 +48,7 @@ Herramientas auxiliares movidas a `scratch/` (ignorado por git) — `read_ini.ph
 - **Offline-first**: `localforage` (IndexedDB) para catálogos, login sin conexión, auto-sync vía `backgroundSync.js`.
 - **Layout unificado**: `AppLayout.vue` usado por las 27 vistas (sidebar, header, bottom-nav ya no duplicados).
 - **Router**: hash history (`createWebHashHistory`), auth guard en `beforeEach`.
-- **Estado global**: Pinia store (`stores/inspeccion.js`) reemplaza `sessionStorage` para datos de scanner/borradores.
+- **Estado global**: Pinia store (`stores/inspeccion.js`) reemplaza `sessionStorage` para datos de scanner/borradores de lecturas.
 - **Toast**: Componente `Toast.vue` para notificaciones.
 
 ## Deploy

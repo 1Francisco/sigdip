@@ -41,7 +41,7 @@ src/
 │   ├── api.js       # HTTP client (fetch + Bearer Sanctum token)
 │   └── db.js        # localforage wrapper (IndexedDB)
 ├── stores/
-│   └── inspeccion.js # Pinia store (scanner, borradores)
+│   └── inspeccion.js # Pinia store (lecturas: scanner, borradores)
 ├── components/
 │   ├── AppLayout.vue    # Layout único (sidebar + header + bottom-nav)
 │   └── Toast.vue        # Notificaciones toast
@@ -57,7 +57,7 @@ Tres stores IndexedDB:
 | Store | Contenido |
 |-------|-----------|
 | `catalogos` | Predios, Productores, Médicos, Visitas, Dashboard, Animales, AretesCenso |
-| `inspecciones_pendientes` | Dictámenes offline pendientes de sincronizar |
+| `inspecciones_pendientes` | Lecturas (dictámenes) offline pendientes de sincronizar |
 | `visitas_pendientes` | Visitas offline pendientes de sincronizar |
 
 Flujo: API primero si hay conexión → cachea en localforage → fallback a localforage si offline.
@@ -74,8 +74,8 @@ Flujo: API primero si hay conexión → cachea en localforage → fallback a loc
 | `/predios/nuevo` | PredioCreateView | Crear predio |
 | `/visitas` | VisitasView | Lista de visitas |
 | `/visitas/nueva` | VisitaCreateView | Crear visita |
-| `/inspecciones` | InspeccionesView | Lista de dictámenes |
-| `/inspecciones/nueva` | InspeccionFormView | Crear dictamen |
+| `/inspecciones` | InspeccionesView | Lista de lecturas / dictámenes |
+| `/inspecciones/nueva` | InspeccionFormView | Crear lectura / dictamen |
 | `/medicos` | MedicosView | Lista de médicos (admin) |
 | `/sync` | SyncView | Descarga/sincronización de catálogos |
 | `/animales` | AnimalesView | CRUD animales (admin) |
@@ -91,7 +91,7 @@ Métodos principales en `api.js`:
 - `getProductores()`, `getProductor(id)`, `searchProductor(q)`, `storeProductor()`, `updateProductor()`
 - `getPredios()`, `getPredio(id)`, `storeRancho()`, `updateRancho()`
 - `getVisitas()`, `createVisita()`, `updateVisita()`
-- `getInspecciones()`, `updateInspeccion()`, `syncDetalles()`
+- `getInspecciones()`, `updateInspeccion()`, `syncDetalles()` — gestión de lecturas / dictámenes
 - `getMedicos()`, `storeMedico()`, `updateMedico()`
 - `downloadCatalogos()` — sincronización masiva
 

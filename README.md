@@ -2,7 +2,7 @@
 
 **Sistema Integral de Gestión de Dictámenes de Inspección Pecuaria**
 
-Plataforma para la gestión de dictámenes de tuberculosis bovina, diseñada para la Campaña Nacional contra la Tuberculosis Bovina (CNTB) de SENASICA.
+Plataforma para la gestión de dictámenes (lecturas pecuarias) de tuberculosis bovina, diseñada para la Campaña Nacional contra la Tuberculosis Bovina (CNTB) de SENASICA.
 
 ---
 
@@ -50,18 +50,20 @@ Plataforma para la gestión de dictámenes de tuberculosis bovina, diseñada par
 ## Modelos Clave y Relaciones
 
 ```
-Productor (1) ──→ (N) Predio (1) ──→ (N) Inspeccion (1) ──→ (N) DetalleInspeccion
-                    Predio (1) ──→ (N) Visita (1) ──→ (1) Inspeccion
+Productor (1) ──→ (N) Predio (1) ──→ (N) Lectura / Dictamen (1) ──→ (N) DetalleLectura
+                    Predio (1) ──→ (N) Visita (1) ──→ (1) Lectura / Dictamen
                     Productor (N) ──→ (1) User (médico)
 ```
 
-| Modelo | Tabla | FK relevantes |
-|--------|-------|--------------|
-| `Productor` | `productores` | `medico_id → users` |
-| `Predio` | `predios` | `productor_id → productores` |
-| `Visita` | `visitas` | `predio_id → predios`, `veterinario_id → users` |
-| `Inspeccion` | `inspecciones` | `predio_id → predios`, `visita_id → visitas`, `grupo_id` (string) |
-| `DetalleInspeccion` | `detalles_inspeccion` | `inspeccion_id → inspecciones`, `animal_id → animales` |
+> **Nota de nomenclatura:** El sistema fue desarrollado originalmente con el término "Inspeccion" en el código (modelos, tablas, controladores). Funcionalmente corresponde a **Lectura Pecuaria (Dictamen)**. En este documento se usa "Lectura" o "Dictamen" para referirse al concepto de negocio.
+
+| Modelo (código) | Tabla | FK relevantes | Concepto de negocio |
+|--------|-------|--------------|-------------------|
+| `Productor` | `productores` | `medico_id → users` | Productor / dueño del hato |
+| `Predio` | `predios` | `productor_id → productores` | Rancho / Unidad de Producción |
+| `Visita` | `visitas` | `predio_id → predios`, `veterinario_id → users` | Visita de campo |
+| `Inspeccion` | `inspecciones` | `predio_id → predios`, `visita_id → visitas`, `grupo_id` (string) | **Lectura / Dictamen** |
+| `DetalleInspeccion` | `detalles_inspeccion` | `inspeccion_id → inspecciones`, `animal_id → animales` | **Detalle de Lectura** (resultado por animal) |
 
 ---
 
@@ -72,19 +74,19 @@ Productor (1) ──→ (N) Predio (1) ──→ (N) Inspeccion (1) ──→ (N
 ### Cómo funciona
 
 1. Dos o más productores comparten la misma `clave` (ej. `BD-123421`) → pertenecen al mismo hato.
-2. Al crear un dictamen para un productor, se pueden añadir **productores extra** del mismo hato.
-3. El backend agrupa los animales por `productor_id` y crea **N registros `Inspeccion` separados**, uno por cada productor.
+2. Al crear una lectura (dictamen) para un productor, se pueden añadir **productores extra** del mismo hato.
+3. El backend agrupa los animales por `productor_id` y crea **N registros de Lectura (`Inspeccion`) separados**, uno por cada productor.
 4. Todos comparten el mismo `grupo_id` (ej. `GRP-20260728-123456-abc`).
 
 ### Generación de PDFs
 
-**Cada `Inspeccion` genera su propio PDF independiente.** No existe un PDF "grupal". Esto significa:
+**Cada Lectura genera su propio PDF independiente.** No existe un PDF "grupal". Esto significa:
 
-- Productor A → Inspeccion A → PDF_A (solo animales de A)
-- Productor B → Inspeccion B → PDF_B (solo animales de B)
+- Productor A → Lectura_A → PDF_A (solo animales de A)
+- Productor B → Lectura_B → PDF_B (solo animales de B)
 - Ambos PDFs son independientes, vinculados por `grupo_id` en base de datos
 
-El PDF se genera con DOMPDF (`resources/views/reports/inspeccion_pdf.blade.php`) y muestra los datos del productor dueño de esa inspección (`$inspeccion->predio->productor`).
+El PDF se genera con DOMPDF (`resources/views/reports/inspeccion_pdf.blade.php`) y muestra los datos del productor dueño de esa lectura (`$inspeccion->predio->productor`).
 
 ### Roles
 
@@ -100,7 +102,7 @@ SIGDIP_NEW/
 ├── app/
 │   ├── Http/Controllers/
 │   │   ├── Api/                   # Controladores API (app móvil)
-│   │   ├── InspeccionController   # Web: dictámenes
+│   │   ├── InspeccionController   # Web: lecturas / dictámenes
 │   │   ├── ProductorController    # Web: productores
 │   │   ├── ReporteController      # Web: PDFs y sábanas
 │   │   └── ...
@@ -121,15 +123,15 @@ SIGDIP_NEW/
 │   │   │   ├── api.js             # Servicio HTTP (fetch + Bearer token)
 │   │   │   └── db.js              # localforage (IndexedDB)
 │   │   ├── stores/
-│   │   │   └── inspeccion.js      # Pinia store
+│   │   │   └── inspeccion.js      # Pinia store (datos de scanner / borradores de lecturas)
 │   │   └── ...
 │   ├── cypress/e2e/               # 23 specs, 126 tests
 │   └── ...
 ├── resources/views/
-│   ├── inspecciones/              # CRUD dictámenes (Blade)
+│   ├── inspecciones/              # CRUD lecturas / dictámenes (Blade)
 │   ├── productores/               # CRUD productores (Blade + wizard)
 │   ├── reports/
-│   │   └── inspeccion_pdf.blade.php  # Template PDF
+│   │   └── inspeccion_pdf.blade.php  # Template PDF de dictamen
 │   └── ...
 ├── routes/
 │   ├── web.php                    # Rutas web (session auth)
@@ -200,7 +202,7 @@ npm run cy:open         # navegador interactivo
 - **Offline-first**: catálogos en localforage (IndexedDB), login sin conexión, auto-sync en segundo plano
 - **Layout unificado**: `AppLayout.vue` usado por las 27 vistas (sidebar, header, bottom-nav)
 - **Router**: hash history (`createWebHashHistory`), auth guard en `beforeEach`
-- **Estado global**: Pinia store (`stores/inspeccion.js`)
+- **Estado global**: Pinia store (`stores/inspeccion.js`) — datos de scanner y borradores de lecturas
 - **Toast**: componente `Toast.vue`
 
 Ver `mobile_app/README.md` para más detalles.
