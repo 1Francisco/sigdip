@@ -155,40 +155,40 @@ class ProductorTest extends TestCase
         $response->assertSessionHasErrors(['nombre']);
     }
 
-    public function test_store_ajax_admin_asigna_clave_cuarentena()
+    public function test_store_ajax_admin_asigna_clave()
     {
         $response = $this->actingAs($this->admin)->post('/productores/ajax', [
             'nombre' => 'Admin',
             'apellido_paterno' => 'Key',
             'curp' => 'KEYX890101HSL00100',
             'upp' => 'UPP-AJAX-003',
-            'clave_cuarentena' => 'AD-99999',
+            'clave' => 'AD-99999',
             'zona' => 'A',
         ]);
 
         $response->assertStatus(200);
         $this->assertDatabaseHas('productores', [
             'curp' => 'KEYX890101HSL00100',
-            'clave_cuarentena' => 'AD-99999',
+            'clave' => 'AD-99999',
             'zona' => 'A',
         ]);
     }
 
-    public function test_store_ajax_medico_no_asigna_clave_cuarentena()
+    public function test_store_ajax_medico_no_asigna_clave()
     {
         $response = $this->actingAs($this->medico)->post('/productores/ajax', [
             'nombre' => 'Medico',
             'apellido_paterno' => 'NoKey',
             'curp' => 'NOKX890101HSL00100',
             'upp' => 'UPP-AJAX-004',
-            'clave_cuarentena' => 'AD-88888',
+            'clave' => 'AD-88888',
             'zona' => 'A',
         ]);
 
         $response->assertStatus(200);
         $this->assertDatabaseHas('productores', [
             'curp' => 'NOKX890101HSL00100',
-            'clave_cuarentena' => null,
+            'clave' => null,
             'zona' => null,
         ]);
     }
@@ -205,5 +205,153 @@ class ProductorTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['curp']);
+    }
+
+    public function test_store_with_valid_activity_type_non_seguimiento()
+    {
+        $response = $this->actingAs($this->admin)->post(route('productores.store'), [
+            'nombre' => 'Test',
+            'apellido_paterno' => 'Activity',
+            'tipo_actividad' => 'Barrido',
+            'sub_tipo_actividad' => '',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('productores', [
+            'nombre' => 'Test',
+            'tipo_actividad' => 'Barrido',
+            'sub_tipo_actividad' => null,
+        ]);
+    }
+
+    public function test_store_fails_when_seguimiento_but_no_sub_type()
+    {
+        $response = $this->actingAs($this->admin)->post(route('productores.store'), [
+            'nombre' => 'Test',
+            'apellido_paterno' => 'Activity',
+            'tipo_actividad' => 'Seguimiento',
+            'sub_tipo_actividad' => '',
+        ]);
+
+        $response->assertSessionHasErrors(['sub_tipo_actividad']);
+    }
+
+    public function test_store_succeeds_when_seguimiento_with_valid_sub_type()
+    {
+        $response = $this->actingAs($this->admin)->post(route('productores.store'), [
+            'nombre' => 'Test',
+            'apellido_paterno' => 'Activity',
+            'tipo_actividad' => 'Seguimiento',
+            'sub_tipo_actividad' => 'Hatos Relacionados y Expuestos',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('productores', [
+            'nombre' => 'Test',
+            'tipo_actividad' => 'Seguimiento',
+            'sub_tipo_actividad' => 'Hatos Relacionados y Expuestos',
+        ]);
+    }
+
+    public function test_update_clears_sub_type_when_switching_from_seguimiento()
+    {
+        $productor = Productor::factory()->create([
+            'tipo_actividad' => 'Seguimiento',
+            'sub_tipo_actividad' => 'Cuarentena Definitiva',
+        ]);
+
+        $response = $this->actingAs($this->admin)->patch(route('productores.update', $productor), [
+            'nombre' => 'Carlos',
+            'apellido_paterno' => 'López',
+            'tipo_actividad' => 'Barrido',
+            'sub_tipo_actividad' => 'Cuarentena Definitiva',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('productores', [
+            'id' => $productor->id,
+            'tipo_actividad' => 'Barrido',
+            'sub_tipo_actividad' => null,
+        ]);
+    }
+
+    public function test_autogenerates_clave_for_barrido()
+    {
+        $productor = Productor::create([
+            'nombre' => 'Barrido',
+            'apellido_paterno' => 'Test',
+            'tipo_actividad' => 'Barrido',
+        ]);
+
+        $this->assertNotNull($productor->clave);
+        $this->assertStringStartsWith('BF-', $productor->clave);
+    }
+
+    public function test_autogenerates_clave_for_buffer()
+    {
+        $productor = Productor::create([
+            'nombre' => 'Buffer',
+            'apellido_paterno' => 'Test',
+            'tipo_actividad' => 'Buffer',
+        ]);
+
+        $this->assertNotNull($productor->clave);
+        $this->assertStringStartsWith('BU-', $productor->clave);
+    }
+
+    public function test_autogenerates_clave_for_seguimiento()
+    {
+        $productor = Productor::create([
+            'nombre' => 'Seguimiento',
+            'apellido_paterno' => 'Test',
+            'tipo_actividad' => 'Seguimiento',
+            'sub_tipo_actividad' => 'Cuarentena Precautoria',
+        ]);
+
+        $this->assertNotNull($productor->clave);
+        $this->assertStringStartsWith('SG-', $productor->clave);
+    }
+
+    public function test_autogenerates_sequential_clave()
+    {
+        $p1 = Productor::create(['nombre' => 'P1', 'apellido_paterno' => 'T1', 'tipo_actividad' => 'Barrido']);
+        $p2 = Productor::create(['nombre' => 'P2', 'apellido_paterno' => 'T2', 'tipo_actividad' => 'Barrido']);
+
+        $this->assertNotEquals($p1->clave, $p2->clave);
+        $this->assertStringStartsWith('BF-', $p1->clave);
+        $this->assertStringStartsWith('BF-', $p2->clave);
+    }
+
+    public function test_store_multiple_producers_with_predios()
+    {
+        $response = $this->actingAs($this->admin)->post(route('productores.store-multiple'), [
+            'productores' => [
+                [
+                    'nombre' => 'Multi1',
+                    'apellido_paterno' => 'P1',
+                    'curp' => 'MULT111111HSL00001',
+                    'tipo_actividad' => 'Barrido',
+                    'registrar_predio' => '1',
+                    'nombre_rancho' => 'Rancho Multi 1',
+                    'clave_unidad_produccion' => 'UPPMULT1',
+                    'predio_municipio' => 'M1',
+                    'predio_localidad' => 'L1',
+                ],
+                [
+                    'nombre' => 'Multi2',
+                    'apellido_paterno' => 'P2',
+                    'curp' => 'MULT222222HSL00002',
+                    'tipo_actividad' => 'Buffer',
+                    'registrar_predio' => '0',
+                ]
+            ]
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect(route('productores.index'));
+
+        $this->assertDatabaseHas('productores', ['nombre' => 'Multi1']);
+        $this->assertDatabaseHas('productores', ['nombre' => 'Multi2']);
+        $this->assertDatabaseHas('predios', ['nombre_rancho' => 'Rancho Multi 1']);
     }
 }

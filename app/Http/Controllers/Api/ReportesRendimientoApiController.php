@@ -325,10 +325,10 @@ class ReportesRendimientoApiController extends Controller
             ->join('productores', 'predios.productor_id', '=', 'productores.id');
 
         $detalleQuery = (clone $base)
-            ->whereNotNull('productores.clave_cuarentena')
-            ->select('productores.clave_cuarentena', DB::raw('COUNT(*) as total'))
-            ->groupBy('productores.clave_cuarentena')
-            ->orderBy('productores.clave_cuarentena');
+            ->whereNotNull('productores.clave')
+            ->select('productores.clave', DB::raw('COUNT(*) as total'))
+            ->groupBy('productores.clave')
+            ->orderBy('productores.clave');
 
         $this->applyCommonFilters($detalleQuery, $fechaDesde, $fechaHasta, $estado, $zona, $medicoId, $localidad);
         $detalle = $detalleQuery->get();
@@ -337,7 +337,7 @@ class ReportesRendimientoApiController extends Controller
         $cuarentenasP = collect();
 
         foreach ($detalle as $item) {
-            $tipo = substr($item->clave_cuarentena, 0, 2);
+            $tipo = substr($item->clave, 0, 2);
             $letter = substr($tipo, 1, 1);
             $target = $letter === 'P' ? $cuarentenasP : $cuarentenasD;
 
@@ -351,7 +351,7 @@ class ReportesRendimientoApiController extends Controller
         }
 
         $sinQuery = (clone $base)
-            ->whereNull('productores.clave_cuarentena')
+            ->whereNull('productores.clave')
             ->select(DB::raw('COUNT(*) as total'));
 
         $this->applyCommonFilters($sinQuery, $fechaDesde, $fechaHasta, $estado, $zona, $medicoId, $localidad);

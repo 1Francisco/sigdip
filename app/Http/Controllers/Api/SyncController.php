@@ -422,7 +422,7 @@ class SyncController extends Controller
             'productores.*.id' => 'required|string',
             'productores.*.nombre' => 'required|string',
             'productores.*.apellido_paterno' => 'required|string',
-            'productores.*.clave_cuarentena' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP)/i'],
+            'productores.*.clave' => 'nullable|string',
             'productores.*.zona' => 'nullable|string|in:A,B',
         ]);
 
@@ -444,7 +444,7 @@ class SyncController extends Controller
                     'upp' => $item['upp'] ?? 'N/A',
                     'telefono' => $item['telefono'] ?? '',
                     'medico_id' => $request->user()->hasRole('Administrador') ? ($item['medico_id'] ?? null) : $request->user()->id,
-                    'clave_cuarentena' => $request->user()->hasRole('Administrador') ? ($item['clave_cuarentena'] ?? null) : null,
+                    'clave' => $request->user()->hasRole('Administrador') ? ($item['clave'] ?? null) : null,
                     'zona' => $request->user()->hasRole('Administrador') ? ($item['zona'] ?? null) : null,
                 ]);
             }

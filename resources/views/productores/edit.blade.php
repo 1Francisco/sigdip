@@ -39,15 +39,14 @@
                         </div>
 
                         <!-- Identificación -->
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold">CURP</label>
                             <input type="text" name="curp" class="form-control" value="{{ old('curp', $productor->curp) }}" maxlength="18">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold">UPP (Unidad de Producción Pecuaria)</label>
                             <input type="text" name="upp" class="form-control" value="{{ old('upp', $productor->upp) }}">
                         </div>
-
                         <!-- Domicilio -->
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Domicilio Completo</label>
@@ -75,12 +74,32 @@
                             <label class="form-label fw-semibold">Correo Electrónico</label>
                             <input type="email" name="email" class="form-control" value="{{ old('email', $productor->email) }}">
                         </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tipo de Actividad</label>
+                            <select name="tipo_actividad" id="tipo_actividad" class="form-select rounded-3">
+                                <option value="">-- Seleccionar Actividad --</option>
+                                <option value="Barrido" {{ old('tipo_actividad', $productor->tipo_actividad) == 'Barrido' ? 'selected' : '' }}>Barrido</option>
+                                <option value="Buffer" {{ old('tipo_actividad', $productor->tipo_actividad) == 'Buffer' ? 'selected' : '' }}>Buffer</option>
+                                <option value="Seguimiento" {{ old('tipo_actividad', $productor->tipo_actividad) == 'Seguimiento' ? 'selected' : '' }}>Seguimiento</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="sub_tipo_actividad_container" style="display: none;">
+                            <label class="form-label fw-semibold">Subtipo de Actividad <span class="text-danger">*</span></label>
+                            <select name="sub_tipo_actividad" id="sub_tipo_actividad" class="form-select rounded-3">
+                                <option value="">-- Seleccionar Subtipo --</option>
+                                <option value="Cuarentena Precautoria" {{ old('sub_tipo_actividad', $productor->sub_tipo_actividad) == 'Cuarentena Precautoria' ? 'selected' : '' }}>Cuarentena Precautoria</option>
+                                <option value="Cuarentena Definitiva" {{ old('sub_tipo_actividad', $productor->sub_tipo_actividad) == 'Cuarentena Definitiva' ? 'selected' : '' }}>Cuarentena Definitiva</option>
+                                <option value="Hatos Relacionados y Expuestos" {{ old('sub_tipo_actividad', $productor->sub_tipo_actividad) == 'Hatos Relacionados y Expuestos' ? 'selected' : '' }}>Hatos Relacionados y Expuestos</option>
+                            </select>
+                        </div>
                         
                         @if(auth()->user()->hasRole('Administrador'))
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Clave de Cuarentena</label>
-                            <input type="text" name="clave_cuarentena" id="clave_cuarentena" class="form-control text-uppercase rounded-3" placeholder="Ej. BD-123421" value="{{ old('clave_cuarentena', $productor->clave_cuarentena) }}">
+                             <label class="form-label fw-semibold">Clave</label>
+                             <input type="text" name="clave" id="clave" class="form-control text-uppercase rounded-3" placeholder="Ej. BD-123421" value="{{ old('clave', $productor->clave) }}" autocomplete="off">
                             <div class="form-text small text-muted">Debe iniciar con AD, AP, BD o BP. Ej. BD-123421</div>
+                            <div id="resultadosClave" class="mt-2"></div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Zona / Sector</label>
@@ -109,9 +128,14 @@
                         @endif
                     </div>
 
-                    <div class="d-flex justify-content-end gap-3 mt-4">
-                        <a href="{{ route('productores.index') }}" class="btn btn-light px-4">Cancelar</a>
-                        <button type="submit" class="btn btn-primary px-5">Actualizar Productor</button>
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <a href="{{ route('productores.create-multiple', ['prefill_from_productor_id' => $productor->id]) }}" class="btn btn-outline-primary fw-bold">
+                            <i class="bi bi-people-fill me-1"></i> Agregar Productores a este Hato
+                        </a>
+                        <div class="d-flex gap-3">
+                            <a href="{{ route('productores.index') }}" class="btn btn-light px-4">Cancelar</a>
+                            <button type="submit" class="btn btn-primary px-5">Actualizar Productor</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -122,8 +146,31 @@
 
 @section('scripts')
 <script>
-    // Auto-update zona based on clave_cuarentena selection
-    const claveSelect = document.getElementById('clave_cuarentena');
+    // Toggle sub_tipo_actividad based on tipo_actividad
+    const tipoActividadSelect = document.getElementById('tipo_actividad');
+    const subTipoActividadContainer = document.getElementById('sub_tipo_actividad_container');
+    const subTipoActividadSelect = document.getElementById('sub_tipo_actividad');
+
+    function toggleSubTipoActividad() {
+        if (tipoActividadSelect && subTipoActividadContainer && subTipoActividadSelect) {
+            if (tipoActividadSelect.value === 'Seguimiento') {
+                subTipoActividadContainer.style.display = 'block';
+                subTipoActividadSelect.setAttribute('required', 'required');
+            } else {
+                subTipoActividadContainer.style.display = 'none';
+                subTipoActividadSelect.removeAttribute('required');
+                subTipoActividadSelect.value = '';
+            }
+        }
+    }
+
+    if (tipoActividadSelect) {
+        tipoActividadSelect.addEventListener('change', toggleSubTipoActividad);
+        toggleSubTipoActividad();
+    }
+
+    // Auto-update zona based on clave selection
+    const claveSelect = document.getElementById('clave');
     const zonaSelect = document.getElementById('zona_select');
     const zonaHidden = document.getElementById('zona');
     if (claveSelect && (zonaSelect || zonaHidden)) {
@@ -137,6 +184,47 @@
             }
             if (zonaSelect) zonaSelect.value = finalZona;
             if (zonaHidden) zonaHidden.value = finalZona;
+        });
+    }
+
+    // ========= Clave autocomplete =========
+    var claveInput = document.getElementById('clave');
+    var resultadosClave = document.getElementById('resultadosClave');
+    var debounceTimer;
+
+    if (claveInput && resultadosClave) {
+        claveInput.addEventListener('input', function () {
+            clearTimeout(debounceTimer);
+            var val = this.value.trim();
+            if (val.length < 1) {
+                resultadosClave.innerHTML = '';
+                return;
+            }
+            debounceTimer = setTimeout(function () {
+                fetch('{{ route("productores.buscar-por-clave") }}?clave=' + encodeURIComponent(val))
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.length === 0) {
+                            resultadosClave.innerHTML = '<div class="small text-muted"><i class="bi bi-exclamation-circle me-1"></i> No se encontraron productores con esa clave.</div>';
+                        } else {
+                            var h = '<div class="small fw-semibold text-muted mb-1">' + data.length + ' productor(es) con esta clave:</div>';
+                            h += '<div class="list-group list-group-flush border rounded-3" style="max-height: 200px; overflow-y: auto;">';
+                            data.forEach(function (p) {
+                                var nom = p.nombre + ' ' + p.apellido_paterno + (p.apellido_materno ? ' ' + p.apellido_materno : '');
+                                var cl = p.clave || '';
+                                h += '<div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-3 small" style="cursor:pointer;" onclick="document.getElementById(\'clave\').value=\'' + cl + '\'; document.getElementById(\'clave\').dispatchEvent(new Event(\'input\')); document.getElementById(\'resultadosClave\').innerHTML=\'\';">' +
+                                    '<div><span class="badge bg-secondary rounded-pill me-2">' + cl + '</span>' + nom + '</div>' +
+                                    '<div><span class="text-muted">' + (p.tipo_actividad || '') + (p.zona ? ' | ' + p.zona : '') + '</span></div>' +
+                                    '</div>';
+                            });
+                            h += '</div>';
+                            resultadosClave.innerHTML = h;
+                        }
+                    })
+                    .catch(function () {
+                        resultadosClave.innerHTML = '<div class="small text-danger"><i class="bi bi-exclamation-triangle me-1"></i> Error al consultar.</div>';
+                    });
+            }, 300);
         });
     }
 </script>

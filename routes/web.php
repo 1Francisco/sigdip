@@ -54,6 +54,10 @@ Route::middleware(['auth'])->group(function () {
 
     // Productores y Predios
     Route::post('/productores/ajax', [ProductorController::class, 'storeAjax'])->name('productores.store.ajax');
+    Route::get('/productores/buscar-por-clave', [ProductorController::class, 'buscarPorClave'])->name('productores.buscar-por-clave');
+    Route::get('/productores/buscar', [ProductorController::class, 'buscar'])->name('productores.buscar');
+    Route::get('/productores/create-multiple', [ProductorController::class, 'createMultiple'])->name('productores.create-multiple');
+    Route::post('/productores/store-multiple', [ProductorController::class, 'storeMultiple'])->name('productores.store-multiple');
     Route::resource('productores', ProductorController::class)->parameters(['productores' => 'productor']);
     Route::post('/predios/{predio}/coordenadas', [PredioController::class, 'updateCoordenadas'])->name('predios.updateCoordenadas');
     Route::resource('predios', PredioController::class);

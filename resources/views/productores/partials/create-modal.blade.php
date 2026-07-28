@@ -34,15 +34,14 @@
                             <input type="text" name="apellido_materno" class="form-control">
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold">CURP</label>
                             <input type="text" name="curp" class="form-control" maxlength="18">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold">UPP (Productor)</label>
                             <input type="text" name="upp" class="form-control" placeholder="Clave UPP Personal">
                         </div>
-
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Domicilio Completo</label>
                             <input type="text" name="domicilio" class="form-control" placeholder="Calle, Número, Colonia">
@@ -68,6 +67,25 @@
                             <label class="form-label fw-semibold">Correo Electrónico</label>
                             <input type="email" name="email" class="form-control">
                         </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tipo de Actividad</label>
+                            <select name="tipo_actividad" id="tipo_actividad_ajax" class="form-select rounded-3">
+                                <option value="">-- Seleccionar Actividad --</option>
+                                <option value="Barrido">Barrido</option>
+                                <option value="Buffer">Buffer</option>
+                                <option value="Seguimiento">Seguimiento</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="sub_tipo_actividad_container_ajax" style="display: none;">
+                            <label class="form-label fw-semibold">Subtipo de Actividad <span class="text-danger">*</span></label>
+                            <select name="sub_tipo_actividad" id="sub_tipo_actividad_ajax" class="form-select rounded-3">
+                                <option value="">-- Seleccionar Subtipo --</option>
+                                <option value="Cuarentena Precautoria">Cuarentena Precautoria</option>
+                                <option value="Cuarentena Definitiva">Cuarentena Definitiva</option>
+                                <option value="Hatos Relacionados y Expuestos">Hatos Relacionados y Expuestos</option>
+                            </select>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -87,6 +105,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('formNuevoProductorAjax');
     const ajaxErrors = document.getElementById('ajaxErrors');
     const ajaxErrorsList = document.getElementById('ajaxErrorsList');
+
+    // Toggle sub_tipo_actividad based on tipo_actividad
+    const tipoActividadSelect = document.getElementById('tipo_actividad_ajax');
+    const subTipoActividadContainer = document.getElementById('sub_tipo_actividad_container_ajax');
+    const subTipoActividadSelect = document.getElementById('sub_tipo_actividad_ajax');
+
+    function toggleSubTipoActividadAjax() {
+        if (tipoActividadSelect && subTipoActividadContainer && subTipoActividadSelect) {
+            if (tipoActividadSelect.value === 'Seguimiento') {
+                subTipoActividadContainer.style.display = 'block';
+                subTipoActividadSelect.setAttribute('required', 'required');
+            } else {
+                subTipoActividadContainer.style.display = 'none';
+                subTipoActividadSelect.removeAttribute('required');
+                subTipoActividadSelect.value = '';
+            }
+        }
+    }
+
+    if (tipoActividadSelect) {
+        tipoActividadSelect.addEventListener('change', toggleSubTipoActividadAjax);
+        toggleSubTipoActividadAjax();
+    }
 
     btnGuardar.addEventListener('click', async function() {
         // Reset state
@@ -118,6 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     apellido_paterno: data.apellido_paterno,
                     upp: data.upp || '',
                     curp: data.curp || '',
+                    clave: data.clave || '',
                     localidad: data.localidad || '',
                     municipio: data.municipio || '',
                     text: `${data.nombre} ${data.apellido_paterno} ${data.apellido_materno || ''}`.trim()

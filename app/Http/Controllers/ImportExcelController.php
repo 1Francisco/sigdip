@@ -692,7 +692,7 @@ class ImportExcelController extends Controller
                 'domicilio' => ['domicilio', 'direccion', 'calle'],
                 'municipio' => ['municipio'],
                 'localidad' => ['localidad'],
-                'cuarentena' => ['cuarentena', 'clave_cuarentena'],
+                'cuarentena' => ['cuarentena', 'clave'],
                 'predio_nombre' => ['predio', 'rancho', 'nombre_predio'],
             ]) ?? $this->smartMapColumns($rowsBase, [
                 'nombre' => ['nombre', 'productor', 'interesado'],
@@ -702,7 +702,7 @@ class ImportExcelController extends Controller
                 'domicilio' => ['domicilio', 'direccion', 'calle'],
                 'municipio' => ['municipio'],
                 'localidad' => ['localidad'],
-                'cuarentena' => ['cuarentena', 'clave_cuarentena'],
+                'cuarentena' => ['cuarentena', 'clave'],
                 'predio_nombre' => ['predio', 'rancho', 'nombre_predio'],
             ]);
 
@@ -794,7 +794,7 @@ class ImportExcelController extends Controller
                         }
                     }
 
-                    $claveCuarentena = $colMap['cuarentena'] ? trim($row[$colMap['cuarentena']] ?? '') : null;
+                    $clave = $colMap['cuarentena'] ? trim($row[$colMap['cuarentena']] ?? '') : null;
 
                     $curpVal = $colMap['curp'] ? trim($row[$colMap['curp']] ?? '') : null;
 
@@ -836,7 +836,7 @@ class ImportExcelController extends Controller
                             'domicilio' => $colMap['domicilio'] ? trim($row[$colMap['domicilio']] ?? '') : $productor->domicilio,
                             'municipio' => $colMap['municipio'] ? trim($row[$colMap['municipio']] ?? '') : $productor->municipio,
                             'localidad' => $colMap['localidad'] ? trim($row[$colMap['localidad']] ?? '') : $productor->localidad,
-                            'clave_cuarentena' => $claveCuarentena,
+                            'clave' => $clave,
                         ]);
                     } else {
                         $productor = Productor::create([
@@ -851,7 +851,7 @@ class ImportExcelController extends Controller
                             'localidad' => $colMap['localidad'] ? trim($row[$colMap['localidad']] ?? '') : '',
                             'medico_id' => $medicoId,
                             'zona' => $zona,
-                            'clave_cuarentena' => $claveCuarentena,
+                            'clave' => $clave,
                         ]);
                     }
 

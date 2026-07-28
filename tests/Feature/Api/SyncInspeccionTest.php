@@ -134,7 +134,7 @@ class SyncInspeccionTest extends TestCase
 
     public function test_upload_con_productor_bd_usa_umbral_2_meses()
     {
-        $productorBD = Productor::factory()->create(['clave_cuarentena' => 'BD-123456', 'zona' => 'B']);
+        $productorBD = Productor::factory()->create(['clave' => 'BD-123456', 'zona' => 'B']);
         $predioBD = Predio::factory()->create(['productor_id' => $productorBD->id]);
 
         $response = $this->postJson('/api/sync/inspecciones', [

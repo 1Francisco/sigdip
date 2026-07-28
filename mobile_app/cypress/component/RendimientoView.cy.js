@@ -61,10 +61,10 @@ const mockRendimientoResponse = {
     { zona: 'B', total: 3 }
   ],
   cuarentenasD: [
-    { tipo: 'D1', total: 2, detalle: [{ clave_cuarentena: 'D1-A', total: 2 }] }
+    { tipo: 'D1', total: 2, detalle: [{ clave: 'D1-A', total: 2 }] }
   ],
   cuarentenasP: [
-    { tipo: 'P2', total: 1, detalle: [{ clave_cuarentena: 'P2-B', total: 1 }] }
+    { tipo: 'P2', total: 1, detalle: [{ clave: 'P2-B', total: 1 }] }
   ],
   totalSinCuarentena: 12,
   meses: [

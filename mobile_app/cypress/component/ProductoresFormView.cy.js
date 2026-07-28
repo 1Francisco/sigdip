@@ -213,7 +213,7 @@ describe('ProductoresFormView', () => {
     cy.get('select').should('have.value', 'B')
   })
 
-  it('payload incluye clave_cuarentena para Admin', () => {
+  it('payload incluye clave para Admin', () => {
     cy.seedIndexedDB('catalogos', 'predios', [])
 
     cy.intercept('POST', '**/api/productores', {
@@ -233,12 +233,12 @@ describe('ProductoresFormView', () => {
 
     cy.contains('No tiene predio (Solo Productor)').click()
     cy.wait('@storeProductor').then((interception) => {
-      expect(interception.request.body.clave_cuarentena).to.eq('AD-999')
+      expect(interception.request.body.clave).to.eq('AD-999')
       expect(interception.request.body.zona).to.eq('A')
     })
   })
 
-  it('payload NO incluye clave_cuarentena para Medico', () => {
+  it('payload NO incluye clave para Medico', () => {
     cy.setLoginState({ user: userMedico })
     cy.seedIndexedDB('catalogos', 'predios', [])
 
@@ -258,12 +258,12 @@ describe('ProductoresFormView', () => {
 
     cy.contains('No tiene predio (Solo Productor)').click()
     cy.wait('@storeProductor').then((interception) => {
-      expect(interception.request.body.clave_cuarentena).to.be.null
+      expect(interception.request.body.clave).to.be.null
       expect(interception.request.body.zona).to.be.null
     })
   })
 
-  it('clave_cuarentena se guarda en IndexedDB', () => {
+  it('clave se guarda en IndexedDB', () => {
     cy.seedIndexedDB('catalogos', 'predios', [])
 
     cy.intercept('POST', '**/api/productores', {
@@ -287,7 +287,7 @@ describe('ProductoresFormView', () => {
     cy.getIndexedDB('catalogos', 'predios').then((predios) => {
       const saved = predios.find(p => p.productor?.curp === 'MALO850101HPLRRN01')
       expect(saved).to.exist
-      expect(saved.productor.clave_cuarentena).to.eq('BD-789')
+      expect(saved.productor.clave).to.eq('BD-789')
       expect(saved.productor.zona).to.eq('B')
     })
   })

@@ -122,14 +122,14 @@ class ModelTest extends TestCase
         ]);
     }
 
-    // --- Auto-zona desde clave_cuarentena ---
+    // --- Auto-zona desde clave ---
 
     public function test_auto_deriva_zona_a_desde_clave_ad()
     {
         $productor = Productor::create([
             'nombre' => 'Test',
             'apellido_paterno' => 'Zona',
-            'clave_cuarentena' => 'AD-12345',
+            'clave' => 'AD-12345',
             'curp' => 'ZONA890101HSL00001',
             'upp' => 'UPP-ZONA-1',
         ]);
@@ -142,7 +142,7 @@ class ModelTest extends TestCase
         $productor = Productor::create([
             'nombre' => 'Test',
             'apellido_paterno' => 'Zona',
-            'clave_cuarentena' => 'BD-12345',
+            'clave' => 'BD-12345',
             'curp' => 'ZONA890101HSL00002',
             'upp' => 'UPP-ZONA-2',
         ]);
@@ -155,7 +155,7 @@ class ModelTest extends TestCase
         $productor = Productor::create([
             'nombre' => 'Test',
             'apellido_paterno' => 'Zona',
-            'clave_cuarentena' => 'ad-12345',
+            'clave' => 'ad-12345',
             'curp' => 'ZONA890101HSL00003',
             'upp' => 'UPP-ZONA-3',
         ]);
@@ -168,7 +168,7 @@ class ModelTest extends TestCase
         $productor = Productor::create([
             'nombre' => 'Test',
             'apellido_paterno' => 'Zona',
-            'clave_cuarentena' => 'AD-12345',
+            'clave' => 'AD-12345',
             'zona' => 'B',
             'curp' => 'ZONA890101HSL00004',
             'upp' => 'UPP-ZONA-4',
@@ -179,7 +179,7 @@ class ModelTest extends TestCase
 
     public function test_sin_clave_no_deriva_zona()
     {
-        $productor = Productor::factory()->create(['clave_cuarentena' => null, 'zona' => null]);
+        $productor = Productor::factory()->create(['clave' => null, 'zona' => null]);
 
         $this->assertNull($productor->zona);
     }
@@ -189,7 +189,7 @@ class ModelTest extends TestCase
         $productor = Productor::create([
             'nombre' => 'Test',
             'apellido_paterno' => 'Zona',
-            'clave_cuarentena' => 'XD-12345',
+            'clave' => 'XD-12345',
             'curp' => 'ZONA890101HSL00005',
             'upp' => 'UPP-ZONA-5',
         ]);

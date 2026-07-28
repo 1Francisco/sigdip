@@ -133,30 +133,30 @@ class ProductorAssignmentTest extends TestCase
     public function test_productor_edad_minima_prueba_accessor()
     {
         // No key
-        $prodDefault = Productor::factory()->make(['clave_cuarentena' => null]);
+        $prodDefault = Productor::factory()->make(['clave' => null]);
         $this->assertEquals(6, $prodDefault->edad_minima_prueba);
 
         // Provisional key
-        $prodProvisional = Productor::factory()->make(['clave_cuarentena' => 'AP']);
+        $prodProvisional = Productor::factory()->make(['clave' => 'AP']);
         $this->assertEquals(6, $prodProvisional->edad_minima_prueba);
 
         // Definitive key
-        $prodDefinitive = Productor::factory()->make(['clave_cuarentena' => 'AD']);
+        $prodDefinitive = Productor::factory()->make(['clave' => 'AD']);
         $this->assertEquals(2, $prodDefinitive->edad_minima_prueba);
 
-        $prodDefinitiveB = Productor::factory()->make(['clave_cuarentena' => 'BD']);
+        $prodDefinitiveB = Productor::factory()->make(['clave' => 'BD']);
         $this->assertEquals(2, $prodDefinitiveB->edad_minima_prueba);
 
         // Edge cases: key without suffix
-        $prodOnlyPrefix = Productor::factory()->make(['clave_cuarentena' => 'AD']);
+        $prodOnlyPrefix = Productor::factory()->make(['clave' => 'AD']);
         $this->assertEquals(2, $prodOnlyPrefix->edad_minima_prueba);
 
         // Edge case: short key (< 2 chars) should fallback to 6
-        $prodShort = Productor::factory()->make(['clave_cuarentena' => 'B']);
+        $prodShort = Productor::factory()->make(['clave' => 'B']);
         $this->assertEquals(6, $prodShort->edad_minima_prueba);
 
         // Edge case: empty string key
-        $prodEmpty = Productor::factory()->make(['clave_cuarentena' => '']);
+        $prodEmpty = Productor::factory()->make(['clave' => '']);
         $this->assertEquals(6, $prodEmpty->edad_minima_prueba);
     }
 
@@ -167,7 +167,7 @@ class ProductorAssignmentTest extends TestCase
             'apellido_paterno' => 'Productor',
             'curp' => 'KEY890101HSL00001X',
             'upp' => 'UPP-KEY-1',
-            'clave_cuarentena' => 'BD-123421',
+            'clave' => 'BD-123421',
             'zona' => 'B',
             'medico_id' => $this->medico2->id,
         ]);
@@ -175,7 +175,7 @@ class ProductorAssignmentTest extends TestCase
         $response->assertSessionHasNoErrors();
         $this->assertDatabaseHas('productores', [
             'curp' => 'KEY890101HSL00001X',
-            'clave_cuarentena' => 'BD-123421',
+            'clave' => 'BD-123421',
             'zona' => 'B',
         ]);
     }
@@ -187,14 +187,14 @@ class ProductorAssignmentTest extends TestCase
             'apellido_paterno' => 'Productor',
             'curp' => 'KEY890101HSL00002X',
             'upp' => 'UPP-KEY-2',
-            'clave_cuarentena' => 'BD-123421',
+            'clave' => 'BD-123421',
             'zona' => 'B',
         ]);
 
         $response->assertSessionHasNoErrors();
         $this->assertDatabaseHas('productores', [
             'curp' => 'KEY890101HSL00002X',
-            'clave_cuarentena' => null,
+            'clave' => null,
             'zona' => null,
         ]);
     }
@@ -202,7 +202,7 @@ class ProductorAssignmentTest extends TestCase
     public function test_inspeccion_dynamic_age_limit_validation()
     {
         // 1. Productor with key BP-98765 (Provisional - 6 months limit)
-        $prodBP = Productor::factory()->create(['medico_id' => $this->medico1->id, 'clave_cuarentena' => 'BP-98765', 'zona' => 'B']);
+        $prodBP = Productor::factory()->create(['medico_id' => $this->medico1->id, 'clave' => 'BP-98765', 'zona' => 'B']);
         $predioBP = Predio::factory()->create(['productor_id' => $prodBP->id]);
 
         $responseBP = $this->actingAs($this->medico1)->post(route('inspecciones.store'), [
@@ -229,7 +229,7 @@ class ProductorAssignmentTest extends TestCase
         ]);
 
         // 2. Productor with key BD-123421 (Definitive - 2 months limit)
-        $prodBD = Productor::factory()->create(['medico_id' => $this->medico1->id, 'clave_cuarentena' => 'BD-123421', 'zona' => 'B']);
+        $prodBD = Productor::factory()->create(['medico_id' => $this->medico1->id, 'clave' => 'BD-123421', 'zona' => 'B']);
         $predioBD = Predio::factory()->create(['productor_id' => $prodBD->id]);
 
         $responseBD = $this->actingAs($this->medico1)->post(route('inspecciones.store'), [

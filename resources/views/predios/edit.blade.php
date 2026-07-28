@@ -118,7 +118,7 @@
             maxOptions: 1000,
             valueField: 'id',
             labelField: 'text',
-            searchField: ['text', 'upp', 'curp', 'localidad', 'municipio'],
+            searchField: ['text', 'upp', 'curp', 'clave', 'localidad', 'municipio'],
             render: {
                 option: function(data, escape) {
                     return `<div>

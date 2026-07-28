@@ -28,15 +28,38 @@ class Productor extends Model
         'email',
         'medico_id',
         'zona',
-        'clave_cuarentena',
+        'clave',
+        'tipo_actividad',
+        'sub_tipo_actividad',
     ];
 
     protected static function booted()
     {
         static::saving(function ($productor) {
-            if ($productor->clave_cuarentena && ! $productor->zona) {
-                $first = strtoupper($productor->clave_cuarentena)[0] ?? '';
+            if ($productor->clave && ! $productor->zona) {
+                $first = strtoupper($productor->clave)[0] ?? '';
                 $productor->zona = in_array($first, ['A', 'B'], true) ? $first : null;
+            }
+
+            if (empty($productor->clave)) {
+                $tipo = strtolower($productor->tipo_actividad ?? '');
+                $prefix = 'GP';
+                if ($tipo === 'barrido') {
+                    $prefix = 'BF';
+                } elseif ($tipo === 'buffer') {
+                    $prefix = 'BU';
+                } elseif ($tipo === 'seguimiento') {
+                    $prefix = 'SG';
+                }
+
+                $count = static::where('clave', 'like', $prefix . '-%')->count();
+                $number = $count + 1;
+                do {
+                    $clave = $prefix . '-' . str_pad($number, 4, '0', STR_PAD_LEFT);
+                    $number++;
+                } while (static::where('clave', $clave)->exists());
+
+                $productor->clave = $clave;
             }
         });
     }
@@ -86,12 +109,12 @@ class Productor extends Model
     }
 
     /**
-     * Obtener la edad mínima de prueba en meses según la clave de cuarentena.
+     * Obtener la edad mínima de prueba en meses según la clave.
      */
     public function getEdadMinimaPruebaAttribute(): int
     {
-        if ($this->clave_cuarentena) {
-            $clave = strtoupper($this->clave_cuarentena);
+        if ($this->clave) {
+            $clave = strtoupper($this->clave);
             if (strlen($clave) >= 2 && $clave[1] === 'D') {
                 return 2;
             }

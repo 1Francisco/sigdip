@@ -5,6 +5,10 @@
 @section('header_subtitle', 'Complete los datos según el formato oficial de SENASICA')
 @section('back_url', route('productores.index'))
 
+@section('styles')
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+@endsection
+
 @section('content')
 <div class="row justify-content-center">
     <div class="col-lg-8">
@@ -22,178 +26,16 @@
                 @endif
                 <form action="{{ route('productores.store') }}" method="POST" id="wizardForm">
                     @csrf
-                    
-                    <!-- Indicadores de Pasos -->
-                    <div class="d-flex justify-content-center mb-4">
-                        <div class="step-indicator active" id="indicator-1">1</div>
-                        <div class="step-line"></div>
-                        <div class="step-indicator" id="indicator-2">2</div>
-                    </div>
-
-                    <!-- PASO 1: DATOS DEL PRODUCTOR -->
-                    <div id="step-1">
-                        <h5 class="fw-bold mb-3"><i class="bi bi-person-circle me-2 text-primary"></i>Paso 1: Información del Productor</h5>
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Nombre(s)</label>
-                                <input type="text" name="nombre" class="form-control" value="{{ old('nombre') }}" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Apellido Paterno</label>
-                                <input type="text" name="apellido_paterno" class="form-control" value="{{ old('apellido_paterno') }}" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Apellido Materno</label>
-                                <input type="text" name="apellido_materno" class="form-control" value="{{ old('apellido_materno') }}">
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">CURP</label>
-                                <input type="text" name="curp" class="form-control" maxlength="18" value="{{ old('curp') }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">UPP (Productor)</label>
-                                <input type="text" name="upp" class="form-control" value="{{ old('upp') }}">
-                            </div>
-
-                            <div class="col-md-12">
-                                <label class="form-label fw-semibold">Domicilio Completo</label>
-                                <input type="text" name="domicilio" class="form-control" placeholder="Calle, Número, Colonia" value="{{ old('domicilio') }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Municipio</label>
-                                <input type="text" name="municipio" class="form-control" value="{{ old('municipio') }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Localidad</label>
-                                <input type="text" name="localidad" class="form-control" value="{{ old('localidad') }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Estado</label>
-                                <input type="text" name="estado" class="form-control" value="{{ old('estado', 'Nayarit') }}">
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Teléfono</label>
-                                <input type="text" name="telefono" class="form-control" value="{{ old('telefono') }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Correo Electrónico</label>
-                                <input type="email" name="email" class="form-control" value="{{ old('email') }}">
-                            </div>
-                            
-                            @if(auth()->user()->hasRole('Administrador'))
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Clave de Cuarentena</label>
-                                <input type="text" name="clave_cuarentena" id="clave_cuarentena" class="form-control text-uppercase rounded-3" placeholder="Ej. BD-123421" value="{{ old('clave_cuarentena') }}">
-                                <div class="form-text small text-muted">Debe iniciar con AD, AP, BD o BP. Ej. BD-123421</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Zona / Sector</label>
-                                <select id="zona_select" class="form-select rounded-3 bg-light" disabled>
-                                    <option value="">-- Sin Zona --</option>
-                                    <option value="A" {{ old('zona') == 'A' ? 'selected' : '' }}>Sector A</option>
-                                    <option value="B" {{ old('zona') == 'B' ? 'selected' : '' }}>Sector B</option>
-                                </select>
-                                <input type="hidden" name="zona" id="zona" value="{{ old('zona') }}">
-                            </div>
-
-                            <div class="col-md-12">
-                                <label class="form-label fw-semibold">Médico Veterinario Zootecnista (MVZ) Asignado</label>
-                                <select name="medico_id" class="form-select rounded-3">
-                                    <option value="">-- Seleccionar Médico (Opcional) --</option>
-                                    @foreach($medicos as $medico)
-                                        <option value="{{ $medico->id }}" {{ old('medico_id') == $medico->id ? 'selected' : '' }}>{{ $medico->name }} ({{ $medico->email }})</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            @else
-                            <div class="col-md-12">
-                                <label class="form-label fw-semibold">Médico Veterinario Zootecnista (MVZ) Asignado</label>
-                                <input type="text" class="form-control bg-light" value="{{ auth()->user()->name }}" readonly disabled>
-                            </div>
-                            @endif
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-3 mt-5">
-                            <a href="{{ route('productores.index') }}" class="btn btn-light px-4 rounded-pill">Cancelar</a>
-                            <button type="button" class="btn btn-primary px-5 rounded-pill" onclick="nextStep()">
-                                Continuar al Paso 2 <i class="bi bi-arrow-right ms-1"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- PASO 2: DATOS DEL PREDIO -->
-                    <div id="step-2" class="d-none">
-                        <input type="hidden" name="registrar_predio" id="inputRegistrarPredio" value="1">
-                        
-                        <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4">
-                            <i class="bi bi-info-circle-fill me-2"></i>
-                            Si el productor no tiene un predio aún, puede hacer clic en <strong>"Solo registrar productor"</strong>.
-                        </div>
-
-                        <h5 class="fw-bold mb-3 text-success"><i class="bi bi-house-add me-2"></i>Paso 2: Información del Rancho / Predio</h5>
-                        <div class="row g-3">
-                            <div class="col-md-12">
-                                <label class="form-label fw-semibold text-primary">Nombre del Rancho</label>
-                                <input type="text" name="nombre_rancho" id="nombre_rancho" class="form-control border-primary" value="{{ old('nombre_rancho') }}" placeholder="Ej. El Mirador">
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label fw-semibold">Clave UPP del Predio</label>
-                                <input type="text" name="clave_unidad_produccion" id="clave_upp" class="form-control" value="{{ old('clave_unidad_produccion') }}" placeholder="Ej. 180104330002">
-                            </div>
-
-                            <!-- Ubicación GPS -->
-                            <div class="col-md-12 mb-2">
-                                <button type="button" class="btn btn-outline-primary btn-sm w-100 py-2 rounded-3 shadow-sm border-2 fw-bold" onclick="getLocation(this)">
-                                    <i class="bi bi-geo-alt-fill me-1"></i> Detectar Ubicación Actual (GPS)
-                                </button>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Latitud</label>
-                                <input type="text" name="latitud" id="latitud" class="form-control" placeholder="Ej. 21.948694">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Longitud</label>
-                                <input type="text" name="longitud" id="longitud" class="form-control" placeholder="Ej. -105.298320">
-                            </div>
-
-                            <div class="col-md-12">
-                                <label class="form-label fw-semibold">Domicilio del Predio</label>
-                                <input type="text" name="predio_domicilio" class="form-control" placeholder="Ej. A 2 km sobre el arroyo">
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Municipio del Predio</label>
-                                <input type="text" name="predio_municipio" id="p_muni" class="form-control" value="{{ old('predio_municipio') }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Localidad del Predio</label>
-                                <input type="text" name="predio_localidad" id="p_loc" class="form-control" value="{{ old('predio_localidad') }}">
-                            </div>
-                        </div>
-
-                        <div class="d-flex flex-wrap justify-content-between gap-3 mt-5">
-                            <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" onclick="prevStep()">
-                                <i class="bi bi-arrow-left me-1"></i> Anterior
-                            </button>
-                            
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-light border px-4 rounded-pill" onclick="submitOnlyProductor()">
-                                    No tiene predio (Solo Productor)
-                                </button>
-                                <button type="submit" class="btn btn-success px-5 rounded-pill shadow">
-                                    <i class="bi bi-check-circle me-1"></i> Finalizar y Guardar Todo
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    @include('productores.partials._wizard_productor', [
+                        'index' => null,
+                        'medicos' => $medicos,
+                        'isAdmin' => auth()->user()->hasRole('Administrador'),
+                    ])
                 </form>
             </div>
         </div>
     </div>
 </div>
-
 <style>
     .step-indicator {
         width: 35px;
@@ -226,63 +68,43 @@
         margin: 0 -5px;
     }
 </style>
-
 @endsection
 
 @section('scripts')
 <script>
-    const step1 = document.getElementById('step-1');
-    const step2 = document.getElementById('step-2');
-    const indicator1 = document.getElementById('indicator-1');
-    const indicator2 = document.getElementById('indicator-2');
-    const inputRegistrar = document.getElementById('inputRegistrarPredio');
-    const form = document.getElementById('wizardForm');
-
-    // Auto-update zona based on clave_cuarentena selection
-    const claveSelect = document.getElementById('clave_cuarentena');
-    const zonaSelect = document.getElementById('zona_select');
-    const zonaHidden = document.getElementById('zona');
-    if (claveSelect && (zonaSelect || zonaHidden)) {
-        claveSelect.addEventListener('input', function() {
-            const val = this.value.toUpperCase();
-            let finalZona = '';
-            if (val.startsWith('AD') || val.startsWith('AP')) {
-                finalZona = 'A';
-            } else if (val.startsWith('BD') || val.startsWith('BP')) {
-                finalZona = 'B';
-            }
-            if (zonaSelect) zonaSelect.value = finalZona;
-            if (zonaHidden) zonaHidden.value = finalZona;
-        });
+    // ========= Wizard navigation functions (single panel) =========
+    function nextStepWizard(index) {
+        if (!validateStep1Wizard(index)) return;
+        var suf = index !== null && index !== '' ? '-' + index : '';
+        document.getElementById('inputRegistrarPredio' + suf).value = "1";
+        document.getElementById('step-1' + suf).classList.add('d-none');
+        document.getElementById('step-2' + suf).classList.remove('d-none');
+        document.getElementById('indicator-1' + suf).classList.add('completed');
+        document.getElementById('indicator-1' + suf).innerHTML = '<i class="bi bi-check"></i>';
+        document.getElementById('indicator-2' + suf).classList.add('active');
     }
 
-    function nextStep() {
-        if (!validateStep1()) return;
-        
-        step1.classList.add('d-none');
-        step2.classList.remove('d-none');
-        indicator1.classList.add('completed');
-        indicator1.innerHTML = '<i class="bi bi-check"></i>';
-        indicator2.classList.add('active');
+    function prevStepWizard(index) {
+        var suf = index !== null && index !== '' ? '-' + index : '';
+        document.getElementById('inputRegistrarPredio' + suf).value = "0";
+        document.getElementById('step-2' + suf).classList.add('d-none');
+        document.getElementById('step-1' + suf).classList.remove('d-none');
+        document.getElementById('indicator-1' + suf).classList.remove('completed');
+        document.getElementById('indicator-1' + suf).innerHTML = '1';
+        document.getElementById('indicator-2' + suf).classList.remove('active');
     }
 
-    function prevStep() {
-        step2.classList.add('d-none');
-        step1.classList.remove('d-none');
-        indicator1.classList.remove('completed');
-        indicator1.innerHTML = '1';
-        indicator2.classList.remove('active');
+    function submitOnlyProductorWizard(index) {
+        var suf = index !== null && index !== '' ? '-' + index : '';
+        document.getElementById('inputRegistrarPredio' + suf).value = "0";
+        document.getElementById('wizardForm').submit();
     }
 
-    function submitOnlyProductor() {
-        inputRegistrar.value = "0";
-        form.submit();
-    }
-
-    function validateStep1() {
-        const inputs = step1.querySelectorAll('input[required]');
-        let valid = true;
-        inputs.forEach(input => {
+    function validateStep1Wizard(index) {
+        var suf = index !== null && index !== '' ? '-' + index : '';
+        var inputs = document.getElementById('step-1' + suf).querySelectorAll('input[required]');
+        var valid = true;
+        inputs.forEach(function(input) {
             if (!input.value.trim()) {
                 input.classList.add('is-invalid');
                 valid = false;
@@ -294,29 +116,109 @@
         return valid;
     }
 
-    // Función GPS
-    function getLocation(btn) {
-        const originalHtml = btn.innerHTML;
-        
+    // ========= Sub tipo toggle =========
+    var tipoSelect = document.getElementById('tipo_actividad');
+    var subContainer = document.getElementById('sub_tipo_actividad_container');
+    var subSelect = document.getElementById('sub_tipo_actividad');
+
+    function toggleSubTipo() {
+        if (tipoSelect && subContainer && subSelect) {
+            if (tipoSelect.value === 'Seguimiento') {
+                subContainer.style.display = 'block';
+                subSelect.setAttribute('required', 'required');
+            } else {
+                subContainer.style.display = 'none';
+                subSelect.removeAttribute('required');
+                subSelect.value = '';
+            }
+        }
+    }
+
+    if (tipoSelect) {
+        tipoSelect.addEventListener('change', toggleSubTipo);
+        toggleSubTipo();
+    }
+
+    // ========= Auto-zona based on clave =========
+    var claveField = document.getElementById('clave');
+    var zonaSel = document.getElementById('zona_select');
+    var zonaHid = document.getElementById('zona');
+    if (claveField) {
+        claveField.addEventListener('input', function() {
+            var val = this.value.toUpperCase();
+            var finalZona = '';
+            if (val.startsWith('AD') || val.startsWith('AP')) {
+                finalZona = 'A';
+            } else if (val.startsWith('BD') || val.startsWith('BP')) {
+                finalZona = 'B';
+            }
+            if (zonaSel) zonaSel.value = finalZona;
+            if (zonaHid) zonaHid.value = finalZona;
+        });
+    }
+
+    // ========= Clave autocomplete =========
+    var claveInput = document.getElementById('clave');
+    var resultadosClave = document.getElementById('resultadosClave');
+    var debounceTimer;
+
+    if (claveInput && resultadosClave) {
+        claveInput.addEventListener('input', function () {
+            clearTimeout(debounceTimer);
+            var val = this.value.trim();
+            if (val.length < 1) {
+                resultadosClave.innerHTML = '';
+                return;
+            }
+            debounceTimer = setTimeout(function () {
+                fetch('{{ route("productores.buscar-por-clave") }}?clave=' + encodeURIComponent(val))
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.length === 0) {
+                            resultadosClave.innerHTML = '<div class="small text-muted"><i class="bi bi-exclamation-circle me-1"></i> No se encontraron productores con esa clave.</div>';
+                        } else {
+                            var h = '<div class="small fw-semibold text-muted mb-1">' + data.length + ' productor(es) con esta clave:</div>';
+                            h += '<div class="list-group list-group-flush border rounded-3" style="max-height: 200px; overflow-y: auto;">';
+                            data.forEach(function (p) {
+                                var nom = p.nombre + ' ' + p.apellido_paterno + (p.apellido_materno ? ' ' + p.apellido_materno : '');
+                                var cl = p.clave || '';
+                                h += '<div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-3 small" style="cursor:pointer;" onclick="document.getElementById(\'clave\').value=\'' + cl + '\'; document.getElementById(\'clave\').dispatchEvent(new Event(\'input\')); document.getElementById(\'resultadosClave\').innerHTML=\'\';">' +
+                                    '<div><span class="badge bg-secondary rounded-pill me-2">' + cl + '</span>' + nom + '</div>' +
+                                    '<div><span class="text-muted">' + (p.tipo_actividad || '') + (p.zona ? ' | ' + p.zona : '') + '</span></div>' +
+                                    '</div>';
+                            });
+                            h += '</div>';
+                            resultadosClave.innerHTML = h;
+                        }
+                    })
+                    .catch(function () {
+                        resultadosClave.innerHTML = '<div class="small text-danger"><i class="bi bi-exclamation-triangle me-1"></i> Error al consultar.</div>';
+                    });
+            }, 300);
+        });
+    }
+
+    // ========= GPS =========
+    function getLocationGps(btn, index) {
+        var suf = index !== null && index !== '' ? '-' + index : '';
+        var originalHtml = btn.innerHTML;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Obteniendo ubicación...';
         btn.disabled = true;
 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    document.getElementById('latitud').value = position.coords.latitude.toFixed(6);
-                    document.getElementById('longitud').value = position.coords.longitude.toFixed(6);
-                    
+                function(position) {
+                    document.getElementById('latitud' + suf).value = position.coords.latitude.toFixed(6);
+                    document.getElementById('longitud' + suf).value = position.coords.longitude.toFixed(6);
                     btn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Ubicación Capturada';
                     btn.classList.replace('btn-outline-primary', 'btn-success');
                     btn.disabled = false;
-                    
-                    setTimeout(() => {
+                    setTimeout(function() {
                         btn.innerHTML = originalHtml;
                         btn.classList.replace('btn-success', 'btn-outline-primary');
                     }, 3000);
                 },
-                (error) => {
+                function(error) {
                     console.error('Error GPS:', error);
                     alert('Error al obtener ubicación: ' + error.message);
                     btn.innerHTML = originalHtml;
@@ -329,6 +231,36 @@
             btn.innerHTML = originalHtml;
             btn.disabled = false;
         }
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script>
+    var copiarSelect = document.getElementById('copiar-productor');
+    if (copiarSelect) {
+        new TomSelect(copiarSelect, {
+            valueField: 'id',
+            labelField: 'display',
+            searchField: ['nombre', 'apellido_paterno', 'apellido_materno', 'clave'],
+            maxOptions: 15,
+            placeholder: 'Buscar y seleccionar productor…',
+            load: function(query, callback) {
+                if (query.length < 2) return callback();
+                fetch('{{ route("productores.buscar") }}?q=' + encodeURIComponent(query))
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        callback(data.map(function(p) {
+                            p.display = (p.clave ? '[' + p.clave + '] ' : '') + p.nombre + ' ' + p.apellido_paterno + (p.apellido_materno ? ' ' + p.apellido_materno : '');
+                            return p;
+                        }));
+                    });
+            },
+            onChange: function(value) {
+                if (value) {
+                    var option = this.options[value];
+                    if (option) window.llenarFormulario(option);
+                }
+            }
+        });
     }
 </script>
 @endsection

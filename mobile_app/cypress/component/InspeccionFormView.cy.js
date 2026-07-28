@@ -527,7 +527,7 @@ describe('InspeccionFormView', () => {
     const seedPrediosConAD = () => {
       cy.seedIndexedDB('catalogos', 'productores', [{
         id: 98, nombre: 'Prod AD', apellido_paterno: 'Test',
-        clave_cuarentena: 'AD-456', zona: 'A',
+        clave: 'AD-456', zona: 'A',
         curp: 'ADXX990101HPLRRN98', upp: 'UPP-AD',
         telefono: '555-098'
       }])
@@ -537,7 +537,7 @@ describe('InspeccionFormView', () => {
         productor_id: 98,
         productor: {
           id: 98, nombre: 'Prod AD', apellido_paterno: 'Test',
-          clave_cuarentena: 'AD-456', zona: 'A',
+          clave: 'AD-456', zona: 'A',
           curp: 'ADXX990101HPLRRN98', upp: 'UPP-AD'
         }
       }])
@@ -566,7 +566,7 @@ describe('InspeccionFormView', () => {
     const seedPrediosConBD = () => {
       cy.seedIndexedDB('catalogos', 'productores', [{
         id: 97, nombre: 'Prod BD2', apellido_paterno: 'Test',
-        clave_cuarentena: 'BD-789', zona: 'B',
+        clave: 'BD-789', zona: 'B',
         curp: 'BDXX990101HPLRRN97', upp: 'UPP-BD2',
         telefono: '555-097'
       }])
@@ -576,7 +576,7 @@ describe('InspeccionFormView', () => {
         productor_id: 97,
         productor: {
           id: 97, nombre: 'Prod BD2', apellido_paterno: 'Test',
-          clave_cuarentena: 'BD-789', zona: 'B',
+          clave: 'BD-789', zona: 'B',
           curp: 'BDXX990101HPLRRN97', upp: 'UPP-BD2'
         }
       }])
@@ -604,12 +604,12 @@ describe('InspeccionFormView', () => {
   it('recalcula motivo al cambiar a predio con diferente umbral', () => {
     const seedPrediosMultiUmbral = () => {
       cy.seedIndexedDB('catalogos', 'productores', [
-        { id: 1, nombre: 'Prod Normal', apellido_paterno: 'Test', clave_cuarentena: null, curp: 'NORM990101HPLRRN01', upp: 'UPP-NORM' },
-        { id: 99, nombre: 'Prod BD', apellido_paterno: 'Test', clave_cuarentena: 'BD-123', zona: 'B', curp: 'BDXX990101HPLRRN99', upp: 'UPP-BD' },
+        { id: 1, nombre: 'Prod Normal', apellido_paterno: 'Test', clave: null, curp: 'NORM990101HPLRRN01', upp: 'UPP-NORM' },
+        { id: 99, nombre: 'Prod BD', apellido_paterno: 'Test', clave: 'BD-123', zona: 'B', curp: 'BDXX990101HPLRRN99', upp: 'UPP-BD' },
       ])
       cy.seedIndexedDB('catalogos', 'predios', [
-        { id: 1, nombre_rancho: 'Rancho Normal', upp: 'UPP-NORM', localidad: 'X', municipio: 'Y', productor_id: 1, productor: { id: 1, nombre: 'Prod Normal', apellido_paterno: 'Test', clave_cuarentena: null } },
-        { id: 10, nombre_rancho: 'Rancho BD', upp: 'UPP-BD', localidad: 'X', municipio: 'Y', productor_id: 99, productor: { id: 99, nombre: 'Prod BD', apellido_paterno: 'Test', clave_cuarentena: 'BD-123', zona: 'B', curp: 'BDXX990101HPLRRN99', upp: 'UPP-BD' } },
+        { id: 1, nombre_rancho: 'Rancho Normal', upp: 'UPP-NORM', localidad: 'X', municipio: 'Y', productor_id: 1, productor: { id: 1, nombre: 'Prod Normal', apellido_paterno: 'Test', clave: null } },
+        { id: 10, nombre_rancho: 'Rancho BD', upp: 'UPP-BD', localidad: 'X', municipio: 'Y', productor_id: 99, productor: { id: 99, nombre: 'Prod BD', apellido_paterno: 'Test', clave: 'BD-123', zona: 'B', curp: 'BDXX990101HPLRRN99', upp: 'UPP-BD' } },
       ])
     }
 
@@ -793,7 +793,7 @@ describe('InspeccionFormView', () => {
     const seedPrediosConBD = () => {
       cy.seedIndexedDB('catalogos', 'productores', [{
         id: 99, nombre: 'Prod BD', apellido_paterno: 'Test',
-        clave_cuarentena: 'BD-123', zona: 'B',
+        clave: 'BD-123', zona: 'B',
         curp: 'BDXX990101HPLRRN99', upp: 'UPP-BD',
         telefono: '555-099'
       }])
@@ -803,7 +803,7 @@ describe('InspeccionFormView', () => {
         productor_id: 99,
         productor: {
           id: 99, nombre: 'Prod BD', apellido_paterno: 'Test',
-          clave_cuarentena: 'BD-123', zona: 'B',
+          clave: 'BD-123', zona: 'B',
           curp: 'BDXX990101HPLRRN99', upp: 'UPP-BD'
         }
       }])

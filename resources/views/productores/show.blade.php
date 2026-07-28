@@ -51,11 +51,24 @@
                         <td>{{ $productor->domicilio ?? 'N/A' }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted ps-0">Clave de Cuarentena</td>
+                        <td class="text-muted ps-0">Clave</td>
                         <td>
-                            @if ($productor->clave_cuarentena)
-                                <span class="badge bg-primary">{{ $productor->clave_cuarentena }}</span>
+                            @if ($productor->clave)
+                                <span class="badge bg-primary">{{ $productor->clave }}</span>
                                 <small class="text-muted ms-1">(Edad mínima de prueba: {{ $productor->edad_minima_prueba }} meses)</small>
+                            @else
+                                <span class="text-muted">N/A</span>
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted ps-0">Tipo de Actividad</td>
+                        <td>
+                            @if ($productor->tipo_actividad)
+                                <span class="badge bg-secondary">{{ $productor->tipo_actividad }}</span>
+                                @if ($productor->sub_tipo_actividad)
+                                    <span class="badge bg-info text-dark">{{ $productor->sub_tipo_actividad }}</span>
+                                @endif
                             @else
                                 <span class="text-muted">N/A</span>
                             @endif

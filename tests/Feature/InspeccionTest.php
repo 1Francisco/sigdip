@@ -221,7 +221,7 @@ class InspeccionTest extends TestCase
 
     public function test_store_con_productor_bd_usa_umbral_2_meses()
     {
-        $productorBD = Productor::factory()->create(['clave_cuarentena' => 'BD-123456', 'zona' => 'B']);
+        $productorBD = Productor::factory()->create(['clave' => 'BD-123456', 'zona' => 'B']);
         $predioBD = Predio::factory()->create(['productor_id' => $productorBD->id]);
 
         $response = $this->actingAs($this->admin)->post(route('inspecciones.store'), [
@@ -251,7 +251,7 @@ class InspeccionTest extends TestCase
 
     public function test_update_con_productor_bd_usa_umbral_2_meses()
     {
-        $productorBD = Productor::factory()->create(['clave_cuarentena' => 'BD-123456', 'zona' => 'B']);
+        $productorBD = Productor::factory()->create(['clave' => 'BD-123456', 'zona' => 'B']);
         $predioBD = Predio::factory()->create(['productor_id' => $productorBD->id]);
 
         $inspeccion = Inspeccion::factory()->create([
@@ -288,7 +288,7 @@ class InspeccionTest extends TestCase
 
     public function test_update_con_productor_ad_usa_umbral_2_meses()
     {
-        $productorAD = Productor::factory()->create(['clave_cuarentena' => 'AD-987654', 'zona' => 'A']);
+        $productorAD = Productor::factory()->create(['clave' => 'AD-987654', 'zona' => 'A']);
         $predioAD = Predio::factory()->create(['productor_id' => $productorAD->id]);
 
         $inspeccion = Inspeccion::factory()->create([
@@ -325,7 +325,7 @@ class InspeccionTest extends TestCase
 
     public function test_update_con_productor_sin_clave_usa_umbral_6_meses()
     {
-        $productor = Productor::factory()->create(['clave_cuarentena' => null]);
+        $productor = Productor::factory()->create(['clave' => null]);
         $predio = Predio::factory()->create(['productor_id' => $productor->id]);
 
         $inspeccion = Inspeccion::factory()->create([
@@ -414,7 +414,7 @@ class InspeccionTest extends TestCase
 
     public function test_store_con_productor_bd_edad_exactamente_2_no_asigna_motivo()
     {
-        $productorBD = Productor::factory()->create(['clave_cuarentena' => 'BD-123456', 'zona' => 'B']);
+        $productorBD = Productor::factory()->create(['clave' => 'BD-123456', 'zona' => 'B']);
         $predioBD = Predio::factory()->create(['productor_id' => $productorBD->id]);
 
         $response = $this->actingAs($this->admin)->post(route('inspecciones.store'), [
@@ -443,7 +443,7 @@ class InspeccionTest extends TestCase
 
     public function test_store_con_productor_clave_vacia_usa_6_meses()
     {
-        $productor = Productor::factory()->create(['clave_cuarentena' => '']);
+        $productor = Productor::factory()->create(['clave' => '']);
         $predio = Predio::factory()->create(['productor_id' => $productor->id]);
 
         $response = $this->actingAs($this->admin)->post(route('inspecciones.store'), [
@@ -543,5 +543,109 @@ class InspeccionTest extends TestCase
         $response->assertStatus(200);
         $response->assertViewHas('selected_productor_id', null);
         $response->assertViewHas('selected_predio_id', $predio->id);
+    }
+
+    public function test_store_multi_productor_splits_inspections()
+    {
+        $extraProductor = Productor::factory()->create();
+        $extraPredio = Predio::factory()->create(['productor_id' => $extraProductor->id]);
+
+        $response = $this->actingAs($this->admin)->post(route('inspecciones.store'), [
+            'predio_id' => $this->predio->id,
+            'fecha' => now()->format('Y-m-d'),
+            'estado' => 'borrador',
+            'productores_extra' => [$extraProductor->id],
+            'animales' => [
+                [
+                    'identificador' => 'ARETE-MAIN-001',
+                    'edad_meses' => 12,
+                    'sexo' => 'H',
+                    'raza' => 'Jersey',
+                    'resultado' => 'Negativo',
+                    'productor_id' => $this->predio->productor_id,
+                ],
+                [
+                    'identificador' => 'ARETE-EXTRA-002',
+                    'edad_meses' => 24,
+                    'sexo' => 'M',
+                    'raza' => 'Holando',
+                    'resultado' => 'Negativo',
+                    'productor_id' => $extraProductor->id,
+                ]
+            ],
+            'folio' => 'F-1000',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        // 2 inspections should be created
+        $inspecciones = Inspeccion::all();
+        $this->assertCount(2, $inspecciones);
+
+        $mainIns = $inspecciones->where('predio_id', $this->predio->id)->first();
+        $extraIns = $inspecciones->where('predio_id', $extraPredio->id)->first();
+
+        $this->assertNotNull($mainIns);
+        $this->assertNotNull($extraIns);
+
+        // They must share the same grupo_id
+        $this->assertEquals($mainIns->grupo_id, $extraIns->grupo_id);
+        $this->assertNotNull($mainIns->grupo_id);
+
+        // Main has Jersey animal, Extra has Holando animal
+        $this->assertCount(1, $mainIns->detalles);
+        $this->assertEquals('ARETE-MAIN-001', $mainIns->detalles->first()->animal->numero_arete_siniiga);
+
+        $this->assertCount(1, $extraIns->detalles);
+        $this->assertEquals('ARETE-EXTRA-002', $extraIns->detalles->first()->animal->numero_arete_siniiga);
+
+        // Folios check
+        $this->assertEquals('F-1000', $mainIns->folio);
+        $this->assertStringContainsString('F-1000-', $extraIns->folio);
+    }
+
+    public function test_update_multi_productor_syncs_and_deletes()
+    {
+        $extraProductor = Productor::factory()->create();
+        $extraPredio = Predio::factory()->create(['productor_id' => $extraProductor->id]);
+
+        $grupoId = 'GRP-TEST-123';
+        $mainIns = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->admin->id,
+            'grupo_id' => $grupoId,
+            'estado' => 'borrador'
+        ]);
+        $extraIns = Inspeccion::factory()->create([
+            'predio_id' => $extraPredio->id,
+            'veterinario_id' => $this->admin->id,
+            'grupo_id' => $grupoId,
+            'estado' => 'borrador'
+        ]);
+
+        // Submit update removing the extra producer completely
+        $response = $this->actingAs($this->admin)->patch(route('inspecciones.update', $mainIns), [
+            'predio_id' => $this->predio->id,
+            'fecha' => now()->format('Y-m-d'),
+            'estado' => 'borrador',
+            'productores_extra' => [], // No extras
+            'animales' => [
+                [
+                    'identificador' => 'ARETE-MAIN-ONLY',
+                    'edad_meses' => 12,
+                    'sexo' => 'H',
+                    'raza' => 'Jersey',
+                    'resultado' => 'Negativo',
+                    'productor_id' => $this->predio->productor_id,
+                ]
+            ],
+            'folio' => 'F-2000',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        // Extra inspection should be deleted
+        $this->assertDatabaseMissing('inspecciones', ['id' => $extraIns->id]);
+        $this->assertDatabaseHas('inspecciones', ['id' => $mainIns->id, 'folio' => 'F-2000']);
     }
 }

@@ -851,8 +851,8 @@ export default {
   },
   computed: {
     edadMinimaPrueba() {
-      if (this.selectedProductor && this.selectedProductor.clave_cuarentena) {
-        const clave = this.selectedProductor.clave_cuarentena.toUpperCase();
+      if (this.selectedProductor && this.selectedProductor.clave) {
+        const clave = this.selectedProductor.clave.toUpperCase();
         if (clave.length >= 2 && clave[1] === 'D') {
           return 2;
         }

@@ -43,6 +43,7 @@ class Inspeccion extends Model
         'estado',
         'visita_id',
         'clave_interna',
+        'grupo_id',
         'modified_at',
     ];
 
@@ -104,8 +105,8 @@ class Inspeccion extends Model
                     $q->whereIn('inspecciones.motivo_prueba', ['Cuarentenas Definitivas', 'Definitiva', 'Cuarentena Definitiva'])
                       ->orWhere('inspecciones.motivo_prueba', 'like', '%Definitiva%')
                       ->orWhereHas('predio.productor', function ($pq) {
-                          $pq->whereNotNull('clave_cuarentena')
-                             ->where('clave_cuarentena', 'like', '%D%');
+                          $pq->whereNotNull('clave')
+                             ->where('clave', 'like', '%D%');
                       });
                 });
             } elseif ($tipoActividad === 'Cuarentenas Precautorias') {
@@ -113,8 +114,8 @@ class Inspeccion extends Model
                     $q->whereIn('inspecciones.motivo_prueba', ['Cuarentenas Precautorias', 'Precautoria', 'Cuarentena Precautoria'])
                       ->orWhere('inspecciones.motivo_prueba', 'like', '%Precautoria%')
                       ->orWhereHas('predio.productor', function ($pq) {
-                          $pq->whereNotNull('clave_cuarentena')
-                             ->where('clave_cuarentena', 'like', '%P%');
+                          $pq->whereNotNull('clave')
+                             ->where('clave', 'like', '%P%');
                       });
                 });
             } elseif ($tipoActividad === 'Hatos Relacionados y Expuestos') {
@@ -138,8 +139,8 @@ class Inspeccion extends Model
                     ->orWhere('inspecciones.motivo_prueba', 'like', '%Seguimiento%')
                     ->orWhere('inspecciones.motivo_prueba', 'like', '%Hatos Relacionados%')
                     ->orWhereHas('predio.productor', function ($pq) {
-                        $pq->whereNotNull('clave_cuarentena')
-                           ->where('clave_cuarentena', '!=', '');
+                        $pq->whereNotNull('clave')
+                           ->where('clave', '!=', '');
                     });
                 });
             } elseif ($tipoActividad === 'Buffer') {

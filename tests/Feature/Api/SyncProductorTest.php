@@ -152,7 +152,7 @@ class SyncProductorTest extends TestCase
         ]);
     }
 
-    public function test_upload_productores_admin_asigna_clave_cuarentena()
+    public function test_upload_productores_admin_asigna_clave()
     {
         Sanctum::actingAs($this->admin);
 
@@ -162,7 +162,7 @@ class SyncProductorTest extends TestCase
                     'id' => 'offline-001',
                     'nombre' => 'Clave',
                     'apellido_paterno' => 'Test',
-                    'clave_cuarentena' => 'AD-12345',
+                    'clave' => 'AD-12345',
                     'zona' => 'A',
                 ],
             ],
@@ -171,12 +171,12 @@ class SyncProductorTest extends TestCase
         $response->assertStatus(200);
         $this->assertDatabaseHas('productores', [
             'nombre' => 'Clave',
-            'clave_cuarentena' => 'AD-12345',
+            'clave' => 'AD-12345',
             'zona' => 'A',
         ]);
     }
 
-    public function test_upload_productores_medico_no_asigna_clave_cuarentena()
+    public function test_upload_productores_medico_no_asigna_clave()
     {
         Sanctum::actingAs($this->medico);
 
@@ -186,7 +186,7 @@ class SyncProductorTest extends TestCase
                     'id' => 'offline-001',
                     'nombre' => 'Medico',
                     'apellido_paterno' => 'Key',
-                    'clave_cuarentena' => 'AD-12345',
+                    'clave' => 'AD-12345',
                     'zona' => 'A',
                 ],
             ],
@@ -195,7 +195,7 @@ class SyncProductorTest extends TestCase
         $response->assertStatus(200);
         $this->assertDatabaseHas('productores', [
             'nombre' => 'Medico',
-            'clave_cuarentena' => null,
+            'clave' => null,
             'zona' => null,
         ]);
     }
@@ -210,7 +210,7 @@ class SyncProductorTest extends TestCase
                     'id' => 'offline-001',
                     'nombre' => 'Invalida',
                     'apellido_paterno' => 'Key',
-                    'clave_cuarentena' => 'XD-12345',
+                    'clave' => 'XD-12345',
                 ],
             ],
         ]);

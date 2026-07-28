@@ -197,7 +197,7 @@ class ProductorApiTest extends TestCase
         $this->assertNotContains($otro->id, $ids);
     }
 
-    public function test_medico_no_puede_asignar_clave_cuarentena()
+    public function test_medico_no_puede_asignar_clave()
     {
         $medico = User::factory()->create();
         $medico->assignRole('Medico_Campo');
@@ -208,47 +208,47 @@ class ProductorApiTest extends TestCase
             'apellido_paterno' => 'Productor',
             'curp' => 'KEY890101HSL00010X',
             'upp' => 'UPP-KEY-API',
-            'clave_cuarentena' => 'BD-999999',
+            'clave' => 'BD-999999',
             'zona' => 'B',
         ]);
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('productores', [
             'curp' => 'KEY890101HSL00010X',
-            'clave_cuarentena' => null,
+            'clave' => null,
             'zona' => null,
         ]);
     }
 
-    public function test_clave_cuarentena_invalida_rechazada()
+    public function test_clave_invalida_rechazada()
     {
         $response = $this->postJson('/api/productores', [
             'nombre' => 'Invalida Key',
             'apellido_paterno' => 'Test',
             'curp' => 'INV890101HSL00000X',
             'upp' => 'UPP-INV-01',
-            'clave_cuarentena' => 'XD-123',
+            'clave' => 'XD-123',
             'zona' => 'B',
         ]);
 
         $response->assertStatus(422);
     }
 
-    public function test_clave_cuarentena_ad_es_valida()
+    public function test_clave_ad_es_valida()
     {
         $response = $this->postJson('/api/productores', [
             'nombre' => 'Admin AD',
             'apellido_paterno' => 'Test',
             'curp' => 'ADM890101HSL00001X',
             'upp' => 'UPP-AD-01',
-            'clave_cuarentena' => 'AD-123456',
+            'clave' => 'AD-123456',
             'zona' => 'A',
         ]);
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('productores', [
             'curp' => 'ADM890101HSL00001X',
-            'clave_cuarentena' => 'AD-123456',
+            'clave' => 'AD-123456',
             'zona' => 'A',
         ]);
     }

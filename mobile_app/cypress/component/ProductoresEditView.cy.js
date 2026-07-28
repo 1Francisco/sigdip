@@ -33,7 +33,7 @@ const fakeProductorAPI = {
     estado: 'Nayarit',
     telefono: '3111129405',
     email: 'juan@correo.com',
-    clave_cuarentena: 'BD-789',
+    clave: 'BD-789',
     zona: 'B',
     predios: [
       {
@@ -73,7 +73,7 @@ const fakePredioIndexedDB = {
     estado: 'Nayarit',
     telefono: '3111129405',
     email: 'juan@correo.com',
-    clave_cuarentena: 'BD-789',
+    clave: 'BD-789',
     zona: 'B',
   }
 }
@@ -236,7 +236,7 @@ describe('ProductoresEditView', () => {
     cy.get('select').should('have.value', 'A')
   })
 
-  it('actualiza clave_cuarentena via API', () => {
+  it('actualiza clave via API', () => {
     cy.intercept('GET', '**/api/productores/1', {
       statusCode: 200,
       body: fakeProductorAPI,
@@ -258,12 +258,12 @@ describe('ProductoresEditView', () => {
     cy.get('form').submit()
 
     cy.wait('@updateProductor', { timeout: 10000 }).then((interception) => {
-      expect(interception.request.body.clave_cuarentena).to.eq('AD-001')
+      expect(interception.request.body.clave).to.eq('AD-001')
       expect(interception.request.body.zona).to.eq('A')
     })
   })
 
-  it('carga clave_cuarentena desde IndexedDB offline', () => {
+  it('carga clave desde IndexedDB offline', () => {
     cy.intercept('GET', '**/api/productores/1', {
       statusCode: 500,
       body: { message: 'Error' },
@@ -280,7 +280,7 @@ describe('ProductoresEditView', () => {
     cy.get('select').should('have.value', 'B')
   })
 
-  it('IndexedDB actualizado con nueva clave_cuarentena', () => {
+  it('IndexedDB actualizado con nueva clave', () => {
     cy.intercept('GET', '**/api/productores/1', {
       statusCode: 200,
       body: fakeProductorAPI,
@@ -306,7 +306,7 @@ describe('ProductoresEditView', () => {
 
     cy.getIndexedDB('catalogos', 'predios').then((predios) => {
       const updated = predios.find(p => p.productor?.id === 1)
-      expect(updated.productor.clave_cuarentena).to.eq('AP-999')
+      expect(updated.productor.clave).to.eq('AP-999')
       expect(updated.productor.zona).to.eq('A')
     })
   })

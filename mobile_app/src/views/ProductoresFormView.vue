@@ -138,13 +138,13 @@
                   </div>
                 </div>
 
-                <!-- Clave de Cuarentena | Zona / Sector (Solo Administradores) -->
+                <!-- Clave | Zona / Sector (Solo Administradores) -->
                 <template v-if="isAdmin">
                   <div class="col-12 col-md-6">
                     <div class="form-group-custom">
-                      <label class="form-label-custom">Clave de Cuarentena</label>
+                      <label class="form-label-custom">Clave</label>
                       <input 
-                        v-model="form.clave_cuarentena" 
+                        v-model="form.clave" 
                         type="text" 
                         class="form-control-custom text-uppercase" 
                         placeholder="Ej. BD-123421"
@@ -316,7 +316,7 @@ export default {
         estado: 'Nayarit',
         telefono: '',
         email: '',
-        clave_cuarentena: '',
+        clave: '',
         zona: '',
 
         // Predio optional data
@@ -389,7 +389,7 @@ export default {
           this.form.estado = prod.estado || 'Nayarit';
           this.form.telefono = prod.telefono || '';
           this.form.email = prod.email || '';
-          this.form.clave_cuarentena = prod.clave_cuarentena || '';
+          this.form.clave = prod.clave || '';
           this.form.zona = prod.zona || '';
 
           // Si es edición, también permitimos editar su predio directamente
@@ -456,8 +456,8 @@ export default {
     },
 
     autoSelectZona() {
-      if (!this.form.clave_cuarentena) return;
-      const first = this.form.clave_cuarentena.toUpperCase()[0];
+      if (!this.form.clave) return;
+      const first = this.form.clave.toUpperCase()[0];
       this.form.zona = (first === 'A' || first === 'B') ? first : '';
     },
 
@@ -491,7 +491,7 @@ export default {
         estado: this.form.estado.trim(),
         telefono: this.form.telefono.trim(),
         email: this.form.email.trim(),
-        clave_cuarentena: this.isAdmin ? (this.form.clave_cuarentena || '').toUpperCase().trim() : null,
+        clave: this.isAdmin ? (this.form.clave || '').toUpperCase().trim() : null,
         zona: this.isAdmin ? (this.form.zona || null) : null,
 
         // Banderas en 2 pasos de la web
@@ -593,7 +593,7 @@ export default {
                 localidad: body.localidad,
                 estado: body.estado,
                 email: body.email,
-                clave_cuarentena: body.clave_cuarentena,
+                clave: body.clave,
                 zona: body.zona
               }
             };
@@ -620,7 +620,7 @@ export default {
                 localidad: body.localidad,
                 estado: body.estado,
                 email: body.email,
-                clave_cuarentena: body.clave_cuarentena,
+                clave: body.clave,
                 zona: body.zona
               }
             };
@@ -650,7 +650,7 @@ export default {
               p.productor.estado = body.estado;
               p.productor.telefono = body.telefono;
               p.productor.email = body.email;
-              p.productor.clave_cuarentena = body.clave_cuarentena;
+              p.productor.clave = body.clave;
               p.productor.zona = body.zona;
 
               // Si actualiza los campos del predio existente

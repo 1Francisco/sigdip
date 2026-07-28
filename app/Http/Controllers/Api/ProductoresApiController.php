@@ -108,7 +108,7 @@ class ProductoresApiController extends Controller
                         'localidad' => $predio->productor->localidad,
                         'estado' => $predio->productor->estado,
                         'email' => $predio->productor->email,
-                        'clave_cuarentena' => $predio->productor->clave_cuarentena,
+                        'clave' => $predio->productor->clave,
                         'zona' => $predio->productor->zona,
                     ] : null,
                 ];
@@ -159,7 +159,7 @@ class ProductoresApiController extends Controller
                     'localidad' => $predio->productor->localidad,
                     'estado' => $predio->productor->estado,
                     'email' => $predio->productor->email,
-                    'clave_cuarentena' => $predio->productor->clave_cuarentena,
+                    'clave' => $predio->productor->clave,
                     'zona' => $predio->productor->zona,
                 ] : null,
                 'animales' => $predio->animales->map(function ($animal) {
@@ -191,8 +191,10 @@ class ProductoresApiController extends Controller
                 'estado' => 'nullable|string',
                 'email' => 'nullable|email',
                 'medico_id' => 'nullable|exists:users,id',
-                'clave_cuarentena' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP)/i'],
+                'clave' => 'nullable|string',
                 'zona' => 'nullable|string|in:A,B',
+                'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
+                'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
 
                 // Validaciones para el predio opcional (copia exacta de la web)
                 'registrar_predio' => 'nullable|boolean',
@@ -207,7 +209,11 @@ class ProductoresApiController extends Controller
                 $medicoId = $validated['medico_id'] ?? null;
                 if ($user && ! $user->hasRole('Administrador')) {
                     $medicoId = $user->id;
-                    unset($validated['clave_cuarentena'], $validated['zona']);
+                    unset($validated['clave'], $validated['zona']);
+                }
+
+                if (($validated['tipo_actividad'] ?? '') !== 'Seguimiento') {
+                    $validated['sub_tipo_actividad'] = null;
                 }
 
                 // 1. Crear el Productor
@@ -224,8 +230,10 @@ class ProductoresApiController extends Controller
                     'estado' => $validated['estado'] ?? 'NAYARIT',
                     'email' => $validated['email'] ?? null,
                     'medico_id' => $medicoId,
-                    'clave_cuarentena' => $validated['clave_cuarentena'] ?? null,
+                    'clave' => $validated['clave'] ?? null,
                     'zona' => $validated['zona'] ?? null,
+                    'tipo_actividad' => $validated['tipo_actividad'] ?? null,
+                    'sub_tipo_actividad' => $validated['sub_tipo_actividad'] ?? null,
                 ]);
 
                 // 2. Crear el Predio si se solicitó (copia exacta de la web)
@@ -390,14 +398,20 @@ class ProductoresApiController extends Controller
                 'estado' => 'nullable|string',
                 'email' => 'nullable|email',
                 'medico_id' => 'nullable|exists:users,id',
-                'clave_cuarentena' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP)/i'],
+                'clave' => 'nullable|string',
                 'zona' => 'nullable|string|in:A,B',
+                'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
+                'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
             ]);
+
+            if (($validated['tipo_actividad'] ?? '') !== 'Seguimiento') {
+                $validated['sub_tipo_actividad'] = null;
+            }
 
             $medicoId = $validated['medico_id'] ?? $productor->medico_id;
             if ($user && ! $user->hasRole('Administrador')) {
                 $medicoId = $user->id;
-                unset($validated['clave_cuarentena'], $validated['zona']);
+                unset($validated['clave'], $validated['zona']);
             }
             $validated['medico_id'] = $medicoId;
 
@@ -579,7 +593,7 @@ class ProductoresApiController extends Controller
                         'localidad' => $predio->productor->localidad,
                         'estado' => $predio->productor->estado,
                         'email' => $predio->productor->email,
-                        'clave_cuarentena' => $predio->productor->clave_cuarentena,
+                        'clave' => $predio->productor->clave,
                         'zona' => $predio->productor->zona,
                     ] : null,
                 ],
@@ -622,8 +636,10 @@ class ProductoresApiController extends Controller
             'estado' => $productor->estado,
             'telefono' => $productor->telefono,
             'email' => $productor->email,
-            'clave_cuarentena' => $productor->clave_cuarentena,
+            'clave' => $productor->clave,
             'zona' => $productor->zona,
+            'tipo_actividad' => $productor->tipo_actividad,
+            'sub_tipo_actividad' => $productor->sub_tipo_actividad,
             'predios_count' => $productor->predios_count ?? $productor->predios()->count(),
             'medico_id' => $productor->medico_id,
         ];

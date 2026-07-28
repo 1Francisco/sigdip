@@ -153,7 +153,7 @@
                                 <label class="form-label fw-semibold">Productor (Persona)</label>
                                 <select id="productor_id" class="form-select @if(isset($visita)) bg-light @endif" required @if(isset($visita)) readonly style="pointer-events: none;" tabindex="-1" @endif>
                                     <option value="">Seleccione un productor...</option>
-                                    @foreach($productores as $prod)
+                                    @foreach($productoresModel as $prod)
                                         <option value="{{ $prod->id }}" 
                                                 data-apellido_paterno="{{ $prod->apellido_paterno }}"
                                                 data-apellido_materno="{{ $prod->apellido_materno }}"
@@ -171,6 +171,18 @@
                                         </option>
                                     @endforeach
                                 </select>
+                            </div>
+                            <div class="mb-3" id="productores_extra_wrapper" style="display: none;">
+                                <label class="form-label fw-semibold">Anexar Productores Extra (Mismo Hato/Dictamen)</label>
+                                <select id="productores_extra" name="productores_extra[]" class="form-select" multiple>
+                                    @foreach($productoresModel as $prod)
+                                        <option value="{{ $prod->id }}"
+                                                {{ (is_array(old('productores_extra')) && in_array($prod->id, old('productores_extra'))) || (isset($productoresExtraSelected) && in_array($prod->id, $productoresExtraSelected)) ? 'selected' : '' }}>
+                                            {{ $prod->nombre }} {{ $prod->apellido_paterno }} {{ $prod->apellido_materno }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text small text-muted"><i class="bi bi-info-circle-fill text-info me-1"></i> Seleccione los productores que tienen animales en el mismo hato de este dictamen. Se les asignará la misma lectura.</div>
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-4">
@@ -485,6 +497,7 @@
                                             <th style="width: 100px;">Sexo</th>
                                             <th style="width: 80px;">Fierro</th>
                                             <th style="width: 140px;">Resultado</th>
+                                            <th style="width: 200px;">Propietario</th>
                                             <th>Observaciones</th>
                                             <th style="width: 40px;"></th>
                                         </tr>
@@ -553,6 +566,11 @@
                                                         </div>
                                                     @endif
                                                </td>
+                                             <td data-label="Propietario">
+                                                 <select name="animales[{{ $index }}][productor_id]" class="form-select form-select-sm propietario-select" required data-selected="{{ $detalle->productor_id ?? '' }}">
+                                                     <!-- Will be populated via JS -->
+                                                 </select>
+                                             </td>
                                             <td data-label="Obs"><input type="text" name="animales[{{ $index }}][observaciones]" class="form-control form-control-sm" value="{{ $detalle->observaciones_animal }}"></td>
                                             <td class="text-center" data-label="Quitar">
                                                 <button type="button" class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove(); actualizarCenso(); actualizarSinInyeccion(); validateSections();">
@@ -1363,15 +1381,21 @@
                         <input type="text" name="animales[${animalCount}][motivo_no_aplica]" class="form-control form-control-sm motivo-no-aplica-input" placeholder="Motivo de No Aplica">
                     </div>
                 </td>
+                <td data-label="Propietario">
+                    <select name="animales[${animalCount}][productor_id]" class="form-select form-select-sm propietario-select" required>
+                        <!-- Will be populated via JS -->
+                    </select>
+                </td>
                 <td data-label="Obs"><input type="text" name="animales[${animalCount}][observaciones]" class="form-control form-control-sm"></td>
                 <td class="text-center" data-label="Quitar">
                     <button type="button" class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove(); actualizarCenso(); validateSections();">
                         <i class="bi bi-trash fs-5"></i>
-                    </button>
+                      </button>
                 </td>
             </tr>
         `;
         tbody.insertAdjacentHTML('beforeend', row);
+        updatePropietariosDropdowns();
         animalCount++;
         actualizarCenso();
         actualizarSinInyeccion();
@@ -1910,13 +1934,14 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const productorSelectEl = document.getElementById('productor_id');
+        let ts = null;
         if (productorSelectEl) {
-            const ts = new TomSelect('#productor_id', {
+            ts = new TomSelect('#productor_id', {
                 create: false,
                 maxOptions: 1000,
                 valueField: 'id',
                 labelField: 'text',
-                searchField: ['text', 'upp', 'curp', 'localidad', 'municipio'],
+                searchField: ['text', 'upp', 'curp', 'clave', 'localidad', 'municipio'],
                 dropdownParent: 'body',
                 render: {
                     option: function(data, escape) {
@@ -1933,7 +1958,134 @@
                 ts.disable();
             }
         }
+
+        const extraSelectEl = document.getElementById('productores_extra');
+        let tsExtra = null;
+        if (extraSelectEl) {
+            tsExtra = new TomSelect('#productores_extra', {
+                create: false,
+                maxOptions: 1000,
+                valueField: 'id',
+                labelField: 'text',
+                searchField: ['text'],
+                dropdownParent: 'body'
+            });
+            tsExtra.on('change', function() {
+                updatePropietariosDropdowns();
+            });
+        }
+
+        if (ts) {
+            ts.on('change', function() {
+                updateExtraProducersOptions();
+                updatePropietariosDropdowns();
+            });
+        }
+
+        // Initial setup
+        setTimeout(() => {
+            updateExtraProducersOptions();
+            updatePropietariosDropdowns();
+        }, 100);
     });
+
+    function updatePropietariosDropdowns() {
+        const mainProdEl = document.getElementById('productor_id');
+        const mainProdId = mainProdEl ? mainProdEl.value : '';
+        let mainProdText = '';
+        if (mainProdEl) {
+            if (mainProdEl.tomselect) {
+                const opt = mainProdEl.tomselect.options[mainProdId];
+                mainProdText = opt ? opt.text : (mainProdEl.options[mainProdEl.selectedIndex]?.text || '');
+            } else {
+                mainProdText = mainProdEl.options[mainProdEl.selectedIndex]?.text || '';
+            }
+        }
+        if (!mainProdText) mainProdText = 'Propietario Principal';
+
+        const extraSelect = document.getElementById('productores_extra');
+        const selectedExtras = [];
+        if (extraSelect && extraSelect.tomselect) {
+            const vals = extraSelect.tomselect.getValue();
+            const valuesArr = Array.isArray(vals) ? vals : (vals ? [vals] : []);
+            valuesArr.forEach(id => {
+                const opt = extraSelect.tomselect.options[id];
+                selectedExtras.push({
+                    id: id,
+                    text: opt ? opt.text : `Productor #${id}`
+                });
+            });
+        }
+
+        const availableOwners = [];
+        if (mainProdId) {
+            availableOwners.push({ id: mainProdId, text: mainProdText });
+        }
+        selectedExtras.forEach(item => {
+            if (item.id !== mainProdId) {
+                availableOwners.push(item);
+            }
+        });
+
+        const dropdowns = document.querySelectorAll('.propietario-select');
+        dropdowns.forEach(select => {
+            const currentVal = select.value || select.getAttribute('data-selected');
+            select.innerHTML = '';
+            availableOwners.forEach(owner => {
+                const opt = document.createElement('option');
+                opt.value = owner.id;
+                opt.textContent = owner.text;
+                if (owner.id == currentVal) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            });
+            if (!availableOwners.some(o => o.id == select.value) && mainProdId) {
+                select.value = mainProdId;
+            }
+        });
+    }
+
+    function updateExtraProducersOptions() {
+        const mainProdId = document.getElementById('productor_id').value;
+        const wrapper = document.getElementById('productores_extra_wrapper');
+        const extraSelect = document.getElementById('productores_extra');
+        
+        if (mainProdId) {
+            if (wrapper) wrapper.style.display = 'block';
+            if (extraSelect && extraSelect.tomselect) {
+                const tsExtra = extraSelect.tomselect;
+                tsExtra.removeItem(mainProdId);
+                const currentValues = tsExtra.getValue();
+                const valuesArr = Array.isArray(currentValues) ? currentValues : (currentValues ? [currentValues] : []);
+                tsExtra.clearOptions();
+                
+                const mainSelect = document.getElementById('productor_id');
+                if (mainSelect && mainSelect.tomselect) {
+                    Object.values(mainSelect.tomselect.options).forEach(opt => {
+                        if (opt.id && opt.id != mainProdId) {
+                            tsExtra.addOption({
+                                id: opt.id,
+                                text: opt.text
+                            });
+                        }
+                    });
+                } else if (mainSelect) {
+                    Array.from(mainSelect.options).forEach(opt => {
+                        if (opt.value && opt.value != mainProdId) {
+                            tsExtra.addOption({
+                                id: opt.value,
+                                text: opt.text
+                            });
+                        }
+                    });
+                }
+                tsExtra.setValue(valuesArr.filter(val => val != mainProdId));
+            }
+        } else {
+            if (wrapper) wrapper.style.display = 'none';
+        }
+    }
 </script>
 @include('inspecciones.partials.offline-draft-js')
 @endsection

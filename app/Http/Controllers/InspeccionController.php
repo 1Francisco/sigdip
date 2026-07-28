@@ -253,48 +253,145 @@ class InspeccionController extends Controller
         try {
             DB::beginTransaction();
 
-            $inspeccionData = [
-                'predio_id' => $request->predio_id,
-                'veterinario_id' => auth()->id() ?? 1,
-                'visita_id' => $request->visita_id,
-                'fecha' => $request->fecha,
-                'folio' => $request->folio,
-                'tipo_inspeccion' => 'Movilización',
-                'tipo_prueba' => $request->tipo_prueba ?? 'P.P.C.',
-                'fecha_inyeccion' => $request->fecha_inyeccion,
-                'hora_inyeccion' => $request->hora_inyeccion,
-                'fecha_lectura' => $request->fecha_lectura,
-                'hora_lectura' => $request->hora_lectura,
-                'motivo_prueba' => $request->motivo_prueba,
-                'funcion_zootecnica' => $request->funcion_zootecnica,
-                'vigencia_fecha' => $request->vigencia_fecha,
-                'sementales' => $request->sementales ?? 0,
-                'vacas' => $request->vacas ?? 0,
-                'vaquillas' => $request->vaquillas ?? 0,
-                'becerras' => $request->becerras ?? 0,
-                'becerros' => $request->becerros ?? 0,
-                'fecha_prueba_anterior' => $request->fecha_prueba_anterior,
-                'dictamen_anterior_no' => $request->dictamen_anterior_no,
-                'exencion_no' => $request->exencion_no,
-                'exencion_fecha' => $request->exencion_fecha,
-                'hato_libre_no' => $request->hato_libre_no,
-                'hato_libre_fecha' => $request->hato_libre_fecha,
-                'observaciones' => $request->observaciones,
-                'estado' => $request->estado ?? 'sincronizado',
-                'clave_interna' => $request->clave_interna,
-            ];
+            $mainPredio = Predio::with('productor')->find($request->predio_id);
+            $mainProductorId = $mainPredio?->productor_id;
 
-            if ($existingDraft) {
-                $existingDraft->update($inspeccionData);
-                $inspeccion = $existingDraft;
-                $inspeccion->detalles()->delete();
-            } else {
-                $inspeccion = Inspeccion::create($inspeccionData);
-            }
-
+            $groupedAnimals = [];
             if ($request->has('animales') && is_array($request->animales)) {
                 foreach ($request->animales as $item) {
-                    if (! $item['identificador'] && $isDraft) {
+                    $ownerId = $item['productor_id'] ?? $mainProductorId;
+                    if ($ownerId) {
+                        $groupedAnimals[$ownerId][] = $item;
+                    }
+                }
+            }
+
+            $allOwnerIds = array_keys($groupedAnimals);
+            if ($request->has('productores_extra') && is_array($request->productores_extra)) {
+                foreach ($request->productores_extra as $extId) {
+                    if ($extId && !in_array($extId, $allOwnerIds)) {
+                        $allOwnerIds[] = $extId;
+                    }
+                }
+            }
+            if ($mainProductorId && !in_array($mainProductorId, $allOwnerIds)) {
+                $allOwnerIds[] = $mainProductorId;
+            }
+
+            // Determine group ID
+            $grupoId = 'GRP-' . now()->format('YmdHis') . '-' . uniqid();
+            if ($existingDraft && $existingDraft->grupo_id) {
+                $grupoId = $existingDraft->grupo_id;
+                // Delete other inspections in the group
+                $otherInspections = Inspeccion::where('grupo_id', $grupoId)
+                    ->where('id', '!=', $existingDraft->id)
+                    ->get();
+                foreach ($otherInspections as $other) {
+                    $other->detalles()->delete();
+                    $other->delete();
+                }
+                $existingDraft->detalles()->delete();
+            }
+
+            $mainInspeccion = null;
+
+            foreach ($allOwnerIds as $ownerId) {
+                $extraProductor = Productor::find($ownerId);
+                if (!$extraProductor) continue;
+
+                if ($ownerId == $mainProductorId) {
+                    $predioObj = $mainPredio;
+                } else {
+                    $predioObj = Predio::where('productor_id', $ownerId)
+                        ->where(function($q) use ($mainPredio) {
+                            if ($mainPredio) {
+                                $q->where('municipio', $mainPredio->municipio)
+                                  ->orWhere('localidad', $mainPredio->localidad);
+                            }
+                        })->first() ?? Predio::where('productor_id', $ownerId)->first();
+                }
+
+                if (!$predioObj) continue;
+
+                // Calculate censo for this owner's animals
+                $sementales = 0;
+                $vacas = 0;
+                $vaquillas = 0;
+                $becerras = 0;
+                $becerros = 0;
+                
+                $ownerAnimals = $groupedAnimals[$ownerId] ?? [];
+                foreach ($ownerAnimals as $item) {
+                    $edad = intval($item['edad_meses'] ?? 0);
+                    $sexo = $item['sexo'] ?? 'H';
+                    if ($sexo === 'M') {
+                        if ($edad < 12) {
+                            $becerros++;
+                        } else {
+                            $sementales++;
+                        }
+                    } else {
+                        if ($edad < 12) {
+                            $becerras++;
+                        } elseif ($edad >= 12 && $edad < 24) {
+                            $vaquillas++;
+                        } else {
+                            $vacas++;
+                        }
+                    }
+                }
+
+                $folio = $request->folio;
+                if ($ownerId != $mainProductorId && $request->folio) {
+                    $suffix = $extraProductor->clave ?: $extraProductor->id;
+                    $folio = $request->folio . '-' . $suffix;
+                }
+
+                $inspeccionData = [
+                    'predio_id' => $predioObj->id,
+                    'veterinario_id' => auth()->id() ?? 1,
+                    'visita_id' => $request->visita_id,
+                    'fecha' => $request->fecha,
+                    'folio' => $folio,
+                    'tipo_inspeccion' => 'Movilización',
+                    'tipo_prueba' => $request->tipo_prueba ?? 'P.P.C.',
+                    'fecha_inyeccion' => $request->fecha_inyeccion,
+                    'hora_inyeccion' => $request->hora_inyeccion,
+                    'fecha_lectura' => $request->fecha_lectura,
+                    'hora_lectura' => $request->hora_lectura,
+                    'motivo_prueba' => $request->motivo_prueba,
+                    'funcion_zootecnica' => $request->funcion_zootecnica,
+                    'vigencia_fecha' => $request->vigencia_fecha,
+                    'sementales' => $sementales,
+                    'vacas' => $vacas,
+                    'vaquillas' => $vaquillas,
+                    'becerras' => $becerras,
+                    'becerros' => $becerros,
+                    'fecha_prueba_anterior' => $request->fecha_prueba_anterior,
+                    'dictamen_anterior_no' => $request->dictamen_anterior_no,
+                    'exencion_no' => $request->exencion_no,
+                    'exencion_fecha' => $request->exencion_fecha,
+                    'hato_libre_no' => $request->hato_libre_no,
+                    'hato_libre_fecha' => $request->hato_libre_fecha,
+                    'observaciones' => $request->observaciones,
+                    'estado' => $request->estado ?? 'sincronizado',
+                    'clave_interna' => ($ownerId == $mainProductorId) ? $request->clave_interna : generarClaveInterna($extraProductor),
+                    'grupo_id' => $grupoId,
+                ];
+
+                if ($ownerId == $mainProductorId && $existingDraft) {
+                    $existingDraft->update($inspeccionData);
+                    $ins = $existingDraft;
+                } else {
+                    $ins = Inspeccion::create($inspeccionData);
+                }
+
+                if ($ownerId == $mainProductorId) {
+                    $mainInspeccion = $ins;
+                }
+
+                foreach ($ownerAnimals as $item) {
+                    if (!$item['identificador'] && $isDraft) {
                         continue;
                     }
 
@@ -303,13 +400,13 @@ class InspeccionController extends Controller
                         [
                             'raza' => $item['raza'] ?? 'No especificada',
                             'sexo' => $item['sexo'] ?? 'Macho',
-                            'predio_id' => $request->predio_id,
+                            'predio_id' => $predioObj->id,
                             'edad' => $item['edad_meses'] ?? 0,
                         ]
                     );
 
                     DetalleInspeccion::create([
-                        'inspeccion_id' => $inspeccion->id,
+                        'inspeccion_id' => $ins->id,
                         'animal_id' => $animal->id,
                         'tipo_arete' => ! empty($item['tipo_arete']) ? $item['tipo_arete'] : ($item['tipo_arete_default'] ?? 'SINIIGA'),
                         'edad_meses' => $item['edad_meses'] ?? null,
@@ -322,6 +419,8 @@ class InspeccionController extends Controller
                     ]);
                 }
             }
+
+            $inspeccion = $mainInspeccion ?? $existingDraft;
 
             // Marcar visita como completada y registrar inyección (solo con "Finalizar y Sincronizar")
             if ($request->visita_id && $request->inyeccion_realizada) {
@@ -374,14 +473,59 @@ class InspeccionController extends Controller
         }
 
         if ($user && ! $user->hasRole('Administrador')) {
-            $productores = Productor::with('predios')->where('medico_id', $user->id)->get();
+            $productoresModel = Productor::with('predios')->where('medico_id', $user->id)->get();
         } else {
-            $productores = Productor::with('predios')->get();
+            $productoresModel = Productor::with('predios')->get();
         }
+
         $inspeccion->load(['detalles.animal', 'visita.predio.productor', 'predio.productor']);
         $visita = $inspeccion->visita;
 
-        return view('inspecciones.edit', compact('inspeccion', 'productores', 'visita'));
+        $productoresExtraSelected = [];
+
+        if ($inspeccion->grupo_id) {
+            // Find all inspections in the same group
+            $grupoInspecciones = Inspeccion::where('grupo_id', $inspeccion->grupo_id)
+                ->with(['detalles.animal', 'predio.productor'])
+                ->get();
+            
+            $detalles = collect();
+            foreach ($grupoInspecciones as $ins) {
+                foreach ($ins->detalles as $det) {
+                    $det->productor_id = $ins->predio->productor_id;
+                    $detalles->push($det);
+                }
+                
+                if ($ins->predio->productor_id != $inspeccion->predio->productor_id) {
+                    $productoresExtraSelected[] = $ins->predio->productor_id;
+                }
+            }
+
+            // Override details relation on main inspection model
+            $inspeccion->setRelation('detalles', $detalles);
+        }
+
+        $productores = $productoresModel->map(function ($prod) {
+            return [
+                'id' => $prod->id,
+                'nombre' => $prod->nombre,
+                'curp' => $prod->curp,
+                'predios' => $prod->predios->map(function ($predio) {
+                    return [
+                        'id' => $predio->id,
+                        'nombre_rancho' => $predio->nombre_rancho,
+                        'localidad' => $predio->localidad,
+                        'municipio' => $predio->municipio,
+                        'latitud' => $predio->latitud,
+                        'longitud' => $predio->longitud,
+                        'domicilio' => $predio->domicilio,
+                        'clave_unidad_produccion' => $predio->clave_unidad_produccion,
+                    ];
+                })->toArray(),
+            ];
+        })->toArray();
+
+        return view('inspecciones.edit', compact('inspeccion', 'productores', 'productoresModel', 'visita', 'productoresExtraSelected'));
     }
 
     public function update(Request $request, Inspeccion $inspeccion)
@@ -490,41 +634,168 @@ class InspeccionController extends Controller
         $request->validate($rules);
 
         try {
-            DB::beginTransaction();
+            $mainPredio = Predio::with('productor')->find($request->predio_id ?: $inspeccion->predio_id);
+            $mainProductorId = $mainPredio?->productor_id;
 
-            $inspeccion->update(array_merge(
-                $request->except(['animales', '_token', '_method']),
-                ['modified_at' => now()]
-            ));
+            $groupedAnimals = [];
+            if ($request->has('animales') && is_array($request->animales)) {
+                foreach ($request->animales as $item) {
+                    $ownerId = $item['productor_id'] ?? $mainProductorId;
+                    if ($ownerId) {
+                        $groupedAnimals[$ownerId][] = $item;
+                    }
+                }
+            }
 
-            // Sync animals (simplistic: delete and recreate for this MVP)
-            if ($request->has('animales')) {
-                // Determinar si estamos en fase de lectura y capturar aretes existentes
-                $isLectura = $inspeccion->visita && $inspeccion->visita->inyeccion;
-                $existingAretes = [];
-                if ($isLectura) {
-                    $existingAretes = $inspeccion->detalles()
-                        ->with('animal')
-                        ->get()
-                        ->pluck('animal.numero_arete_siniiga')
-                        ->toArray();
+            $allOwnerIds = array_keys($groupedAnimals);
+            if ($request->has('productores_extra') && is_array($request->productores_extra)) {
+                foreach ($request->productores_extra as $extId) {
+                    if ($extId && !in_array($extId, $allOwnerIds)) {
+                        $allOwnerIds[] = $extId;
+                    }
+                }
+            }
+            if ($mainProductorId && !in_array($mainProductorId, $allOwnerIds)) {
+                $allOwnerIds[] = $mainProductorId;
+            }
+
+            // Group ID
+            $grupoId = $inspeccion->grupo_id ?: ('GRP-' . now()->format('YmdHis') . '-' . uniqid());
+
+            // Fetch existing inspections in the group
+            $existingInspections = Inspeccion::where('grupo_id', $grupoId)->get();
+            $existingInspectionsMap = [];
+            foreach ($existingInspections as $exist) {
+                $existingInspectionsMap[$exist->predio->productor_id] = $exist;
+            }
+
+            // Track existing animal tags in this group for "agregado_en_lectura" check
+            $isLectura = ($inspeccion->visita && $inspeccion->visita->inyeccion) || $request->inyeccion_realizada;
+            $existingAretes = DetalleInspeccion::whereIn('inspeccion_id', $existingInspections->pluck('id'))
+                ->with('animal')
+                ->get()
+                ->pluck('animal.numero_arete_siniiga')
+                ->toArray();
+
+            // Loop and process each owner
+            foreach ($allOwnerIds as $ownerId) {
+                $extraProductor = Productor::find($ownerId);
+                if (!$extraProductor) continue;
+
+                if ($ownerId == $mainProductorId) {
+                    $predioObj = $mainPredio;
+                    $ownerIns = $inspeccion;
+                } else {
+                    $predioObj = Predio::where('productor_id', $ownerId)
+                        ->where(function($q) use ($mainPredio) {
+                            if ($mainPredio) {
+                                $q->where('municipio', $mainPredio->municipio)
+                                  ->orWhere('localidad', $mainPredio->localidad);
+                            }
+                        })->first() ?? Predio::where('productor_id', $ownerId)->first();
+                    
+                    $ownerIns = $existingInspectionsMap[$ownerId] ?? null;
                 }
 
-                $inspeccion->detalles()->delete();
-                foreach ($request->animales as $item) {
-                    if (! $item['identificador'] && $isDraft) {
+                if (!$predioObj) continue;
+
+                // Calculate censo
+                $sementales = 0;
+                $vacas = 0;
+                $vaquillas = 0;
+                $becerras = 0;
+                $becerros = 0;
+                
+                $ownerAnimals = $groupedAnimals[$ownerId] ?? [];
+                foreach ($ownerAnimals as $item) {
+                    $edad = intval($item['edad_meses'] ?? 0);
+                    $sexo = $item['sexo'] ?? 'H';
+                    if ($sexo === 'M') {
+                        if ($edad < 12) {
+                            $becerros++;
+                        } else {
+                            $sementales++;
+                        }
+                    } else {
+                        if ($edad < 12) {
+                            $becerras++;
+                        } elseif ($edad >= 12 && $edad < 24) {
+                            $vaquillas++;
+                        } else {
+                            $vacas++;
+                        }
+                    }
+                }
+
+                $folio = $request->folio;
+                if ($ownerId != $mainProductorId && $request->folio) {
+                    $suffix = $extraProductor->clave ?: $extraProductor->id;
+                    $folio = $request->folio . '-' . $suffix;
+                }
+
+                $inspeccionData = [
+                    'predio_id' => $predioObj->id,
+                    'fecha' => $request->fecha,
+                    'folio' => $folio,
+                    'tipo_prueba' => $request->tipo_prueba ?? $inspeccion->tipo_prueba,
+                    'fecha_inyeccion' => $request->fecha_inyeccion,
+                    'hora_inyeccion' => $request->hora_inyeccion,
+                    'fecha_lectura' => $request->fecha_lectura,
+                    'hora_lectura' => $request->hora_lectura,
+                    'motivo_prueba' => $request->motivo_prueba,
+                    'funcion_zootecnica' => $request->funcion_zootecnica,
+                    'vigencia_fecha' => $request->vigencia_fecha,
+                    'sementales' => $sementales,
+                    'vacas' => $vacas,
+                    'vaquillas' => $vaquillas,
+                    'becerras' => $becerras,
+                    'becerros' => $becerros,
+                    'fecha_prueba_anterior' => $request->fecha_prueba_anterior,
+                    'dictamen_anterior_no' => $request->dictamen_anterior_no,
+                    'exencion_no' => $request->exencion_no,
+                    'exencion_fecha' => $request->exencion_fecha,
+                    'hato_libre_no' => $request->hato_libre_no,
+                    'hato_libre_fecha' => $request->hato_libre_fecha,
+                    'observaciones' => $request->observaciones,
+                    'estado' => $request->estado ?? 'sincronizado',
+                    'modified_at' => now(),
+                    'grupo_id' => $grupoId,
+                ];
+
+                if ($ownerIns) {
+                    $ownerIns->update($inspeccionData);
+                    $ins = $ownerIns;
+                } else {
+                    // Create new extra inspection
+                    $inspeccionData['veterinario_id'] = $inspeccion->veterinario_id;
+                    $inspeccionData['visita_id'] = $inspeccion->visita_id;
+                    $inspeccionData['tipo_inspeccion'] = 'Movilización';
+                    $inspeccionData['clave_interna'] = generarClaveInterna($extraProductor);
+                    $ins = Inspeccion::create($inspeccionData);
+                }
+
+                // Delete old details and recreate
+                $ins->detalles()->delete();
+
+                foreach ($ownerAnimals as $item) {
+                    if (!$item['identificador'] && $isDraft) {
                         continue;
                     }
 
                     $animal = Animal::firstOrCreate(
                         ['numero_arete_siniiga' => $item['identificador']],
-                        ['predio_id' => $request->predio_id, 'raza' => $item['raza'] ?? 'N/A', 'sexo' => $item['sexo'] ?? 'Macho', 'edad' => $item['edad_meses'] ?? 0]
+                        [
+                            'raza' => $item['raza'] ?? 'No especificada',
+                            'sexo' => $item['sexo'] ?? 'Macho',
+                            'predio_id' => $predioObj->id,
+                            'edad' => $item['edad_meses'] ?? 0,
+                        ]
                     );
 
                     $agregadoEnLectura = $isLectura && ! in_array($item['identificador'], $existingAretes);
 
                     DetalleInspeccion::create([
-                        'inspeccion_id' => $inspeccion->id,
+                        'inspeccion_id' => $ins->id,
                         'animal_id' => $animal->id,
                         'tipo_arete' => ! empty($item['tipo_arete']) ? $item['tipo_arete'] : ($item['tipo_arete_default'] ?? 'SINIIGA'),
                         'edad_meses' => $item['edad_meses'] ?? null,
@@ -536,6 +807,14 @@ class InspeccionController extends Controller
                         'observaciones_animal' => $item['observaciones'] ?? null,
                         'agregado_en_lectura' => $agregadoEnLectura,
                     ]);
+                }
+            }
+
+            // Delete any group inspections that are no longer selected
+            foreach ($existingInspections as $exist) {
+                if (!in_array($exist->predio->productor_id, $allOwnerIds)) {
+                    $exist->detalles()->delete();
+                    $exist->delete();
                 }
             }
 

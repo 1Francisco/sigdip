@@ -8,9 +8,14 @@
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0 fw-bold">Listado de Productores</h5>
-        <a href="{{ route('productores.create') }}" class="btn btn-primary">
-            <i class="bi bi-person-plus"></i> Nuevo Productor
-        </a>
+        <div class="d-flex flex-column align-items-end gap-1">
+            <a href="{{ route('productores.create') }}" class="btn btn-primary">
+                <i class="bi bi-person-plus"></i> Nuevo Productor
+            </a>
+            <a href="{{ route('productores.create-multiple') }}" class="btn btn-sm btn-link text-primary p-0 text-decoration-none">
+                <i class="bi bi-plus-circle me-1"></i> Añadir Productor a uno existente
+            </a>
+        </div>
     </div>
     <div class="card-body bg-light border-bottom py-2 px-4">
         <form method="GET" class="row g-2 align-items-center">
@@ -33,7 +38,8 @@
             <table class="table table-hover align-middle mb-0 table-mobile-cards">
                 <thead class="bg-light">
                     <tr>
-                        <th class="ps-4">Nombre</th>
+                        <th class="ps-4">Clave</th>
+                        <th>Nombre</th>
                         <th>CURP</th>
                         <th>UPP</th>
                         @if(auth()->user()->hasRole('Administrador'))
@@ -47,7 +53,14 @@
                 <tbody>
                     @foreach($productores as $p)
                     <tr>
-                        <td class="ps-4" data-label="Productor">
+                        <td class="ps-4" data-label="Clave">
+                            @if($p->clave)
+                                <span class="badge bg-secondary text-white rounded-pill px-2">{{ $p->clave }}</span>
+                            @else
+                                <span class="text-muted small">N/A</span>
+                            @endif
+                        </td>
+                        <td data-label="Productor">
                             <div class="fw-bold text-dark">{{ $p->nombre }} {{ $p->apellido_paterno }} {{ $p->apellido_materno }}</div>
                             <small class="text-muted">Productor Registrado</small>
                         </td>
