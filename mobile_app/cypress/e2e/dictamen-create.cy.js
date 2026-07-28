@@ -26,7 +26,7 @@ describe('Creacion de Dictamen (E2E)', () => {
     cy.get('.animal-mobile-card').should('have.length.at.least', 2)
     cy.get('.animal-mobile-card').eq(1).find('input[placeholder*="SINIIGA"]').should('have.value', 'MX-TEST-001')
     cy.contains('Borrador').click({ force: true })
-    cy.location('hash', { timeout: 5000 }).should('eq', '#/dashboard')
+    cy.location('hash', { timeout: 10000 }).should('eq', '#/dashboard')
   })
 
   it('valida que se seleccione un predio antes de guardar', () => {

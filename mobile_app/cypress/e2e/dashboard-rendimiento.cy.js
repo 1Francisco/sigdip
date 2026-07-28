@@ -50,7 +50,7 @@ describe('Dashboard Rendimiento (E2E)', () => {
     cy.visit('/#/dashboard')
     cy.contains('Resumen Administrativo', { timeout: 10000 }).should('be.visible')
     cy.contains('Rendimiento Veterinarios').should('be.visible')
-    cy.contains('TOTAL INSPECCIONES').should('be.visible')
+    cy.contains('TOTAL LECTURAS').should('be.visible')
     cy.contains('0').should('be.visible')
   })
 

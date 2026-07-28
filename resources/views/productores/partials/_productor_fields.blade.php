@@ -126,22 +126,29 @@
     (function() {
         var input = document.getElementById('clave{{ $idSuffix }}');
         var marker = document.getElementById('clave-marker{{ $idSuffix }}');
-        if (!input || !marker) return;
+        if (!marker) return;
 
-        function updateClaveMarker() {
-            var val = input.value.toUpperCase().trim();
+        function updateClaveMarker(val) {
+            if (val === undefined) {
+                if (!input) return;
+                val = input.value.toUpperCase().trim();
+            }
             var prefix = val.substring(0, 2);
             if (prefix === 'AD' || prefix === 'AP' || prefix === 'BD' || prefix === 'BP') {
                 var sector = (prefix === 'AD' || prefix === 'AP') ? 'A' : 'B';
-                marker.innerHTML = '<span class="badge bg-primary rounded-pill px-3 py-1 fs-6">' + prefix + '  ·  Sector ' + sector + '</span>';
+                marker.innerHTML = '<span class="badge bg-primary rounded-pill px-3 py-1 fs-6">' + val + '  ·  Zona ' + sector + '</span>';
                 marker.style.display = '';
             } else {
                 marker.style.display = 'none';
             }
         }
 
-        input.addEventListener('input', updateClaveMarker);
-        updateClaveMarker();
+        if (input) {
+            input.addEventListener('input', function() { updateClaveMarker(); });
+            updateClaveMarker();
+        }
+
+        marker._updateClave = updateClaveMarker;
     })();
     </script>
 </div>

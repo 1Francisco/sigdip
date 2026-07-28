@@ -37,7 +37,7 @@ describe('Full CRUD Flow (E2E)', () => {
 
     cy.visit('/#/inspecciones')
     cy.wait('@getInspecciones', { timeout: 10000 })
-    cy.contains('Inspecciones Pecuarias', { timeout: 5000 }).should('be.visible')
+    cy.contains('Lecturas Pecuarias', { timeout: 5000 }).should('be.visible')
   })
 
   it('navega todas las vistas principales como admin', () => {

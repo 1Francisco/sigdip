@@ -41,15 +41,33 @@ class Productor extends Model
                 $productor->zona = in_array($first, ['A', 'B'], true) ? $first : null;
             }
 
-            if (empty($productor->clave)) {
-                $tipo = strtolower($productor->tipo_actividad ?? '');
+            if (empty($productor->clave) && !empty($productor->tipo_actividad)) {
+                $tipo = strtolower($productor->tipo_actividad);
                 $prefix = 'GP';
                 if ($tipo === 'barrido') {
                     $prefix = 'BF';
                 } elseif ($tipo === 'buffer') {
-                    $prefix = 'BU';
+                    $prefix = 'BFC';
                 } elseif ($tipo === 'seguimiento') {
-                    $prefix = 'SG';
+                    $zone = strtoupper($productor->zona ?? '');
+                    if (empty($zone) && $productor->medico_id) {
+                        $medico = \App\Models\User::find($productor->medico_id);
+                        if ($medico && $medico->zona) {
+                            $zone = strtoupper($medico->zona);
+                            $productor->zona = $zone;
+                        }
+                    }
+                    if ($zone !== 'A' && $zone !== 'B') {
+                        $zone = 'B';
+                        $productor->zona = $zone;
+                    }
+                    
+                    $subType = strtolower($productor->sub_tipo_actividad ?? '');
+                    $typeChar = 'P';
+                    if (str_contains($subType, 'definitiva')) {
+                        $typeChar = 'D';
+                    }
+                    $prefix = $zone . $typeChar;
                 }
 
                 $count = static::where('clave', 'like', $prefix . '-%')->count();

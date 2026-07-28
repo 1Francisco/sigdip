@@ -40,6 +40,48 @@ class ProductoresApiController extends Controller
         ]);
     }
 
+    public function buscar(Request $request)
+    {
+        $q = $request->get('q', '');
+        $q = trim($q);
+
+        if (strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $user = $request->user();
+        $query = Productor::with('predios')->where(function ($query) use ($q) {
+            $query->where('nombre', 'like', "%{$q}%")
+                ->orWhere('apellido_paterno', 'like', "%{$q}%")
+                ->orWhere('apellido_materno', 'like', "%{$q}%")
+                ->orWhere('clave', 'like', "%{$q}%");
+        });
+
+        if ($user && ! $user->hasRole('Administrador')) {
+            $query->where('medico_id', $user->id);
+        }
+
+        $productores = $query
+            ->orderByRaw("CASE WHEN clave LIKE ? THEN 0 ELSE 1 END", [$q . '%'])
+            ->orderBy('nombre')
+            ->limit(15)
+            ->get();
+
+        $productores->each(function ($p) {
+            $primerPredio = $p->predios->first();
+            $p->setAttribute('_predio_nombre_rancho', $primerPredio?->nombre_rancho);
+            $p->setAttribute('_predio_clave_unidad_produccion', $primerPredio?->clave_unidad_produccion);
+            $p->setAttribute('_predio_latitud', $primerPredio?->latitud);
+            $p->setAttribute('_predio_longitud', $primerPredio?->longitud);
+            $p->setAttribute('_predio_domicilio', $primerPredio?->domicilio);
+            $p->setAttribute('_predio_municipio', $primerPredio?->municipio);
+            $p->setAttribute('_predio_localidad', $primerPredio?->localidad);
+            unset($p->predios);
+        });
+
+        return response()->json($productores);
+    }
+
     public function show(Request $request, $id)
     {
         $user = $request->user();
@@ -191,7 +233,7 @@ class ProductoresApiController extends Controller
                 'estado' => 'nullable|string',
                 'email' => 'nullable|email',
                 'medico_id' => 'nullable|exists:users,id',
-                'clave' => 'nullable|string',
+                'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
                 'zona' => 'nullable|string|in:A,B',
                 'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
                 'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
@@ -398,7 +440,7 @@ class ProductoresApiController extends Controller
                 'estado' => 'nullable|string',
                 'email' => 'nullable|email',
                 'medico_id' => 'nullable|exists:users,id',
-                'clave' => 'nullable|string',
+                'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
                 'zona' => 'nullable|string|in:A,B',
                 'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
                 'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',

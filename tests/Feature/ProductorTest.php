@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -296,7 +297,7 @@ class ProductorTest extends TestCase
         ]);
 
         $this->assertNotNull($productor->clave);
-        $this->assertStringStartsWith('BU-', $productor->clave);
+        $this->assertStringStartsWith('BFC-', $productor->clave);
     }
 
     public function test_autogenerates_clave_for_seguimiento()
@@ -306,10 +307,11 @@ class ProductorTest extends TestCase
             'apellido_paterno' => 'Test',
             'tipo_actividad' => 'Seguimiento',
             'sub_tipo_actividad' => 'Cuarentena Precautoria',
+            'zona' => 'B',
         ]);
 
         $this->assertNotNull($productor->clave);
-        $this->assertStringStartsWith('SG-', $productor->clave);
+        $this->assertStringStartsWith('BP-', $productor->clave);
     }
 
     public function test_autogenerates_sequential_clave()
@@ -353,5 +355,160 @@ class ProductorTest extends TestCase
         $this->assertDatabaseHas('productores', ['nombre' => 'Multi1']);
         $this->assertDatabaseHas('productores', ['nombre' => 'Multi2']);
         $this->assertDatabaseHas('predios', ['nombre_rancho' => 'Rancho Multi 1']);
+    }
+
+    // --- Tests para buscar endpoint y copia de datos (llenarFormulario) ---
+
+    public function test_buscar_endpoint_returns_productor_con_predio()
+    {
+        $productor = Productor::factory()->create(['nombre' => 'Juan', 'apellido_paterno' => 'Buscar']);
+        Predio::factory()->create([
+            'productor_id' => $productor->id,
+            'nombre_rancho' => 'Rancho Test',
+            'clave_unidad_produccion' => 'CUP-TEST-001',
+            'latitud' => '22.123456',
+            'longitud' => '-105.123456',
+            'domicilio' => 'Domicilio Predio',
+            'municipio' => 'Municipio Predio',
+            'localidad' => 'Localidad Predio',
+        ]);
+
+        $response = $this->actingAs($this->admin)->getJson(route('productores.buscar', ['q' => 'Buscar']));
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1);
+        $response->assertJsonCount(1);
+        $response->assertJsonIsArray();
+
+        $data = $response->json()[0];
+        $this->assertEquals('Juan', $data['nombre']);
+        $this->assertEquals('Rancho Test', $data['_predio_nombre_rancho']);
+        $this->assertEquals('CUP-TEST-001', $data['_predio_clave_unidad_produccion']);
+        $this->assertEquals(22.123456, $data['_predio_latitud']);
+        $this->assertEquals(-105.123456, $data['_predio_longitud']);
+        $this->assertEquals('Domicilio Predio', $data['_predio_domicilio']);
+        $this->assertEquals('Municipio Predio', $data['_predio_municipio']);
+        $this->assertEquals('Localidad Predio', $data['_predio_localidad']);
+    }
+
+    public function test_buscar_endpoint_requiere_minimo_2_caracteres()
+    {
+        Productor::factory()->create(['nombre' => 'Juan']);
+
+        $response = $this->actingAs($this->admin)->getJson(route('productores.buscar', ['q' => 'a']));
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(0);
+    }
+
+    public function test_buscar_endpoint_sin_resultados()
+    {
+        $response = $this->actingAs($this->admin)->getJson(route('productores.buscar', ['q' => 'zzzzzz']));
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(0);
+    }
+
+    public function test_store_no_copia_campos_personales()
+    {
+        Productor::factory()->create([
+            'nombre' => 'Fuente',
+            'apellido_paterno' => 'Original',
+            'apellido_materno' => 'Copia',
+            'curp' => 'FUEN890101HSL00000',
+            'upp' => 'UPP-FUENTE',
+            'telefono' => '3111234567',
+            'email' => 'fuente@test.com',
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('productores.store'), [
+            'nombre' => 'Nuevo',
+            'apellido_paterno' => 'Productor',
+            'apellido_materno' => '',
+            'curp' => 'NUEV890101HSL00001',
+            'upp' => 'UPP-NUEVO',
+            'domicilio' => 'Domicilio Compartido',
+            'municipio' => 'Municipio Compartido',
+            'localidad' => 'Localidad Compartida',
+            'estado' => 'Nayarit',
+            'telefono' => '',
+            'email' => '',
+            'tipo_actividad' => 'Barrido',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('productores', ['nombre' => 'Nuevo']);
+        $this->assertDatabaseHas('productores', [
+            'nombre' => 'Nuevo',
+            'apellido_paterno' => 'Productor',
+            'curp' => 'NUEV890101HSL00001',
+            'upp' => 'UPP-NUEVO',
+            'telefono' => null,
+            'email' => null,
+            'domicilio' => 'Domicilio Compartido',
+            'municipio' => 'Municipio Compartido',
+            'localidad' => 'Localidad Compartida',
+            'estado' => 'Nayarit',
+        ]);
+    }
+
+    public function test_store_copia_campos_compartidos()
+    {
+        $medico = User::factory()->create();
+        $medico->assignRole('Medico_Campo');
+
+        Productor::factory()->create([
+            'domicilio' => 'Domicilio Fuente',
+            'municipio' => 'Municipio Fuente',
+            'localidad' => 'Localidad Fuente',
+            'estado' => 'Nayarit',
+            'tipo_actividad' => 'Barrido',
+            'sub_tipo_actividad' => null,
+            'medico_id' => $medico->id,
+            'clave' => 'BF-123456',
+            'zona' => 'B',
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('productores.store'), [
+            'nombre' => 'Compartido',
+            'apellido_paterno' => 'Test',
+            'curp' => 'COMP890101HSL00002',
+            'domicilio' => 'Domicilio Fuente',
+            'municipio' => 'Municipio Fuente',
+            'localidad' => 'Localidad Fuente',
+            'estado' => 'Nayarit',
+            'tipo_actividad' => 'Barrido',
+            'medico_id' => $medico->id,
+            'clave' => 'BF-123456',
+            'zona' => 'B',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('productores', [
+            'nombre' => 'Compartido',
+            'domicilio' => 'Domicilio Fuente',
+            'municipio' => 'Municipio Fuente',
+            'localidad' => 'Localidad Fuente',
+            'estado' => 'Nayarit',
+            'tipo_actividad' => 'Barrido',
+            'medico_id' => $medico->id,
+            'clave' => 'BF-123456',
+            'zona' => 'B',
+        ]);
+    }
+
+    public function test_buscar_endpoint_medico_puede_buscar()
+    {
+        Productor::factory()->create([
+            'nombre' => 'Medico',
+            'apellido_paterno' => 'Busqueda',
+            'medico_id' => $this->medico->id,
+        ]);
+
+        $response = $this->actingAs($this->medico)->getJson(route('productores.buscar', ['q' => 'Busqueda']));
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1);
+        $response->assertJsonFragment(['nombre' => 'Medico']);
     }
 }

@@ -52,6 +52,43 @@
               <h4 class="h5 fw-bold mb-0 text-dark">Paso 1: Información del Productor</h4>
             </div>
 
+            <!-- Vincular a hato existente -->
+            <div class="mb-4 p-3 bg-light rounded-3 border">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="vincular-hato" v-model="showSearch" @change="toggleSearch">
+                <label class="form-check-label fw-semibold text-muted small" for="vincular-hato">
+                  <i class="bi bi-link-45deg me-1"></i> Vincular a un hato o productor existente
+                </label>
+              </div>
+              <div v-if="showSearch" class="mt-3 pt-3 border-top">
+                <label class="form-label fw-semibold small text-muted mb-2">Buscar productor existente para copiar datos y hato:</label>
+                <input
+                  v-model="searchTerm"
+                  type="text"
+                  class="form-control-custom mb-2"
+                  placeholder="Buscar por nombre o clave…"
+                  @input="onSearchInput"
+                >
+                <div v-if="isSearching" class="text-muted small">Buscando…</div>
+                <div v-if="searchResults.length > 0" class="list-group mb-2">
+                  <button
+                    v-for="item in searchResults"
+                    :key="item.id"
+                    class="list-group-item list-group-item-action text-start"
+                    @click="selectProductor(item)"
+                  >
+                    <strong>{{ item.nombre }} {{ item.apellido_paterno }} {{ item.apellido_materno }}</strong>
+                    <div class="small text-muted">
+                      {{ item.clave ? item.clave + ' · ' : '' }}{{ item.curp }} · {{ item.upp }}
+                      <span v-if="item._predio_nombre_rancho" class="d-block">{{ item._predio_nombre_rancho }} · {{ item._predio_clave_unidad_produccion }}</span>
+                    </div>
+                  </button>
+                </div>
+                <div v-if="searchTerm.length >= 2 && !isSearching && searchResults.length === 0" class="text-muted small">Sin resultados</div>
+                <div class="form-text small text-muted">Seleccione el productor al que desea vincular el nuevo registro.</div>
+              </div>
+            </div>
+
             <form @submit.prevent="nextStep">
               <div class="row g-3">
                 <!-- Nombre(s) | Apellido Paterno | Apellido Materno -->
@@ -138,6 +175,30 @@
                   </div>
                 </div>
 
+                <!-- Tipo de Actividad | Subtipo -->
+                <div class="col-12 col-md-6">
+                  <div class="form-group-custom">
+                    <label class="form-label-custom">Tipo de Actividad</label>
+                    <select v-model="form.tipo_actividad" class="form-control-custom" @change="onTipoActividadChange">
+                      <option value="">-- Seleccionar Actividad --</option>
+                      <option value="Barrido">Barrido</option>
+                      <option value="Buffer">Buffer</option>
+                      <option value="Seguimiento">Seguimiento</option>
+                    </select>
+                  </div>
+                </div>
+                <div v-if="form.tipo_actividad === 'Seguimiento'" class="col-12 col-md-6">
+                  <div class="form-group-custom">
+                    <label class="form-label-custom">Subtipo de Actividad *</label>
+                    <select v-model="form.sub_tipo_actividad" class="form-control-custom">
+                      <option value="">-- Seleccionar Subtipo --</option>
+                      <option value="Cuarentena Precautoria">Cuarentena Precautoria</option>
+                      <option value="Cuarentena Definitiva">Cuarentena Definitiva</option>
+                      <option value="Hatos Relacionados y Expuestos">Hatos Relacionados y Expuestos</option>
+                    </select>
+                  </div>
+                </div>
+
                 <!-- Clave | Zona / Sector (Solo Administradores) -->
                 <template v-if="isAdmin">
                   <div class="col-12 col-md-6">
@@ -164,6 +225,23 @@
                     </div>
                   </div>
                 </template>
+
+                <!-- Médico Asignado -->
+                <div class="col-12 col-md-6">
+                  <div class="form-group-custom">
+                    <label class="form-label-custom">Médico Veterinario Zootecnista (MVZ) Asignado</label>
+                    <select v-if="isAdmin" v-model="form.medico_id" class="form-control-custom">
+                      <option value="">-- Seleccionar Médico (Opcional) --</option>
+                      <option v-for="med in medicos" :key="med.id" :value="med.id">{{ med.name }} ({{ med.email }})</option>
+                    </select>
+                    <input v-else type="text" class="form-control-custom bg-light" :value="userName" readonly disabled>
+                  </div>
+                </div>
+
+                <!-- Clave Marker (visible para todos) -->
+                <div v-if="claveBadge" class="col-12 mt-1">
+                  <span class="badge bg-primary rounded-pill px-3 py-1 fs-6">{{ claveBadge.clave }}  ·  Zona {{ claveBadge.zona }}</span>
+                </div>
               </div>
 
               <!-- Action Buttons Paso 1 -->
@@ -294,6 +372,14 @@ export default {
       isAdmin: false,
       isOnline: true,
       networkListener: null,
+
+      medicos: [],
+
+      // Vincular / copy from existing
+      searchTerm: '',
+      searchResults: [],
+      isSearching: false,
+      showSearch: false,
       
       // Step workflow state
       currentStep: 1,
@@ -318,6 +404,9 @@ export default {
         email: '',
         clave: '',
         zona: '',
+        tipo_actividad: '',
+        sub_tipo_actividad: '',
+        medico_id: '',
 
         // Predio optional data
         nombre_rancho: '',
@@ -330,11 +419,25 @@ export default {
       }
     };
   },
+  computed: {
+    claveBadge() {
+      if (!this.form.clave) return null;
+      const val = this.form.clave.toUpperCase().trim();
+      const prefix = val.substring(0, 2);
+      if (['AD', 'AP', 'BD', 'BP'].includes(prefix)) {
+        return { clave: val, zona: (prefix === 'AD' || prefix === 'AP') ? 'A' : 'B' };
+      }
+      return null;
+    }
+  },
   async mounted() {
     // 1. Cargar datos del usuario autenticado
     const user = api.getCurrentUser();
     this.userName = user?.name || 'Administrador Central';
     this.isAdmin = user?.roles && user.roles.includes('Administrador');
+
+    // 1b. Cargar médicos para el select
+    await this.loadMedicos();
 
     // 2. Determinar si es Crear o Editar según la ruta
     if (this.$route.params.id) {
@@ -391,6 +494,9 @@ export default {
           this.form.email = prod.email || '';
           this.form.clave = prod.clave || '';
           this.form.zona = prod.zona || '';
+          this.form.tipo_actividad = prod.tipo_actividad || '';
+          this.form.sub_tipo_actividad = prod.sub_tipo_actividad || '';
+          this.form.medico_id = prod.medico_id || '';
 
           // Si es edición, también permitimos editar su predio directamente
           this.form.nombre_rancho = predioAsociado.nombre !== 'Sin Rancho' ? predioAsociado.nombre : '';
@@ -401,8 +507,102 @@ export default {
           this.form.latitud = predioAsociado.latitud || '';
           this.form.longitud = predioAsociado.longitud || '';
         }
+
+        // Intentar cargar datos más completos desde la API
+        if (this.isOnline) {
+          try {
+            const res = await api.getProductor(this.productorId);
+            if (res?.productor) {
+              const prod = res.productor;
+              if (prod.tipo_actividad) this.form.tipo_actividad = prod.tipo_actividad;
+              if (prod.sub_tipo_actividad) this.form.sub_tipo_actividad = prod.sub_tipo_actividad;
+              if (prod.medico_id) this.form.medico_id = prod.medico_id;
+              if (prod.clave) this.form.clave = prod.clave;
+              if (prod.zona) this.form.zona = prod.zona;
+            }
+          } catch (e) {
+            console.warn('No se pudieron cargar datos adicionales del servidor:', e.message);
+          }
+        }
       } catch (err) {
         console.error('Error cargando productor para editar:', err);
+      }
+    },
+
+    async loadMedicos() {
+      try {
+        const res = await api.getMedicos();
+        this.medicos = res.data || [];
+        try {
+          const dbMedicos = await db.getMedicos();
+          if (dbMedicos.length > this.medicos.length) {
+            this.medicos = dbMedicos;
+          }
+        } catch (e) { /* ignore */ }
+      } catch (e) {
+        try {
+          this.medicos = await db.getMedicos();
+        } catch (e2) {
+          this.medicos = [];
+        }
+      }
+    },
+
+    toggleSearch() {
+      if (!this.showSearch) {
+        this.searchTerm = '';
+        this.searchResults = [];
+      }
+    },
+
+    async onSearchInput() {
+      if (this.searchTerm.trim().length < 2) {
+        this.searchResults = [];
+        return;
+      }
+      this.isSearching = true;
+      try {
+        const res = await api.searchProductor(this.searchTerm.trim());
+        this.searchResults = Array.isArray(res) ? res : [];
+      } catch (e) {
+        console.warn('Error buscando productor:', e.message);
+        this.searchResults = [];
+      } finally {
+        this.isSearching = false;
+      }
+    },
+
+    selectProductor(item) {
+      this.form.clave = item.clave || '';
+      if (this.form.clave) {
+        const first = this.form.clave.toUpperCase()[0];
+        this.form.zona = (first === 'A' || first === 'B') ? first : '';
+      }
+      this.form.tipo_actividad = item.tipo_actividad || '';
+      this.form.sub_tipo_actividad = item.sub_tipo_actividad || '';
+      this.form.medico_id = item.medico_id || '';
+
+      this.form.nombre_rancho = item._predio_nombre_rancho || '';
+      this.form.clave_unidad_produccion = item._predio_clave_unidad_produccion || '';
+      this.form.predio_domicilio = item._predio_domicilio || '';
+      this.form.predio_municipio = item._predio_municipio || '';
+      this.form.predio_localidad = item._predio_localidad || '';
+      this.form.latitud = item._predio_latitud || '';
+      this.form.longitud = item._predio_longitud || '';
+
+      this.form.domicilio = item.domicilio || '';
+      this.form.municipio = item.municipio || '';
+      this.form.localidad = item.localidad || '';
+      this.form.estado = item.estado || 'Nayarit';
+
+      this.searchTerm = `${item.nombre} ${item.apellido_paterno}${item.apellido_materno ? ' ' + item.apellido_materno : ''}`;
+      this.searchResults = [];
+      this.showSearch = false;
+    },
+
+    onTipoActividadChange() {
+      if (this.form.tipo_actividad !== 'Seguimiento') {
+        this.form.sub_tipo_actividad = '';
       }
     },
 
@@ -493,6 +693,9 @@ export default {
         email: this.form.email.trim(),
         clave: this.isAdmin ? (this.form.clave || '').toUpperCase().trim() : null,
         zona: this.isAdmin ? (this.form.zona || null) : null,
+        tipo_actividad: this.form.tipo_actividad || null,
+        sub_tipo_actividad: this.form.tipo_actividad === 'Seguimiento' ? (this.form.sub_tipo_actividad || null) : null,
+        medico_id: this.isAdmin ? (this.form.medico_id || null) : null,
 
         // Banderas en 2 pasos de la web
         registrar_predio: this.mode === 'create' && this.registrarPredio ? 1 : 0,
@@ -594,7 +797,10 @@ export default {
                 estado: body.estado,
                 email: body.email,
                 clave: body.clave,
-                zona: body.zona
+                zona: body.zona,
+                tipo_actividad: body.tipo_actividad,
+                sub_tipo_actividad: body.sub_tipo_actividad,
+                medico_id: body.medico_id
               }
             };
           } else {
@@ -621,7 +827,10 @@ export default {
                 estado: body.estado,
                 email: body.email,
                 clave: body.clave,
-                zona: body.zona
+                zona: body.zona,
+                tipo_actividad: body.tipo_actividad,
+                sub_tipo_actividad: body.sub_tipo_actividad,
+                medico_id: body.medico_id
               }
             };
           }
@@ -652,6 +861,9 @@ export default {
               p.productor.email = body.email;
               p.productor.clave = body.clave;
               p.productor.zona = body.zona;
+              p.productor.tipo_actividad = body.tipo_actividad;
+              p.productor.sub_tipo_actividad = body.sub_tipo_actividad;
+              p.productor.medico_id = body.medico_id;
 
               // Si actualiza los campos del predio existente
               if (p.nombre !== 'Sin Rancho' && this.form.nombre_rancho.trim()) {

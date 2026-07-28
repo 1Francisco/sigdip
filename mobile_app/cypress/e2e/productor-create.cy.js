@@ -8,14 +8,14 @@ describe('Creacion de Productor (E2E)', () => {
 
   it('crea productor sin rancho', () => {
     cy.intercept('POST', '**/api/productores', {
-      statusCode: 200,
-      body: { data: { id: 99, nombre: 'Juan', apellido_paterno: 'Perez' } },
+      statusCode: 201,
+      body: { success: true, productor: { id: 99, nombre: 'Juan', apellido_paterno: 'Perez' } },
     }).as('storeProductor')
 
     cy.visit('/#/productores/nuevo')
     cy.contains('Paso 1', { timeout: 5000 }).should('be.visible')
 
-    cy.get('input').first().type('Juan')
+    cy.get('input[placeholder*="Pepito"]').type('Juan')
     cy.get('input[placeholder*="Tejeda"]').type('Perez')
     cy.get('input[placeholder*="Figueroa"]').type('Lopez')
     cy.get('input[maxlength="18"]').type('PELJ900101HDFLZN01')

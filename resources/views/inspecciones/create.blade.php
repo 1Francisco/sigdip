@@ -138,6 +138,7 @@
                                                 data-email="{{ $prod->email }}"
                                                 data-upp="{{ $prod->upp }}" 
                                                 data-curp="{{ $prod->curp }}"
+                                                data-clave="{{ $prod->clave }}"
                                                 {{ (old('productor_id', $selected_productor_id ?? '') == $prod->id) ? 'selected' : '' }}>
                                             {{ $prod->nombre }} {{ $prod->apellido_paterno }} {{ $prod->apellido_materno }}
                                         </option>
@@ -647,7 +648,8 @@
         }
         calcularFechaLectura();
 
-        const productores = @json($productores);
+        window.productores = @json($productores);
+        const productores = window.productores;
         const productorSelect = document.getElementById('productor_id');
         const predioSelect = document.getElementById('predio_id');
         const initialPredioId = "{{ old('predio_id', $selected_predio_id ?? '') }}";
@@ -1657,7 +1659,21 @@
                         }
                     });
                 }
-                tsExtra.setValue(valuesArr.filter(val => val != mainProdId));
+                
+                let finalValues = valuesArr.filter(val => val != mainProdId);
+                // Auto-select linked producers if no extra producers are currently selected
+                if (finalValues.length === 0 && typeof window.productores !== 'undefined') {
+                    const mainProd = window.productores.find(p => p.id == mainProdId);
+                    if (mainProd && mainProd.clave) {
+                        window.productores.forEach(p => {
+                            if (p.clave && p.clave === mainProd.clave && p.id != mainProdId) {
+                                finalValues.push(p.id.toString());
+                            }
+                        });
+                    }
+                }
+                
+                tsExtra.setValue(finalValues);
             }
         } else {
             if (wrapper) wrapper.style.display = 'none';

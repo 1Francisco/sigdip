@@ -422,7 +422,7 @@ class SyncController extends Controller
             'productores.*.id' => 'required|string',
             'productores.*.nombre' => 'required|string',
             'productores.*.apellido_paterno' => 'required|string',
-            'productores.*.clave' => 'nullable|string',
+            'productores.*.clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
             'productores.*.zona' => 'nullable|string|in:A,B',
         ]);
 

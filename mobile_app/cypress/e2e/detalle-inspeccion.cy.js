@@ -22,7 +22,7 @@ describe('Detalle de Inspección (E2E)', () => {
 
     cy.visit('/#/inspecciones')
     cy.wait('@getInspecciones', { timeout: 10000 })
-    cy.get('h2').contains('Inspecciones', { timeout: 5000 }).should('be.visible')
+    cy.get('h2').contains('Lecturas Pecuarias', { timeout: 5000 }).should('be.visible')
 
     cy.get('[title="Detalles"]').first().click({ force: true })
     cy.location('hash', { timeout: 5000 }).should('match', /\/inspecciones\/1/)

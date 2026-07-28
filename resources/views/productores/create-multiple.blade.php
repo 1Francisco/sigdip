@@ -68,6 +68,15 @@
                 </div>
             @endif
 
+            @if($prefillProductor)
+            <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4 small d-flex align-items-center">
+                <i class="bi bi-link-45deg me-3 fs-4 text-primary"></i>
+                <div>
+                    Vinculando nuevos productores al hato de: <strong>{{ $prefillProductor->nombre_completo }}</strong> (Clave de Hato: <code>{{ $prefillProductor->clave }}</code>). Se copiarán automáticamente sus datos de localización.
+                </div>
+            </div>
+            @endif
+
             <form action="{{ route('productores.store-multiple') }}" method="POST" id="multipleForm">
                 @csrf
                 <div id="hidden-data"></div>
@@ -235,7 +244,13 @@
 
         var formElements = document.querySelectorAll('#step-1 input, #step-1 select, #step-2 input, #step-2 select');
         formElements.forEach(function(el) {
-            if (el.type !== 'hidden') el.value = '';
+            if (el.type !== 'hidden') {
+                if (el.type === 'checkbox') {
+                    el.checked = false;
+                } else {
+                    el.value = '';
+                }
+            }
         });
         document.getElementById('inputRegistrarPredio').value = '0';
 
@@ -244,6 +259,12 @@
 
         var resultadosClave = document.getElementById('resultadosClave');
         if (resultadosClave) resultadosClave.innerHTML = '';
+
+        var switchEl = document.getElementById('vincular_hato_switch');
+        if (switchEl) {
+            switchEl.checked = false;
+            if (typeof toggleVincularHato === 'function') toggleVincularHato('');
+        }
     }
 
     function applyPrefill() {

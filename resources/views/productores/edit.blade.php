@@ -130,7 +130,7 @@
 
                     <div class="d-flex justify-content-between align-items-center mt-4">
                         <a href="{{ route('productores.create-multiple', ['prefill_from_productor_id' => $productor->id]) }}" class="btn btn-outline-primary fw-bold">
-                            <i class="bi bi-people-fill me-1"></i> Agregar Productores a este Hato
+                            <i class="bi bi-people-fill me-1"></i> Agregar productores vinculados al hato de {{ $productor->nombre_completo }} (Clave: {{ $productor->clave }})
                         </a>
                         <div class="d-flex gap-3">
                             <a href="{{ route('productores.index') }}" class="btn btn-light px-4">Cancelar</a>

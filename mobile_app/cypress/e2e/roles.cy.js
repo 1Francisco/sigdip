@@ -20,7 +20,7 @@ describe('Role-based Navigation (E2E)', () => {
       cy.get('.sidebar').contains('Dashboard').should('be.visible')
       cy.get('.sidebar').contains('Productores').should('be.visible')
       cy.get('.sidebar').contains('Predios').should('be.visible')
-      cy.get('.sidebar').contains('Inspecciones').should('be.visible')
+      cy.get('.sidebar').contains('Lecturas').should('be.visible')
       cy.get('.sidebar').contains('Agenda / Visitas').should('be.visible')
       cy.get('.sidebar').contains('Médicos').should('be.visible')
       cy.get('.sidebar').contains('Descargas').should('be.visible')
@@ -71,7 +71,7 @@ describe('Role-based Navigation (E2E)', () => {
 
       cy.visit('/#/inspecciones')
       cy.wait('@getInspecciones', { timeout: 10000 })
-      cy.get('h2', { timeout: 5000 }).should('contain', 'Inspecciones Pecuarias')
+      cy.get('h2', { timeout: 5000 }).should('contain', 'Lecturas Pecuarias')
     })
 
     it('navega a Descargas', () => {
@@ -127,7 +127,7 @@ describe('Role-based Navigation (E2E)', () => {
       cy.get('.sidebar').contains('Productores').should('be.visible')
       cy.get('.sidebar').contains('Predios').should('be.visible')
       cy.get('.sidebar').contains('Agenda / Visitas').should('be.visible')
-      cy.get('.sidebar').contains('Inspecciones').should('be.visible')
+      cy.get('.sidebar').contains('Lecturas').should('be.visible')
       cy.get('.sidebar').contains('Nuevo Dictamen').should('be.visible')
       cy.get('.sidebar').contains('Descargas').should('be.visible')
       cy.get('.sidebar').contains('Sábana Excel').should('be.visible')
@@ -168,7 +168,7 @@ describe('Role-based Navigation (E2E)', () => {
 
       cy.visit('/#/inspecciones')
       cy.wait('@getInspecciones', { timeout: 10000 })
-      cy.get('h2', { timeout: 5000 }).should('contain', 'Inspecciones Pecuarias')
+      cy.get('h2', { timeout: 5000 }).should('contain', 'Lecturas Pecuarias')
     })
 
     it('navega a Descargas', () => {

@@ -83,6 +83,7 @@ class InspeccionController extends Controller
                 'id' => $prod->id,
                 'nombre' => $prod->nombre,
                 'curp' => $prod->curp,
+                'clave' => $prod->clave,
                 'predios' => $prod->predios->map(function ($predio) {
                     return [
                         'id' => $predio->id,

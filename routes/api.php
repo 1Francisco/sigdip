@@ -63,6 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/stats', [DashboardApiController::class, 'getStats']);
 
     // Gestión de Productores y Predios desde la App Móvil
+    Route::get('/productores/buscar', [ProductoresApiController::class, 'buscar']);
     Route::get('/productores', [ProductoresApiController::class, 'index']);
     Route::get('/productores/{id}', [ProductoresApiController::class, 'show']);
     Route::get('/predios', [ProductoresApiController::class, 'predios']);

@@ -304,6 +304,10 @@ export default {
     return await request('GET', `/productores/${id}`);
   },
 
+  async searchProductor(q) {
+    return await request('GET', `/productores/buscar?q=${encodeURIComponent(q)}`);
+  },
+
   async getPredios() {
     return await request('GET', '/predios');
   },

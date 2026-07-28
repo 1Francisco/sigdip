@@ -23,11 +23,20 @@
 
     <!-- Selector de productor existente (TomSelect) para copiar datos -->
     <div class="mb-4 p-3 bg-light rounded-3 border">
-        <label class="form-label fw-semibold small text-muted mb-2">
-            <i class="bi bi-people me-1"></i> Copiar datos de otro productor <span class="fw-normal text-muted">(opcional)</span>
-        </label>
-        <select id="copiar-productor{{ $suf }}" class="form-select" placeholder="Buscar y seleccionar productor…" autocomplete="off"></select>
-        <div class="form-text small">Seleccione un productor para copiar sus datos. Si no selecciona, funciona como registro normal con clave consecuente.</div>
+        <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="vincular_hato_switch{{ $suf }}" onchange="toggleVincularHato('{{ $index }}')" @if($prefillProductor ?? false) checked @endif>
+            <label class="form-check-label fw-semibold text-muted small" for="vincular_hato_switch{{ $suf }}">
+                <i class="bi bi-link-45deg me-1"></i> Vincular a un hato o productor existente
+            </label>
+        </div>
+        
+        <div id="copiar_productor_wrapper{{ $suf }}" class="@if($prefillProductor ?? false) d-block @else d-none @endif mt-3 pt-3 border-top">
+            <label class="form-label fw-semibold small text-muted mb-2">
+                Buscar productor existente para copiar datos y hato:
+            </label>
+            <select id="copiar-productor{{ $suf }}" class="form-select" placeholder="Buscar y seleccionar productor…" autocomplete="off"></select>
+            <div class="form-text small text-muted">Seleccione el productor al que desea vincular el nuevo registro.</div>
+        </div>
     </div>
 
     @include('productores.partials._productor_fields', [
@@ -92,6 +101,51 @@
 </div>
 
 <script>
+window.toggleVincularHato = function(index) {
+    var suf = index !== null && index !== '' ? '-' + index : '';
+    var checkbox = document.getElementById('vincular_hato_switch' + suf);
+    var searchWrapper = document.getElementById('copiar_productor_wrapper' + suf);
+    
+    if (checkbox) {
+        if (checkbox.checked) {
+            if (searchWrapper) {
+                searchWrapper.classList.remove('d-none');
+                searchWrapper.classList.add('d-block');
+            }
+        } else {
+            if (searchWrapper) {
+                searchWrapper.classList.remove('d-block');
+                searchWrapper.classList.add('d-none');
+            }
+            
+            // Clear the TomSelect value if any
+            var selectEl = document.getElementById('copiar-productor' + suf);
+            if (selectEl && selectEl.tomselect) {
+                selectEl.tomselect.clear();
+            }
+            
+            // Clear the key & location fields to return to "normal" mode
+            var fields = ['nombre', 'apellido_paterno', 'apellido_materno', 'curp', 'upp', 'domicilio', 'municipio', 'localidad', 'telefono', 'email', 'nombre_rancho', 'clave_unidad_produccion', 'latitud', 'longitud', 'predio_domicilio', 'predio_municipio', 'predio_localidad'];
+            fields.forEach(function(field) {
+                var nameAttr = index !== null && index !== '' ? 'productores[' + index + '][' + field + ']' : field;
+                var el = document.querySelector('[name="' + nameAttr + '"]');
+                if (el) el.value = '';
+            });
+            
+            var claveEl = document.getElementById('clave' + suf);
+            if (claveEl) {
+                claveEl.value = '';
+                claveEl.dispatchEvent(new Event('input'));
+            }
+            
+            var zonaSel = document.getElementById('zona_select' + suf);
+            var zonaHid = document.getElementById('zona' + suf);
+            if (zonaSel) zonaSel.value = '';
+            if (zonaHid) zonaHid.value = '';
+        }
+    }
+};
+
 window.llenarFormulario = function(data) {
     function setVal(name, value) {
         if (value) {
@@ -100,17 +154,10 @@ window.llenarFormulario = function(data) {
         }
     }
 
-    setVal('nombre', data.nombre);
-    setVal('apellido_paterno', data.apellido_paterno);
-    setVal('apellido_materno', data.apellido_materno);
-    setVal('curp', data.curp);
-    setVal('upp', data.upp);
     setVal('domicilio', data.domicilio);
     setVal('municipio', data.municipio);
     setVal('localidad', data.localidad);
     setVal('estado', data.estado);
-    setVal('telefono', data.telefono);
-    setVal('email', data.email);
     setVal('tipo_actividad', data.tipo_actividad);
     setVal('sub_tipo_actividad', data.sub_tipo_actividad);
     setVal('medico_id', data.medico_id);
@@ -120,6 +167,11 @@ window.llenarFormulario = function(data) {
         if (claveEl) {
             claveEl.value = data.clave;
             claveEl.dispatchEvent(new Event('input'));
+        } else {
+            var marker = document.getElementById('clave-marker{{ $suf }}');
+            if (marker && marker._updateClave) {
+                marker._updateClave(data.clave);
+            }
         }
     }
 

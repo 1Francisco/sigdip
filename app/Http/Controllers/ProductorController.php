@@ -61,7 +61,7 @@ class ProductorController extends Controller
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email',
             'medico_id' => 'nullable|exists:users,id',
-            'clave' => 'nullable|string|max:50',
+            'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
             'zona' => 'nullable|string|in:A,B',
             'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
             'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
@@ -163,7 +163,7 @@ class ProductorController extends Controller
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email',
             'medico_id' => 'nullable|exists:users,id',
-            'clave' => 'nullable|string|max:50',
+            'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
             'zona' => 'nullable|string|in:A,B',
             'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
             'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
@@ -194,7 +194,18 @@ class ProductorController extends Controller
 
         $productor->load(['predios', 'medico']);
 
-        return view('productores.show', ['productor' => $productor]);
+        $vinculados = collect();
+        if ($productor->clave) {
+            $vinculados = Productor::where('clave', $productor->clave)
+                ->where('id', '!=', $productor->id)
+                ->with(['medico', 'predios'])
+                ->get();
+        }
+
+        return view('productores.show', [
+            'productor' => $productor,
+            'vinculados' => $vinculados,
+        ]);
     }
 
     public function destroy(Productor $productor)
@@ -324,7 +335,7 @@ class ProductorController extends Controller
             'productores.*.apellido_materno' => 'nullable|string|max:255',
             'productores.*.curp' => 'nullable|string|size:18|unique:productores,curp',
             'productores.*.upp' => 'nullable|string|unique:productores,upp',
-            'productores.*.clave' => 'nullable|string|max:50',
+            'productores.*.clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
             'productores.*.domicilio' => 'nullable|string',
             'productores.*.municipio' => 'nullable|string',
             'productores.*.localidad' => 'nullable|string',

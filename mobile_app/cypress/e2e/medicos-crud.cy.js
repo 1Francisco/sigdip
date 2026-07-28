@@ -33,6 +33,8 @@ describe('CRUD de Medicos (E2E)', () => {
     cy.visit('/#/medicos/nuevo')
     cy.get('input').first().type('Dr. Nuevo')
     cy.get('input[type="email"]').type('nuevo@test.com')
+    cy.get('select').eq(0).select('A')
+    cy.get('select').eq(1).select('Buffer')
     cy.get('input[type="password"]').first().type('password123')
     cy.get('input[type="password"]').eq(1).type('password123')
 
@@ -45,11 +47,13 @@ describe('CRUD de Medicos (E2E)', () => {
     cy.visit('/#/medicos/nuevo')
     cy.get('input').first().type('Dr. Error')
     cy.get('input[type="email"]').type('error@test.com')
+    cy.get('select').eq(0).select('A')
+    cy.get('select').eq(1).select('Buffer')
     cy.get('input[type="password"]').first().type('password123')
     cy.get('input[type="password"]').eq(1).type('different')
 
     cy.get('button[type="submit"]').click()
-    cy.contains('coinciden', { timeout: 5000 }).should('be.visible')
+    cy.contains('no coinciden', { timeout: 5000 }).should('be.visible')
   })
 
   it('muestra empty state en medicos', () => {
@@ -69,6 +73,8 @@ describe('CRUD de Medicos (E2E)', () => {
     cy.visit('/#/medicos/nuevo')
     cy.get('input').first().type('Dr. Fail')
     cy.get('input[type="email"]').type('fail@test.com')
+    cy.get('select').eq(0).select('A')
+    cy.get('select').eq(1).select('Buffer')
     cy.get('input[type="password"]').first().type('password123')
     cy.get('input[type="password"]').eq(1).type('password123')
 
@@ -89,7 +95,7 @@ describe('CRUD de Medicos (E2E)', () => {
 
     cy.intercept('GET', '**/api/medicos/2', {
       statusCode: 200,
-      body: { data: { id: 2, name: 'Dr. Juan', email: 'juan@test.com' } },
+      body: { data: { id: 2, name: 'Dr. Juan', email: 'juan@test.com', zona: 'A', actividad: 'Buffer' } },
     }).as('getMedico')
 
     cy.visit('/#/medicos')
@@ -103,7 +109,7 @@ describe('CRUD de Medicos (E2E)', () => {
   it('edita un medico exitosamente', () => {
     cy.intercept('GET', '**/api/medicos/2', {
       statusCode: 200,
-      body: { data: { id: 2, name: 'Dr. Juan', email: 'juan@test.com' } },
+      body: { data: { id: 2, name: 'Dr. Juan', email: 'juan@test.com', zona: 'A', actividad: 'Buffer' } },
     }).as('getMedico')
 
     cy.intercept('PUT', '**/api/medicos/2', {
@@ -125,7 +131,7 @@ describe('CRUD de Medicos (E2E)', () => {
   it('muestra error si la API falla al editar medico', () => {
     cy.intercept('GET', '**/api/medicos/2', {
       statusCode: 200,
-      body: { data: { id: 2, name: 'Dr. Juan', email: 'juan@test.com' } },
+      body: { data: { id: 2, name: 'Dr. Juan', email: 'juan@test.com', zona: 'A', actividad: 'Buffer' } },
     }).as('getMedico')
 
     cy.intercept('PUT', '**/api/medicos/2', {

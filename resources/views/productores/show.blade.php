@@ -127,6 +127,51 @@
                 @endif
             </div>
         </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">Productores del mismo Hato ({{ $vinculados->count() }})</h5>
+                @if ($productor->clave)
+                    <span class="badge bg-primary">Hato: {{ $productor->clave }}</span>
+                @endif
+            </div>
+            <div class="card-body p-0">
+                @if ($vinculados->count() > 0)
+                <div class="list-group list-group-flush">
+                    @foreach ($vinculados as $vinc)
+                    <div class="list-group-item px-4 py-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-bold">
+                                    <a href="{{ route('productores.show', $vinc->id) }}" class="text-decoration-none text-dark">
+                                        {{ $vinc->nombre_completo }}
+                                    </a>
+                                </div>
+                                <div class="small text-muted mt-1">
+                                    <span class="me-3"><i class="bi bi-person-badge text-secondary me-1"></i>UPP: {{ $vinc->upp ?? 'N/A' }}</span>
+                                    <span><i class="bi bi-telephone text-secondary me-1"></i>Tel: {{ $vinc->telefono ?? 'N/A' }}</span>
+                                </div>
+                                <div class="small text-muted mt-1">
+                                    <span><i class="bi bi-person-fill-check text-secondary me-1"></i>MVZ Asignado: <strong class="text-dark">{{ $vinc->medico ? $vinc->medico->name : 'Sin asignar' }}</strong></span>
+                                </div>
+                            </div>
+                            <div>
+                                <a href="{{ route('productores.show', $vinc->id) }}" class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @else
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-people fs-2 d-block mb-2"></i>
+                    No hay otros productores vinculados a este hato.
+                </div>
+                @endif
+            </div>
+        </div>
     </div>
 </div>
 <div class="d-flex gap-2">

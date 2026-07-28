@@ -26,6 +26,6 @@ describe('Flujo de Inspeccion (E2E)', () => {
 
     cy.visit('/#/inspecciones')
     cy.wait('@getInspecciones', { timeout: 10000 })
-    cy.contains('No hay inspecciones para mostrar', { timeout: 5000 }).should('be.visible')
+    cy.contains('No hay lecturas para mostrar', { timeout: 5000 }).should('be.visible')
   })
 })
