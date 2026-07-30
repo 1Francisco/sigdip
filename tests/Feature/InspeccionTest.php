@@ -571,7 +571,7 @@ class InspeccionTest extends TestCase
                     'raza' => 'Holando',
                     'resultado' => 'Negativo',
                     'productor_id' => $extraProductor->id,
-                ]
+                ],
             ],
             'folio' => 'F-1000',
         ]);
@@ -614,13 +614,13 @@ class InspeccionTest extends TestCase
             'predio_id' => $this->predio->id,
             'veterinario_id' => $this->admin->id,
             'grupo_id' => $grupoId,
-            'estado' => 'borrador'
+            'estado' => 'borrador',
         ]);
         $extraIns = Inspeccion::factory()->create([
             'predio_id' => $extraPredio->id,
             'veterinario_id' => $this->admin->id,
             'grupo_id' => $grupoId,
-            'estado' => 'borrador'
+            'estado' => 'borrador',
         ]);
 
         // Submit update removing the extra producer completely
@@ -637,7 +637,7 @@ class InspeccionTest extends TestCase
                     'raza' => 'Jersey',
                     'resultado' => 'Negativo',
                     'productor_id' => $this->predio->productor_id,
-                ]
+                ],
             ],
             'folio' => 'F-2000',
         ]);

@@ -8,7 +8,9 @@ use App\Models\Inspeccion;
 use App\Models\Productor;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ReporteController extends Controller
@@ -75,7 +77,7 @@ class ReporteController extends Controller
             ->count();
 
         // Obtener resultados paginados para la tabla interactiva
-        /** @var \Illuminate\Pagination\LengthAwarePaginator $inspecciones */
+        /** @var LengthAwarePaginator $inspecciones */
         $inspecciones = $query->latest('fecha')->latest('id')->paginate(15);
         $inspecciones = $inspecciones->withQueryString();
 
@@ -155,7 +157,7 @@ class ReporteController extends Controller
             ->count();
 
         $perPage = 20;
-        /** @var \Illuminate\Pagination\LengthAwarePaginator $inspecciones */
+        /** @var LengthAwarePaginator $inspecciones */
         $inspecciones = $query->latest('fecha')->latest('id')->paginate($perPage, ['*'], 'page', $page);
 
         $items = $inspecciones->map(function ($ins) {
@@ -173,7 +175,7 @@ class ReporteController extends Controller
                 'localidad' => $ins->predio?->localidad,
                 'prueba' => $ins->motivo_prueba ?? $ins->tipo_prueba ?? $ins->tipo_inspeccion,
                 'funcion_zootecnica' => $ins->funcion_zootecnica,
-                'fecha' => $ins->fecha ? \Carbon\Carbon::parse($ins->fecha)->format('d/m/Y') : null,
+                'fecha' => $ins->fecha ? Carbon::parse($ins->fecha)->format('d/m/Y') : null,
                 'probados' => $ins->detalles->count(),
                 'negativos' => $negativos,
                 'reactores' => $reactores,

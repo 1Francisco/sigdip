@@ -43,6 +43,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/productores/:id/gestionar-hato',
+    name: 'GestionarHato',
+    component: () => import('../views/GestionarHatoView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/scan',
     name: 'Scan',
     component: () => import('../views/ScanView.vue'),

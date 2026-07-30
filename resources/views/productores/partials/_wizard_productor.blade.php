@@ -21,23 +21,6 @@
 <div id="step-1{{ $suf }}" class="wizard-step-1">
     <h5 class="fw-bold mb-3"><i class="bi bi-person-circle me-2 text-primary"></i>Paso 1: Información del Productor</h5>
 
-    <!-- Selector de productor existente (TomSelect) para copiar datos -->
-    <div class="mb-4 p-3 bg-light rounded-3 border">
-        <div class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" id="vincular_hato_switch{{ $suf }}" onchange="toggleVincularHato('{{ $index }}')" @if($prefillProductor ?? false) checked @endif>
-            <label class="form-check-label fw-semibold text-muted small" for="vincular_hato_switch{{ $suf }}">
-                <i class="bi bi-link-45deg me-1"></i> Vincular a un hato o productor existente
-            </label>
-        </div>
-        
-        <div id="copiar_productor_wrapper{{ $suf }}" class="@if($prefillProductor ?? false) d-block @else d-none @endif mt-3 pt-3 border-top">
-            <label class="form-label fw-semibold small text-muted mb-2">
-                Buscar productor existente para copiar datos y hato:
-            </label>
-            <select id="copiar-productor{{ $suf }}" class="form-select" placeholder="Buscar y seleccionar productor…" autocomplete="off"></select>
-            <div class="form-text small text-muted">Seleccione el productor al que desea vincular el nuevo registro.</div>
-        </div>
-    </div>
 
     @include('productores.partials._productor_fields', [
         'prefix' => $prefix,
@@ -87,11 +70,11 @@
                 <i class="bi bi-check-circle me-1"></i> Finalizar y Guardar Todo
             </button>
             @else
-            <button type="button" class="btn btn-light border px-4 rounded-pill" onclick="submitOnlyProductorWizard('{{ $index }}')">
+            <button type="button" class="btn btn-light border px-4 rounded-pill" onclick="confirmarGuardarSimple('{{ $index }}', false)">
                 No tiene predio (Solo Productor)
             </button>
             @if($index === null)
-            <button type="submit" class="btn btn-success px-5 rounded-pill shadow">
+            <button type="button" class="btn btn-success px-5 rounded-pill shadow" onclick="confirmarGuardarSimple('{{ $index }}', true)">
                 <i class="bi bi-check-circle me-1"></i> Finalizar y Guardar Todo
             </button>
             @endif
@@ -100,100 +83,97 @@
     </div>
 </div>
 
+<!-- Modal de confirmación de guardado -->
+<div class="modal fade" id="modalConfirmarGuardado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success text-white border-0">
+                <h6 class="modal-title fw-bold"><i class="bi bi-check-circle me-2"></i>Confirmar registro</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted mb-3">Se registrará al siguiente productor:</p>
+                <div class="bg-light rounded-3 p-3 border">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Nombre:</span>
+                        <span class="fw-bold" id="modal-guardar-nombre">—</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Clave:</span>
+                        <span class="fw-bold" id="modal-guardar-clave">—</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">UPP:</span>
+                        <span class="fw-bold" id="modal-guardar-upp">—</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Tipo actividad:</span>
+                        <span class="fw-bold" id="modal-guardar-tipo">—</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted small">Con predio:</span>
+                        <span class="fw-bold" id="modal-guardar-predio">—</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light px-4 rounded-pill" data-bs-dismiss="modal" onclick="_cancelarGuardado()">Cancelar</button>
+                <button type="button" class="btn btn-success px-5 rounded-pill fw-bold shadow-sm" data-bs-dismiss="modal" onclick="_ejecutarGuardado()">
+                    <i class="bi bi-check-circle me-1"></i> Confirmar y Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-window.toggleVincularHato = function(index) {
+window._guardarCallback = null;
+
+window._confirmarGuardado = function(callback, data) {
+    window._guardarCallback = callback;
+    document.getElementById('modal-guardar-nombre').textContent = (data.nombre || '') + ' ' + (data.apellido_paterno || '') + (data.apellido_materno ? ' ' + data.apellido_materno : '');
+    document.getElementById('modal-guardar-clave').textContent = data.clave || '—';
+    document.getElementById('modal-guardar-upp').textContent = data.upp || '—';
+    document.getElementById('modal-guardar-tipo').textContent = data.tipo_actividad || '—';
+    document.getElementById('modal-guardar-predio').textContent = data.registrar_predio == '1' ? 'Sí' : 'No';
+    new bootstrap.Modal(document.getElementById('modalConfirmarGuardado')).show();
+};
+
+window._ejecutarGuardado = function() {
+    if (window._guardarCallback) {
+        window._guardarCallback();
+        window._guardarCallback = null;
+    }
+};
+
+window._cancelarGuardado = function() {
+    window._guardarCallback = null;
+};
+
+window.confirmarGuardarSimple = function(index, conPredio) {
     var suf = index !== null && index !== '' ? '-' + index : '';
-    var checkbox = document.getElementById('vincular_hato_switch' + suf);
-    var searchWrapper = document.getElementById('copiar_productor_wrapper' + suf);
-    
-    if (checkbox) {
-        if (checkbox.checked) {
-            if (searchWrapper) {
-                searchWrapper.classList.remove('d-none');
-                searchWrapper.classList.add('d-block');
-            }
-        } else {
-            if (searchWrapper) {
-                searchWrapper.classList.remove('d-block');
-                searchWrapper.classList.add('d-none');
-            }
-            
-            // Clear the TomSelect value if any
-            var selectEl = document.getElementById('copiar-productor' + suf);
-            if (selectEl && selectEl.tomselect) {
-                selectEl.tomselect.clear();
-            }
-            
-            // Clear the key & location fields to return to "normal" mode
-            var fields = ['nombre', 'apellido_paterno', 'apellido_materno', 'curp', 'upp', 'domicilio', 'municipio', 'localidad', 'telefono', 'email', 'nombre_rancho', 'clave_unidad_produccion', 'latitud', 'longitud', 'predio_domicilio', 'predio_municipio', 'predio_localidad'];
-            fields.forEach(function(field) {
-                var nameAttr = index !== null && index !== '' ? 'productores[' + index + '][' + field + ']' : field;
-                var el = document.querySelector('[name="' + nameAttr + '"]');
-                if (el) el.value = '';
-            });
-            
-            var claveEl = document.getElementById('clave' + suf);
-            if (claveEl) {
-                claveEl.value = '';
-                claveEl.dispatchEvent(new Event('input'));
-            }
-            
-            var zonaSel = document.getElementById('zona_select' + suf);
-            var zonaHid = document.getElementById('zona' + suf);
-            if (zonaSel) zonaSel.value = '';
-            if (zonaHid) zonaHid.value = '';
-        }
+    if (!validateStep1Wizard(index)) return;
+
+    function getVal(name) {
+        var el = document.querySelector('[name="' + name + '"]');
+        return el ? el.value : '';
     }
+
+    var data = {
+        nombre: getVal('nombre'),
+        apellido_paterno: getVal('apellido_paterno'),
+        apellido_materno: getVal('apellido_materno'),
+        clave: getVal('clave'),
+        upp: getVal('upp'),
+        tipo_actividad: getVal('tipo_actividad'),
+        registrar_predio: conPredio ? '1' : '0',
+    };
+
+    window._confirmarGuardado(function() {
+        document.getElementById('inputRegistrarPredio' + suf).value = conPredio ? '1' : '0';
+        document.getElementById('wizardForm').submit();
+    }, data);
 };
 
-window.llenarFormulario = function(data) {
-    function setVal(name, value) {
-        if (value) {
-            var el = document.querySelector('[name="' + name + '"]');
-            if (el) el.value = value;
-        }
-    }
 
-    setVal('domicilio', data.domicilio);
-    setVal('municipio', data.municipio);
-    setVal('localidad', data.localidad);
-    setVal('estado', data.estado);
-    setVal('tipo_actividad', data.tipo_actividad);
-    setVal('sub_tipo_actividad', data.sub_tipo_actividad);
-    setVal('medico_id', data.medico_id);
-
-    if (data.clave) {
-        var claveEl = document.getElementById('clave{{ $suf }}');
-        if (claveEl) {
-            claveEl.value = data.clave;
-            claveEl.dispatchEvent(new Event('input'));
-        } else {
-            var marker = document.getElementById('clave-marker{{ $suf }}');
-            if (marker && marker._updateClave) {
-                marker._updateClave(data.clave);
-            }
-        }
-    }
-
-    if (data.zona) {
-        var zonaSel = document.getElementById('zona_select{{ $suf }}');
-        var zonaHid = document.getElementById('zona{{ $suf }}');
-        if (zonaSel) zonaSel.value = data.zona;
-        if (zonaHid) zonaHid.value = data.zona;
-    }
-
-    setVal('nombre_rancho', data._predio_nombre_rancho);
-    setVal('clave_unidad_produccion', data._predio_clave_unidad_produccion);
-    setVal('latitud', data._predio_latitud);
-    setVal('longitud', data._predio_longitud);
-    setVal('predio_domicilio', data._predio_domicilio);
-    setVal('predio_municipio', data._predio_municipio);
-    setVal('predio_localidad', data._predio_localidad);
-
-    var tipoSelect = document.getElementById('tipo_actividad{{ $suf }}');
-    if (tipoSelect && data.tipo_actividad === 'Seguimiento') {
-        var subContainer = document.getElementById('sub_tipo_actividad_container{{ $suf }}');
-        if (subContainer) subContainer.style.display = 'block';
-    }
-};
 </script>

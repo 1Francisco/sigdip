@@ -6,7 +6,9 @@ use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
 use App\Models\Visita;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class VisitaController extends Controller
 {
@@ -38,7 +40,7 @@ class VisitaController extends Controller
             $query->where('veterinario_id', auth()->id());
         }
 
-        /** @var \Illuminate\Pagination\LengthAwarePaginator $visitas */
+        /** @var LengthAwarePaginator $visitas */
         $visitas = $query->paginate(10);
         $visitas = $visitas->withQueryString();
 
@@ -183,6 +185,6 @@ class VisitaController extends Controller
             'estado' => 'pendiente',
         ]);
 
-        return back()->with('success', 'Visita reprogramada con éxito para el '.\Carbon\Carbon::parse($visita->fecha_programada)->format('d/m/Y').'.');
+        return back()->with('success', 'Visita reprogramada con éxito para el '.Carbon::parse($visita->fecha_programada)->format('d/m/Y').'.');
     }
 }

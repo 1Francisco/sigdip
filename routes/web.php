@@ -58,6 +58,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/productores/buscar', [ProductorController::class, 'buscar'])->name('productores.buscar');
     Route::get('/productores/create-multiple', [ProductorController::class, 'createMultiple'])->name('productores.create-multiple');
     Route::post('/productores/store-multiple', [ProductorController::class, 'storeMultiple'])->name('productores.store-multiple');
+    Route::get('/productores/{productor}/hato', [ProductorController::class, 'gestionarHato'])->name('productores.gestionar-hato');
+    Route::post('/productores/{productor}/hato/vincular', [ProductorController::class, 'vincularExistenteAHato'])->name('productores.vincular-existente');
     Route::resource('productores', ProductorController::class)->parameters(['productores' => 'productor']);
     Route::post('/predios/{predio}/coordenadas', [PredioController::class, 'updateCoordenadas'])->name('predios.updateCoordenadas');
     Route::resource('predios', PredioController::class);

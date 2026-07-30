@@ -11,6 +11,7 @@ use App\Models\Productor;
 use App\Models\Visita;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class InspeccionController extends Controller
@@ -59,7 +60,7 @@ class InspeccionController extends Controller
             $query->where('veterinario_id', auth()->id());
         }
 
-        /** @var \Illuminate\Pagination\LengthAwarePaginator $inspecciones */
+        /** @var LengthAwarePaginator $inspecciones */
         $inspecciones = $query->paginate(10);
         $inspecciones = $inspecciones->withQueryString();
 
@@ -270,17 +271,17 @@ class InspeccionController extends Controller
             $allOwnerIds = array_keys($groupedAnimals);
             if ($request->has('productores_extra') && is_array($request->productores_extra)) {
                 foreach ($request->productores_extra as $extId) {
-                    if ($extId && !in_array($extId, $allOwnerIds)) {
+                    if ($extId && ! in_array($extId, $allOwnerIds)) {
                         $allOwnerIds[] = $extId;
                     }
                 }
             }
-            if ($mainProductorId && !in_array($mainProductorId, $allOwnerIds)) {
+            if ($mainProductorId && ! in_array($mainProductorId, $allOwnerIds)) {
                 $allOwnerIds[] = $mainProductorId;
             }
 
             // Determine group ID
-            $grupoId = 'GRP-' . now()->format('YmdHis') . '-' . uniqid();
+            $grupoId = 'GRP-'.now()->format('YmdHis').'-'.uniqid();
             if ($existingDraft && $existingDraft->grupo_id) {
                 $grupoId = $existingDraft->grupo_id;
                 // Delete other inspections in the group
@@ -298,21 +299,25 @@ class InspeccionController extends Controller
 
             foreach ($allOwnerIds as $ownerId) {
                 $extraProductor = Productor::find($ownerId);
-                if (!$extraProductor) continue;
+                if (! $extraProductor) {
+                    continue;
+                }
 
                 if ($ownerId == $mainProductorId) {
                     $predioObj = $mainPredio;
                 } else {
                     $predioObj = Predio::where('productor_id', $ownerId)
-                        ->where(function($q) use ($mainPredio) {
+                        ->where(function ($q) use ($mainPredio) {
                             if ($mainPredio) {
                                 $q->where('municipio', $mainPredio->municipio)
-                                  ->orWhere('localidad', $mainPredio->localidad);
+                                    ->orWhere('localidad', $mainPredio->localidad);
                             }
                         })->first() ?? Predio::where('productor_id', $ownerId)->first();
                 }
 
-                if (!$predioObj) continue;
+                if (! $predioObj) {
+                    continue;
+                }
 
                 // Calculate censo for this owner's animals
                 $sementales = 0;
@@ -320,7 +325,7 @@ class InspeccionController extends Controller
                 $vaquillas = 0;
                 $becerras = 0;
                 $becerros = 0;
-                
+
                 $ownerAnimals = $groupedAnimals[$ownerId] ?? [];
                 foreach ($ownerAnimals as $item) {
                     $edad = intval($item['edad_meses'] ?? 0);
@@ -345,7 +350,7 @@ class InspeccionController extends Controller
                 $folio = $request->folio;
                 if ($ownerId != $mainProductorId && $request->folio) {
                     $suffix = $extraProductor->clave ?: $extraProductor->id;
-                    $folio = $request->folio . '-' . $suffix;
+                    $folio = $request->folio.'-'.$suffix;
                 }
 
                 $inspeccionData = [
@@ -392,7 +397,7 @@ class InspeccionController extends Controller
                 }
 
                 foreach ($ownerAnimals as $item) {
-                    if (!$item['identificador'] && $isDraft) {
+                    if (! $item['identificador'] && $isDraft) {
                         continue;
                     }
 
@@ -489,14 +494,14 @@ class InspeccionController extends Controller
             $grupoInspecciones = Inspeccion::where('grupo_id', $inspeccion->grupo_id)
                 ->with(['detalles.animal', 'predio.productor'])
                 ->get();
-            
+
             $detalles = collect();
             foreach ($grupoInspecciones as $ins) {
                 foreach ($ins->detalles as $det) {
                     $det->productor_id = $ins->predio->productor_id;
                     $detalles->push($det);
                 }
-                
+
                 if ($ins->predio->productor_id != $inspeccion->predio->productor_id) {
                     $productoresExtraSelected[] = $ins->predio->productor_id;
                 }
@@ -651,17 +656,17 @@ class InspeccionController extends Controller
             $allOwnerIds = array_keys($groupedAnimals);
             if ($request->has('productores_extra') && is_array($request->productores_extra)) {
                 foreach ($request->productores_extra as $extId) {
-                    if ($extId && !in_array($extId, $allOwnerIds)) {
+                    if ($extId && ! in_array($extId, $allOwnerIds)) {
                         $allOwnerIds[] = $extId;
                     }
                 }
             }
-            if ($mainProductorId && !in_array($mainProductorId, $allOwnerIds)) {
+            if ($mainProductorId && ! in_array($mainProductorId, $allOwnerIds)) {
                 $allOwnerIds[] = $mainProductorId;
             }
 
             // Group ID
-            $grupoId = $inspeccion->grupo_id ?: ('GRP-' . now()->format('YmdHis') . '-' . uniqid());
+            $grupoId = $inspeccion->grupo_id ?: ('GRP-'.now()->format('YmdHis').'-'.uniqid());
 
             // Fetch existing inspections in the group
             $existingInspections = Inspeccion::where('grupo_id', $grupoId)->get();
@@ -681,24 +686,28 @@ class InspeccionController extends Controller
             // Loop and process each owner
             foreach ($allOwnerIds as $ownerId) {
                 $extraProductor = Productor::find($ownerId);
-                if (!$extraProductor) continue;
+                if (! $extraProductor) {
+                    continue;
+                }
 
                 if ($ownerId == $mainProductorId) {
                     $predioObj = $mainPredio;
                     $ownerIns = $inspeccion;
                 } else {
                     $predioObj = Predio::where('productor_id', $ownerId)
-                        ->where(function($q) use ($mainPredio) {
+                        ->where(function ($q) use ($mainPredio) {
                             if ($mainPredio) {
                                 $q->where('municipio', $mainPredio->municipio)
-                                  ->orWhere('localidad', $mainPredio->localidad);
+                                    ->orWhere('localidad', $mainPredio->localidad);
                             }
                         })->first() ?? Predio::where('productor_id', $ownerId)->first();
-                    
+
                     $ownerIns = $existingInspectionsMap[$ownerId] ?? null;
                 }
 
-                if (!$predioObj) continue;
+                if (! $predioObj) {
+                    continue;
+                }
 
                 // Calculate censo
                 $sementales = 0;
@@ -706,7 +715,7 @@ class InspeccionController extends Controller
                 $vaquillas = 0;
                 $becerras = 0;
                 $becerros = 0;
-                
+
                 $ownerAnimals = $groupedAnimals[$ownerId] ?? [];
                 foreach ($ownerAnimals as $item) {
                     $edad = intval($item['edad_meses'] ?? 0);
@@ -731,7 +740,7 @@ class InspeccionController extends Controller
                 $folio = $request->folio;
                 if ($ownerId != $mainProductorId && $request->folio) {
                     $suffix = $extraProductor->clave ?: $extraProductor->id;
-                    $folio = $request->folio . '-' . $suffix;
+                    $folio = $request->folio.'-'.$suffix;
                 }
 
                 $inspeccionData = [
@@ -779,7 +788,7 @@ class InspeccionController extends Controller
                 $ins->detalles()->delete();
 
                 foreach ($ownerAnimals as $item) {
-                    if (!$item['identificador'] && $isDraft) {
+                    if (! $item['identificador'] && $isDraft) {
                         continue;
                     }
 
@@ -813,7 +822,7 @@ class InspeccionController extends Controller
 
             // Delete any group inspections that are no longer selected
             foreach ($existingInspections as $exist) {
-                if (!in_array($exist->predio->productor_id, $allOwnerIds)) {
+                if (! in_array($exist->predio->productor_id, $allOwnerIds)) {
                     $exist->detalles()->delete();
                     $exist->delete();
                 }

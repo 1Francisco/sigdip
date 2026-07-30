@@ -6,6 +6,7 @@ use App\Models\AreteCenso;
 use App\Models\Predio;
 use App\Models\Productor;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AreteCensoController extends Controller
 {
@@ -33,7 +34,7 @@ class AreteCensoController extends Controller
             });
         }
 
-        /** @var \Illuminate\Pagination\LengthAwarePaginator $aretes */
+        /** @var LengthAwarePaginator $aretes */
         $aretes = $query->latest()->paginate(20);
         $aretes = $aretes->withQueryString();
         $productores = Productor::all();

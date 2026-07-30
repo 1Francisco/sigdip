@@ -62,7 +62,7 @@ class ProductoresApiController extends Controller
         }
 
         $productores = $query
-            ->orderByRaw("CASE WHEN clave LIKE ? THEN 0 ELSE 1 END", [$q . '%'])
+            ->orderByRaw('CASE WHEN clave LIKE ? THEN 0 ELSE 1 END', [$q.'%'])
             ->orderBy('nombre')
             ->limit(15)
             ->get();
@@ -248,6 +248,7 @@ class ProductoresApiController extends Controller
 
             return DB::transaction(function () use ($validated, $request) {
                 $user = $request->user();
+
                 $medicoId = $validated['medico_id'] ?? null;
                 if ($user && ! $user->hasRole('Administrador')) {
                     $medicoId = $user->id;
@@ -662,6 +663,47 @@ class ProductoresApiController extends Controller
         }
     }
 
+    public function vincularAHato(Request $request, $id)
+    {
+        try {
+            $validated = $request->validate([
+                'productor_id' => 'required|exists:productores,id',
+            ]);
+
+            $productor = Productor::findOrFail($id);
+            $vinculado = Productor::findOrFail($validated['productor_id']);
+
+            if (! $productor->clave) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El productor actual no tiene una clave asignada. Asigne una clave primero.',
+                ], 422);
+            }
+
+            $vinculado->update(['clave' => $productor->clave]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Productor vinculado al hato exitosamente.',
+                'data' => [
+                    'productor' => $this->toProductorArray($productor, true),
+                    'vinculado' => $this->toProductorArray($vinculado),
+                ],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error crítico en el servidor: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
     private function toProductorArray(Productor $productor, bool $includePredios = false): array
     {
         $data = [
@@ -698,6 +740,26 @@ class ProductoresApiController extends Controller
                     'domicilio' => $predio->domicilio,
                     'municipio' => $predio->municipio,
                     'localidad' => $predio->localidad,
+                ];
+            })->values();
+
+            $vinculados = collect();
+            if ($productor->clave) {
+                $vinculados = Productor::where('clave', $productor->clave)
+                    ->where('id', '!=', $productor->id)
+                    ->get();
+            }
+            $data['vinculados'] = $vinculados->map(function (Productor $v) {
+                return [
+                    'id' => $v->id,
+                    'nombre_completo' => $v->nombre_completo,
+                    'nombre' => $v->nombre,
+                    'apellido_paterno' => $v->apellido_paterno,
+                    'apellido_materno' => $v->apellido_materno,
+                    'upp' => $v->upp,
+                    'telefono' => $v->telefono,
+                    'clave' => $v->clave,
+                    'zona' => $v->zona,
                 ];
             })->values();
         }

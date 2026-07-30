@@ -52,43 +52,6 @@
               <h4 class="h5 fw-bold mb-0 text-dark">Paso 1: Información del Productor</h4>
             </div>
 
-            <!-- Vincular a hato existente -->
-            <div class="mb-4 p-3 bg-light rounded-3 border">
-              <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="vincular-hato" v-model="showSearch" @change="toggleSearch">
-                <label class="form-check-label fw-semibold text-muted small" for="vincular-hato">
-                  <i class="bi bi-link-45deg me-1"></i> Vincular a un hato o productor existente
-                </label>
-              </div>
-              <div v-if="showSearch" class="mt-3 pt-3 border-top">
-                <label class="form-label fw-semibold small text-muted mb-2">Buscar productor existente para copiar datos y hato:</label>
-                <input
-                  v-model="searchTerm"
-                  type="text"
-                  class="form-control-custom mb-2"
-                  placeholder="Buscar por nombre o clave…"
-                  @input="onSearchInput"
-                >
-                <div v-if="isSearching" class="text-muted small">Buscando…</div>
-                <div v-if="searchResults.length > 0" class="list-group mb-2">
-                  <button
-                    v-for="item in searchResults"
-                    :key="item.id"
-                    class="list-group-item list-group-item-action text-start"
-                    @click="selectProductor(item)"
-                  >
-                    <strong>{{ item.nombre }} {{ item.apellido_paterno }} {{ item.apellido_materno }}</strong>
-                    <div class="small text-muted">
-                      {{ item.clave ? item.clave + ' · ' : '' }}{{ item.curp }} · {{ item.upp }}
-                      <span v-if="item._predio_nombre_rancho" class="d-block">{{ item._predio_nombre_rancho }} · {{ item._predio_clave_unidad_produccion }}</span>
-                    </div>
-                  </button>
-                </div>
-                <div v-if="searchTerm.length >= 2 && !isSearching && searchResults.length === 0" class="text-muted small">Sin resultados</div>
-                <div class="form-text small text-muted">Seleccione el productor al que desea vincular el nuevo registro.</div>
-              </div>
-            </div>
-
             <form @submit.prevent="nextStep">
               <div class="row g-3">
                 <!-- Nombre(s) | Apellido Paterno | Apellido Materno -->
@@ -205,13 +168,39 @@
                     <div class="form-group-custom">
                       <label class="form-label-custom">Clave</label>
                       <input 
-                        v-model="form.clave" 
+                        :value="form.clave" 
                         type="text" 
                         class="form-control-custom text-uppercase" 
                         placeholder="Ej. BD-123421"
-                        @input="autoSelectZona"
+                        @input="e => { form.clave = e.target.value.toUpperCase(); onClaveInput(); }"
                       >
                       <div class="small text-muted mt-1" style="font-size: 0.72rem;">Debe iniciar con AD, AP, BD o BP.</div>
+                      
+                      <!-- Resultados de clave autocomplete (real-time como en la web) -->
+                      <div v-if="resultadosClave.length > 0" class="mt-2 p-2 bg-light rounded border text-start" style="max-height: 180px; overflow-y: auto;">
+                        <div class="small text-muted fw-bold mb-1" style="font-size: 0.75rem;">Productores con esta clave:</div>
+                        <div class="list-group list-group-flush">
+                          <div 
+                            v-for="p in resultadosClave" 
+                            :key="p.id" 
+                            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-3 small border rounded mb-1" 
+                            style="cursor: pointer; background: #fff; font-size: 0.78rem;"
+                            @click="selectClave(p.clave)"
+                          >
+                            <div>
+                              <span class="badge bg-secondary rounded-pill me-2" style="font-size: 0.7rem;">{{ p.clave }}</span>
+                              <span class="fw-bold">{{ p.nombre }} {{ p.apellido_paterno }}</span>
+                            </div>
+                            <span class="text-secondary small">{{ p.tipo_actividad || 'General' }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-else-if="form.clave && isSearchingClave" class="small text-muted mt-1 text-start" style="font-size: 0.75rem;">
+                        <span class="spinner-border spinner-border-sm me-1" role="status" style="width: 0.75rem; height: 0.75rem;"></span> Buscando claves...
+                      </div>
+                      <div v-else-if="form.clave && noClaveFound" class="small text-warning mt-1 text-start" style="font-size: 0.75rem;">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Clave nueva (no asignada a ningún productor en el servidor).
+                      </div>
                     </div>
                   </div>
                   <div class="col-12 col-md-6">
@@ -375,12 +364,6 @@ export default {
 
       medicos: [],
 
-      // Vincular / copy from existing
-      searchTerm: '',
-      searchResults: [],
-      isSearching: false,
-      showSearch: false,
-      
       // Step workflow state
       currentStep: 1,
       mode: 'create', // 'create' | 'edit'
@@ -388,6 +371,12 @@ export default {
 
       // Two-step logic
       registrarPredio: false,
+      
+      // Clave autocomplete states
+      resultadosClave: [],
+      isSearchingClave: false,
+      noClaveFound: false,
+      claveDebounce: null,
 
       // Form bindings
       form: {
@@ -447,6 +436,13 @@ export default {
     } else {
       this.mode = 'create';
       this.registrarPredio = false;
+      
+      const prefillId = this.$route.query.prefill_from_productor_id;
+      if (prefillId) {
+        await this.prefillFromProductor(prefillId);
+      } else if (this.$route.query.vincular === 'true') {
+        this.showSearch = true;
+      }
     }
 
     // 3. Inicializar estado de conectividad nativa
@@ -548,58 +544,6 @@ export default {
       }
     },
 
-    toggleSearch() {
-      if (!this.showSearch) {
-        this.searchTerm = '';
-        this.searchResults = [];
-      }
-    },
-
-    async onSearchInput() {
-      if (this.searchTerm.trim().length < 2) {
-        this.searchResults = [];
-        return;
-      }
-      this.isSearching = true;
-      try {
-        const res = await api.searchProductor(this.searchTerm.trim());
-        this.searchResults = Array.isArray(res) ? res : [];
-      } catch (e) {
-        console.warn('Error buscando productor:', e.message);
-        this.searchResults = [];
-      } finally {
-        this.isSearching = false;
-      }
-    },
-
-    selectProductor(item) {
-      this.form.clave = item.clave || '';
-      if (this.form.clave) {
-        const first = this.form.clave.toUpperCase()[0];
-        this.form.zona = (first === 'A' || first === 'B') ? first : '';
-      }
-      this.form.tipo_actividad = item.tipo_actividad || '';
-      this.form.sub_tipo_actividad = item.sub_tipo_actividad || '';
-      this.form.medico_id = item.medico_id || '';
-
-      this.form.nombre_rancho = item._predio_nombre_rancho || '';
-      this.form.clave_unidad_produccion = item._predio_clave_unidad_produccion || '';
-      this.form.predio_domicilio = item._predio_domicilio || '';
-      this.form.predio_municipio = item._predio_municipio || '';
-      this.form.predio_localidad = item._predio_localidad || '';
-      this.form.latitud = item._predio_latitud || '';
-      this.form.longitud = item._predio_longitud || '';
-
-      this.form.domicilio = item.domicilio || '';
-      this.form.municipio = item.municipio || '';
-      this.form.localidad = item.localidad || '';
-      this.form.estado = item.estado || 'Nayarit';
-
-      this.searchTerm = `${item.nombre} ${item.apellido_paterno}${item.apellido_materno ? ' ' + item.apellido_materno : ''}`;
-      this.searchResults = [];
-      this.showSearch = false;
-    },
-
     onTipoActividadChange() {
       if (this.form.tipo_actividad !== 'Seguimiento') {
         this.form.sub_tipo_actividad = '';
@@ -661,6 +605,59 @@ export default {
       this.form.zona = (first === 'A' || first === 'B') ? first : '';
     },
 
+    onClaveInput() {
+      this.autoSelectZona();
+      
+      clearTimeout(this.claveDebounce);
+      const val = (this.form.clave || '').trim();
+      if (val.length < 1) {
+        this.resultadosClave = [];
+        this.noClaveFound = false;
+        this.isSearchingClave = false;
+        return;
+      }
+
+      this.isSearchingClave = true;
+      this.noClaveFound = false;
+
+      this.claveDebounce = setTimeout(async () => {
+        try {
+          let matches = [];
+          if (this.isOnline) {
+            try {
+              matches = await api.searchProductorPorClave(val);
+            } catch (err) {
+              console.warn('Error fetching producers by key from API:', err);
+            }
+          }
+          
+          const localProds = await db.getProductores();
+          const localMatches = localProds.filter(p => p.clave && p.clave.toUpperCase().startsWith(val.toUpperCase()));
+          
+          const seen = new Set(matches.map(m => String(m.id)));
+          localMatches.forEach(lp => {
+            if (!seen.has(String(lp.id))) {
+              matches.push(lp);
+            }
+          });
+
+          this.resultadosClave = matches.slice(0, 15);
+          this.noClaveFound = matches.length === 0;
+        } catch (e) {
+          console.error(e);
+        } finally {
+          this.isSearchingClave = false;
+        }
+      }, 300);
+    },
+
+    selectClave(clave) {
+      this.form.clave = clave;
+      this.resultadosClave = [];
+      this.noClaveFound = false;
+      this.autoSelectZona();
+    },
+
     // Guardar con Rancho asociado
     async saveWithPredio() {
       if (!this.form.nombre_rancho.trim() || !this.form.clave_unidad_produccion.trim()) {
@@ -675,6 +672,50 @@ export default {
     async saveWithoutPredio() {
       this.registrarPredio = false;
       await this.processFinalSave();
+    },
+
+    async prefillFromProductor(productorId) {
+      try {
+        let productor = null;
+        let predio = null;
+
+        if (this.isOnline) {
+          try {
+            const res = await api.getProductor(productorId);
+            productor = res.data || {};
+            predio = productor.predios?.[0] || null;
+          } catch (e) {
+            console.warn('Error loading prefill productor from API:', e.message);
+          }
+        }
+
+        if (!productor) {
+          const predios = await db.getPredios();
+          const predioAsociado = predios.find(p => p.productor && String(p.productor.id) === String(productorId));
+          if (predioAsociado && predioAsociado.productor) {
+            productor = predioAsociado.productor;
+            predio = predioAsociado;
+          }
+        }
+
+        if (productor) {
+          const item = {
+            ...productor,
+            _predio_nombre_rancho: predio?.nombre_rancho || predio?.nombre || '',
+            _predio_clave_unidad_produccion: predio?.clave_unidad_produccion || predio?.upp || '',
+            _predio_domicilio: predio?.domicilio || '',
+            _predio_municipio: predio?.municipio || '',
+            _predio_localidad: predio?.localidad || '',
+            _predio_latitud: predio?.latitud || '',
+            _predio_longitud: predio?.longitud || ''
+          };
+          this.selectProductor(item);
+          // Ocultar buscador ya que pre-llenamos los datos
+          this.showSearch = false;
+        }
+      } catch (err) {
+        console.error('Error al pre-llenar productor:', err);
+      }
     },
 
     // PROCESAR GUARDADO FINAL (API SI ONLINE, FALLBACK INDEXEDDB)
@@ -837,6 +878,34 @@ export default {
 
           predios.push(newPredio);
           await db.savePredios(predios);
+
+          // También guardar en la store dedicada de productores para offline-first consistente
+          const productores = await db.getProductores();
+          const fullNombre = [body.nombre, body.apellido_paterno, body.apellido_materno]
+            .filter(Boolean).join(' ').trim();
+          productores.push({
+            id: finalProductorId,
+            nombre: fullNombre || 'Productor Registrado',
+            nombreRaw: body.nombre || '',
+            apellido_paterno: body.apellido_paterno || '',
+            apellido_materno: body.apellido_materno || '',
+            curp: body.curp || 'N/A',
+            upp: body.upp || 'N/A',
+            telefono: body.telefono || 'N/A',
+            domicilio: body.domicilio || '',
+            municipio: body.municipio || '',
+            localidad: body.localidad || '',
+            estado: body.estado || 'Nayarit',
+            email: body.email || '',
+            clave: body.clave || null,
+            zona: body.zona || null,
+            tipo_actividad: body.tipo_actividad || null,
+            sub_tipo_actividad: body.sub_tipo_actividad || null,
+            medico_id: body.medico_id || api.getCurrentUser()?.id || null,
+            prediosCount: this.registrarPredio ? 1 : 0,
+            ranchos: this.registrarPredio ? [newPredio] : []
+          });
+          await db.saveProductores(productores);
           
           alert(newPredio.nombre !== 'Sin Rancho' 
             ? 'Productor y Rancho creados exitosamente!'
@@ -879,6 +948,33 @@ export default {
           });
 
           await db.savePredios(predios);
+
+          // También actualizar en la store dedicada de productores
+          const productores = await db.getProductores();
+          const prodIdx = productores.findIndex(p => String(p.id) === targetId);
+          if (prodIdx >= 0) {
+            const fullNombre = [body.nombre, body.apellido_paterno, body.apellido_materno]
+              .filter(Boolean).join(' ').trim();
+            productores[prodIdx].nombre = fullNombre;
+            productores[prodIdx].nombreRaw = body.nombre;
+            productores[prodIdx].apellido_paterno = body.apellido_paterno;
+            productores[prodIdx].apellido_materno = body.apellido_materno;
+            productores[prodIdx].curp = body.curp;
+            productores[prodIdx].upp = body.upp;
+            productores[prodIdx].domicilio = body.domicilio;
+            productores[prodIdx].municipio = body.municipio;
+            productores[prodIdx].localidad = body.localidad;
+            productores[prodIdx].estado = body.estado;
+            productores[prodIdx].telefono = body.telefono;
+            productores[prodIdx].email = body.email;
+            productores[prodIdx].clave = body.clave;
+            productores[prodIdx].zona = body.zona;
+            productores[prodIdx].tipo_actividad = body.tipo_actividad;
+            productores[prodIdx].sub_tipo_actividad = body.sub_tipo_actividad;
+            productores[prodIdx].medico_id = body.medico_id || api.getCurrentUser()?.id || null;
+            await db.saveProductores(productores);
+          }
+
           alert('¡Datos del productor actualizados con éxito!');
         }
 

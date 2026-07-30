@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\Inspeccion;
 use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
@@ -105,7 +106,7 @@ class VisitaByCodigoTest extends TestCase
             'veterinario_id' => $this->admin->id,
         ]);
 
-        $inspeccion = \App\Models\Inspeccion::factory()->create([
+        $inspeccion = Inspeccion::factory()->create([
             'predio_id' => $this->predio->id,
             'veterinario_id' => $this->admin->id,
             'visita_id' => $visita->id,

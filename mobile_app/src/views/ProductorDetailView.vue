@@ -69,9 +69,31 @@
           </div>
         </div>
 
-        <div class="d-flex gap-2 mb-5">
+        <div class="card shadow-sm border-0 p-4 rounded-4 mb-4">
+          <div class="fw-bold text-dark mb-3 d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-people me-2"></i>Productores del mismo Hato ({{ vinculados.length }})</span>
+            <span v-if="productor.clave" class="badge bg-primary text-white rounded-pill px-3 py-1 small">Hato: {{ productor.clave }}</span>
+          </div>
+          <div v-if="!vinculados.length" class="text-muted">No hay otros productores vinculados a este hato.</div>
+          <div v-else class="list-group list-group-flush text-start">
+            <div v-for="vinc in vinculados" :key="vinc.id" class="list-group-item px-0 d-flex justify-content-between align-items-center gap-2">
+              <div>
+                <div class="fw-semibold">{{ vinc.nombre_completo }}</div>
+                <div class="text-secondary small">UPP: {{ vinc.upp || '—' }} · Tel: {{ vinc.telefono || '—' }}</div>
+              </div>
+              <button class="btn btn-sm btn-outline-primary rounded-pill" @click="goToProductor(vinc.id)">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 mb-5 flex-wrap">
           <button class="btn btn-primary rounded-pill px-4" @click="$router.push(`/productores/editar/${productor.id}`)">
             <i class="bi bi-pencil me-1"></i> Editar
+          </button>
+          <button v-if="productor.clave" class="btn btn-outline-primary rounded-pill px-4" @click="$router.push(`/productores/${productor.id}/gestionar-hato`)">
+            <i class="bi bi-people me-1"></i> Gestionar Hato
           </button>
           <button class="btn btn-outline-secondary rounded-pill px-4" @click="$router.push('/productores')">
             Volver
@@ -103,10 +125,16 @@ export default {
     },
     predios() {
       return this.productor?.predios || [];
+    },
+    vinculados() {
+      return this.productor?.vinculados || [];
     }
   },
-  async mounted() {
-    await this.loadDetail();
+  watch: {
+    '$route.params.id': {
+      handler: 'loadDetail',
+      immediate: true
+    }
   },
   methods: {
     async loadDetail() {
@@ -120,6 +148,9 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    goToProductor(id) {
+      this.$router.push(`/productores/${id}`);
     }
   }
 };

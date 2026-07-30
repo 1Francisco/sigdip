@@ -119,13 +119,39 @@
                   <div class="form-group-custom">
                     <label class="form-label-custom">Clave</label>
                     <input 
-                      v-model="form.clave" 
+                      :value="form.clave" 
                       type="text" 
                       class="form-control-custom text-uppercase" 
                       placeholder="Ej. BD-123421"
-                      @input="autoSelectZona"
+                      @input="e => { form.clave = e.target.value.toUpperCase(); onClaveInput(); }"
                     >
                     <div class="small text-muted mt-1" style="font-size: 0.72rem;">Debe iniciar con AD, AP, BD o BP.</div>
+                    
+                    <!-- Resultados de clave autocomplete (real-time como en la web) -->
+                    <div v-if="resultadosClave.length > 0" class="mt-2 p-2 bg-light rounded border text-start" style="max-height: 180px; overflow-y: auto;">
+                      <div class="small text-muted fw-bold mb-1" style="font-size: 0.75rem;">Productores con esta clave:</div>
+                      <div class="list-group list-group-flush">
+                        <div 
+                          v-for="p in resultadosClave" 
+                          :key="p.id" 
+                          class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-3 small border rounded mb-1" 
+                          style="cursor: pointer; background: #fff; font-size: 0.78rem;"
+                          @click="selectClave(p.clave)"
+                        >
+                          <div>
+                            <span class="badge bg-secondary rounded-pill me-2" style="font-size: 0.7rem;">{{ p.clave }}</span>
+                            <span class="fw-bold">{{ p.nombre }} {{ p.apellido_paterno }}</span>
+                          </div>
+                          <span class="text-secondary small">{{ p.tipo_actividad || 'General' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-else-if="form.clave && isSearchingClave" class="small text-muted mt-1 text-start" style="font-size: 0.75rem;">
+                      <span class="spinner-border spinner-border-sm me-1" role="status" style="width: 0.75rem; height: 0.75rem;"></span> Buscando claves...
+                    </div>
+                    <div v-else-if="form.clave && noClaveFound" class="small text-warning mt-1 text-start" style="font-size: 0.75rem;">
+                      <i class="bi bi-exclamation-triangle-fill"></i> Clave nueva (no asignada a ningún productor en el servidor).
+                    </div>
                   </div>
                 </div>
                 <div class="col-12 col-md-6">
@@ -141,11 +167,21 @@
               </template>
             </div>
 
-            <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top border-slate-100">
-              <button type="button" class="btn-cancel-custom rounded-pill px-4" @click="handleCancel">Cancelar</button>
-              <button type="submit" class="btn-submit-custom rounded-pill px-4" :disabled="saving">
-                {{ saving ? 'Actualizando...' : 'Actualizar Productor' }}
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4 pt-3 border-top border-slate-100">
+              <button 
+                type="button" 
+                class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold text-start btn-sm" 
+                style="font-size: 0.82rem;"
+                @click="$router.push(`/productores/${productorId}/gestionar-hato`)"
+              >
+                <i class="bi bi-people-fill me-1"></i> Gestionar Hato (Clave: {{ form.clave || 'S/C' }})
               </button>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn-cancel-custom rounded-pill px-4" @click="handleCancel">Cancelar</button>
+                <button type="submit" class="btn-submit-custom rounded-pill px-4" :disabled="saving">
+                  {{ saving ? 'Actualizando...' : 'Actualizar Productor' }}
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -170,9 +206,34 @@ export default {
       saving: false,
       errorMsg: '',
       productorId: null,
+      
+      // Clave autocomplete states
+      resultadosClave: [],
+      isSearchingClave: false,
+      noClaveFound: false,
+      claveDebounce: null,
+      
       form: {
         nombre: '',
         apellido_paterno: '',
+        apellido_materno: '',
+        curp: '',
+        upp: '',
+        domicilio: '',
+        municipio: '',
+        localidad: '',
+        estado: 'Nayarit',
+        telefono: '',
+        email: '',
+        clave: '',
+        zona: '',
+        nombre_rancho: '',
+        clave_unidad_produccion: '',
+        predio_localidad: '',
+        predio_municipio: '',
+        predio_domicilio: '',
+        latitud: '',
+        longitud: '',
         apellido_materno: '',
         curp: '',
         upp: '',
@@ -283,6 +344,59 @@ export default {
       const first = this.form.clave.toUpperCase()[0];
       this.form.zona = (first === 'A' || first === 'B') ? first : '';
     },
+
+    onClaveInput() {
+      this.autoSelectZona();
+      
+      clearTimeout(this.claveDebounce);
+      const val = (this.form.clave || '').trim();
+      if (val.length < 1) {
+        this.resultadosClave = [];
+        this.noClaveFound = false;
+        this.isSearchingClave = false;
+        return;
+      }
+
+      this.isSearchingClave = true;
+      this.noClaveFound = false;
+
+      this.claveDebounce = setTimeout(async () => {
+        try {
+          let matches = [];
+          if (this.isOnline) {
+            try {
+              matches = await api.searchProductorPorClave(val);
+            } catch (err) {
+              console.warn('Error fetching producers by key from API:', err);
+            }
+          }
+          
+          const localProds = await db.getProductores();
+          const localMatches = localProds.filter(p => p.clave && p.clave.toUpperCase().startsWith(val.toUpperCase()));
+          
+          const seen = new Set(matches.map(m => String(m.id)));
+          localMatches.forEach(lp => {
+            if (!seen.has(String(lp.id))) {
+              matches.push(lp);
+            }
+          });
+
+          this.resultadosClave = matches.slice(0, 15);
+          this.noClaveFound = matches.length === 0;
+        } catch (e) {
+          console.error(e);
+        } finally {
+          this.isSearchingClave = false;
+        }
+      }, 300);
+    },
+
+    selectClave(clave) {
+      this.form.clave = clave;
+      this.resultadosClave = [];
+      this.noClaveFound = false;
+      this.autoSelectZona();
+    },
     async processFinalSave() {
       this.saving = true;
       this.errorMsg = '';
@@ -300,7 +414,7 @@ export default {
         telefono: this.form.telefono.trim(),
         email: this.form.email.trim(),
         clave: this.isAdmin ? (this.form.clave || '').toUpperCase().trim() : null,
-        zona: this.isAdmin ? (this.form.zona || null) : null
+        zona: this.isAdmin ? (this.form.zona || null) : null,
       };
 
       try {
@@ -324,7 +438,6 @@ export default {
             p.productor.email = body.email;
             p.productor.clave = body.clave;
             p.productor.zona = body.zona;
-
             if (p.nombre !== 'Sin Rancho' && this.form.nombre_rancho.trim()) {
               p.nombre = this.form.nombre_rancho.trim();
               p.upp = this.form.clave_unidad_produccion.trim();
@@ -338,6 +451,30 @@ export default {
         });
 
         await db.savePredios(predios);
+
+        // También actualizar en la store dedicada de productores
+        const productores = await db.getProductores();
+        const prodIdx = productores.findIndex(p => String(p.id) === String(this.productorId));
+        if (prodIdx >= 0) {
+          const fullNombre = [body.nombre, body.apellido_paterno, body.apellido_materno]
+            .filter(Boolean).join(' ').trim();
+          productores[prodIdx].nombre = fullNombre;
+          productores[prodIdx].nombreRaw = body.nombre;
+          productores[prodIdx].apellido_paterno = body.apellido_paterno;
+          productores[prodIdx].apellido_materno = body.apellido_materno;
+          productores[prodIdx].curp = body.curp;
+          productores[prodIdx].upp = body.upp;
+          productores[prodIdx].domicilio = body.domicilio;
+          productores[prodIdx].municipio = body.municipio;
+          productores[prodIdx].localidad = body.localidad;
+          productores[prodIdx].estado = body.estado;
+          productores[prodIdx].telefono = body.telefono;
+          productores[prodIdx].email = body.email;
+          productores[prodIdx].clave = body.clave;
+          productores[prodIdx].zona = body.zona;
+          await db.saveProductores(productores);
+        }
+
         this.$router.push('/productores');
       } catch (e) {
         this.errorMsg = e.message || 'No se pudo actualizar el productor.';

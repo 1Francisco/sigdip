@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Animal;
 use App\Models\Predio;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AnimalController extends Controller
 {
@@ -31,7 +32,7 @@ class AnimalController extends Controller
             });
         }
 
-        /** @var \Illuminate\Pagination\LengthAwarePaginator $animales */
+        /** @var LengthAwarePaginator $animales */
         $animales = $query->latest()->paginate(20);
         $animales = $animales->withQueryString();
         $predios = Predio::with('productor')->get();

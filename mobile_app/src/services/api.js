@@ -308,6 +308,16 @@ export default {
     return await request('GET', `/productores/buscar?q=${encodeURIComponent(q)}`);
   },
 
+  async searchProductorPorClave(clave) {
+    return await request('GET', `/productores/buscar-por-clave?clave=${encodeURIComponent(clave)}`);
+  },
+
+  async vincularProductorAHato(productorId, productorAAsignarId) {
+    return await request('POST', `/productores/${productorId}/vincular-a-hato`, {
+      productor_id: productorAAsignarId
+    });
+  },
+
   async getPredios() {
     return await request('GET', '/predios');
   },

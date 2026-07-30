@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\ReportesRendimientoApiController;
 use App\Http\Controllers\Api\SyncController;
 use App\Http\Controllers\Api\VisitasApiController;
 use App\Http\Controllers\InspeccionController;
+use App\Http\Controllers\ProductorController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -63,6 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/stats', [DashboardApiController::class, 'getStats']);
 
     // Gestión de Productores y Predios desde la App Móvil
+    Route::get('/productores/buscar-por-clave', [ProductorController::class, 'buscarPorClave']);
     Route::get('/productores/buscar', [ProductoresApiController::class, 'buscar']);
     Route::get('/productores', [ProductoresApiController::class, 'index']);
     Route::get('/productores/{id}', [ProductoresApiController::class, 'show']);
@@ -75,6 +77,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/predios/{id}', [ProductoresApiController::class, 'updateRancho']);
     Route::delete('/predios/{id}', [ProductoresApiController::class, 'destroyPredio']);
     Route::post('/predios/{id}/coordenadas', [ProductoresApiController::class, 'updateCoordenadas']);
+    Route::post('/productores/{productor}/vincular-a-hato', [ProductoresApiController::class, 'vincularAHato']);
 
     // Visitas desde la App Móvil
     Route::get('/visitas', [VisitasApiController::class, 'index']);

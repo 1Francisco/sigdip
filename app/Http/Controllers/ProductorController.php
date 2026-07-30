@@ -6,6 +6,7 @@ use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class ProductorController extends Controller
@@ -32,7 +33,7 @@ class ProductorController extends Controller
             });
         }
 
-        /** @var \Illuminate\Pagination\LengthAwarePaginator $productores */
+        /** @var LengthAwarePaginator $productores */
         $productores = $query->paginate(10);
         $productores = $productores->withQueryString();
 
@@ -141,7 +142,10 @@ class ProductorController extends Controller
 
         $medicos = User::role('Medico_Campo')->orderBy('name')->get();
 
-        return view('productores.edit', ['productor' => $productor, 'medicos' => $medicos]);
+        return view('productores.edit', [
+            'productor' => $productor,
+            'medicos' => $medicos,
+        ]);
     }
 
     public function update(Request $request, Productor $productor)
@@ -267,10 +271,22 @@ class ProductorController extends Controller
             return response()->json([]);
         }
 
-        $productores = Productor::where('clave', 'like', $clave . '%')
+        $productores = Productor::with('predios')->where('clave', 'like', $clave.'%')
             ->orderBy('clave')
             ->limit(50)
-            ->get(['id', 'clave', 'nombre', 'apellido_paterno', 'apellido_materno', 'tipo_actividad', 'zona']);
+            ->get();
+
+        $productores->each(function ($p) {
+            $primerPredio = $p->predios->first();
+            $p->setAttribute('_predio_nombre_rancho', $primerPredio?->nombre_rancho);
+            $p->setAttribute('_predio_clave_unidad_produccion', $primerPredio?->clave_unidad_produccion);
+            $p->setAttribute('_predio_latitud', $primerPredio?->latitud);
+            $p->setAttribute('_predio_longitud', $primerPredio?->longitud);
+            $p->setAttribute('_predio_domicilio', $primerPredio?->domicilio);
+            $p->setAttribute('_predio_municipio', $primerPredio?->municipio);
+            $p->setAttribute('_predio_localidad', $primerPredio?->localidad);
+            unset($p->predios);
+        });
 
         return response()->json($productores);
     }
@@ -285,12 +301,12 @@ class ProductorController extends Controller
         }
 
         $productores = Productor::with('predios')->where(function ($query) use ($q) {
-                $query->where('nombre', 'like', "%{$q}%")
-                    ->orWhere('apellido_paterno', 'like', "%{$q}%")
-                    ->orWhere('apellido_materno', 'like', "%{$q}%")
-                    ->orWhere('clave', 'like', "%{$q}%");
-            })
-            ->orderByRaw("CASE WHEN clave LIKE ? THEN 0 ELSE 1 END", [$q . '%'])
+            $query->where('nombre', 'like', "%{$q}%")
+                ->orWhere('apellido_paterno', 'like', "%{$q}%")
+                ->orWhere('apellido_materno', 'like', "%{$q}%")
+                ->orWhere('clave', 'like', "%{$q}%");
+        })
+            ->orderByRaw('CASE WHEN clave LIKE ? THEN 0 ELSE 1 END', [$q.'%'])
             ->orderBy('nombre')
             ->limit(15)
             ->get();
@@ -346,7 +362,7 @@ class ProductorController extends Controller
             'productores.*.tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
             'productores.*.sub_tipo_actividad' => 'required_if:productores.*.tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
             'productores.*.zona' => 'nullable|string|in:A,B',
-            
+
             // Predio
             'productores.*.registrar_predio' => 'nullable|boolean',
             'productores.*.nombre_rancho' => 'required_if:productores.*.registrar_predio,1|nullable|string|max:255',
@@ -419,7 +435,36 @@ class ProductorController extends Controller
 
             return redirect()->route('productores.index')->with('success', 'Productores registrados correctamente.');
         } catch (\Exception $e) {
-            return back()->withInput()->with('error', 'Error al procesar el registro masivo: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Error al procesar el registro masivo: '.$e->getMessage());
         }
+    }
+
+    public function gestionarHato(Productor $productor)
+    {
+        $productores = collect();
+        if ($productor->clave) {
+            $productores = Productor::where('clave', $productor->clave)
+                ->where('id', '!=', $productor->id)
+                ->with(['medico', 'predios'])
+                ->get();
+        }
+
+        return view('productores.gestionar-hato', compact('productor', 'productores'));
+    }
+
+    public function vincularExistenteAHato(Request $request, Productor $productor)
+    {
+        $validated = $request->validate([
+            'productor_id' => 'required|exists:productores,id|different:productor',
+        ]);
+
+        if (! auth()->user()->hasRole('Administrador') && $productor->medico_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $vinculado = Productor::findOrFail($validated['productor_id']);
+        $vinculado->update(['clave' => $productor->clave]);
+
+        return back()->with('success', 'Productor agregado al hato.');
     }
 }

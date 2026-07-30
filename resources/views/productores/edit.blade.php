@@ -23,6 +23,7 @@
                 <form action="{{ route('productores.update', $productor->id) }}" method="POST">
                     @csrf
                     @method('PATCH')
+
                     <div class="row g-3">
                         <!-- Nombres -->
                         <div class="col-md-4">
@@ -129,8 +130,8 @@
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mt-4">
-                        <a href="{{ route('productores.create-multiple', ['prefill_from_productor_id' => $productor->id]) }}" class="btn btn-outline-primary fw-bold">
-                            <i class="bi bi-people-fill me-1"></i> Agregar productores vinculados al hato de {{ $productor->nombre_completo }} (Clave: {{ $productor->clave }})
+                        <a href="{{ route('productores.gestionar-hato', $productor->id) }}" class="btn btn-outline-primary fw-bold">
+                            <i class="bi bi-people-fill me-1"></i> Gestionar Hato ({{ $productor->clave ? 'Clave: '.$productor->clave : 'Sin clave' }})
                         </a>
                         <div class="d-flex gap-3">
                             <a href="{{ route('productores.index') }}" class="btn btn-light px-4">Cancelar</a>
@@ -226,6 +227,15 @@
                     });
             }, 300);
         });
+
+        claveInput.addEventListener('blur', function () {
+            setTimeout(function () {
+                resultadosClave.innerHTML = '';
+            }, 200);
+        });
+
+        resultadosClave.innerHTML = '';
     }
+
 </script>
 @endsection

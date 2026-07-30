@@ -2,16 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Exports\InspeccionExport;
 use App\Models\Animal;
 use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
-use App\Exports\InspeccionExport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -52,7 +53,7 @@ class ExportSabanaExcelTest extends TestCase
         ]);
     }
 
-    private function parseExcelFromExport(?string $zona = null, ?string $tipoActividad = null, ?string $medicoId = null): \PhpOffice\PhpSpreadsheet\Spreadsheet
+    private function parseExcelFromExport(?string $zona = null, ?string $tipoActividad = null, ?string $medicoId = null): Spreadsheet
     {
         $export = new InspeccionExport($zona, $tipoActividad, $medicoId);
         $content = Excel::raw($export, \Maatwebsite\Excel\Excel::XLSX);

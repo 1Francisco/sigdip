@@ -82,6 +82,7 @@
                         <td class="text-muted ps-0">Médico Asignado</td>
                         <td>{{ $productor->medico ? $productor->medico->name : 'No Asignado' }}</td>
                     </tr>
+
                 </table>
             </div>
         </div>
@@ -129,11 +130,16 @@
         </div>
 
         <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold">Productores del mismo Hato ({{ $vinculados->count() }})</h5>
-                @if ($productor->clave)
-                    <span class="badge bg-primary">Hato: {{ $productor->clave }}</span>
-                @endif
+                <div class="d-flex align-items-center gap-2">
+                    @if ($productor->clave)
+                        <span class="badge bg-primary">Hato: {{ $productor->clave }}</span>
+                        <a href="{{ route('productores.gestionar-hato', $productor->id) }}" class="btn btn-sm btn-outline-primary rounded-pill">
+                            <i class="bi bi-gear me-1"></i>Gestionar Hato
+                        </a>
+                    @endif
+                </div>
             </div>
             <div class="card-body p-0">
                 @if ($vinculados->count() > 0)

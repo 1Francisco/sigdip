@@ -8,7 +8,6 @@
 @php $showWizard = $errors->any(); @endphp
 
 @section('styles')
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 @endsection
 
 @section('content')
@@ -259,12 +258,6 @@
 
         var resultadosClave = document.getElementById('resultadosClave');
         if (resultadosClave) resultadosClave.innerHTML = '';
-
-        var switchEl = document.getElementById('vincular_hato_switch');
-        if (switchEl) {
-            switchEl.checked = false;
-            if (typeof toggleVincularHato === 'function') toggleVincularHato('');
-        }
     }
 
     function applyPrefill() {
@@ -367,8 +360,10 @@
             updateUI();
             initPanelEvents();
         } else {
-            rebuildHiddenInputs();
-            document.getElementById('multipleForm').submit();
+            window._confirmarGuardado(function() {
+                rebuildHiddenInputs();
+                document.getElementById('multipleForm').submit();
+            }, data);
         }
     }
 
@@ -480,6 +475,9 @@
             if (window.claveHandler) {
                 claveInput.removeEventListener('input', window.claveHandler);
             }
+            if (window.claveBlurHandler) {
+                claveInput.removeEventListener('blur', window.claveBlurHandler);
+            }
             window.claveHandler = function() {
                 clearTimeout(window.debounceTimer);
                 var val = this.value.trim();
@@ -513,7 +511,13 @@
                         });
                 }, 300);
             };
+            window.claveBlurHandler = function() {
+                setTimeout(function() {
+                    resultadosClave.innerHTML = '';
+                }, 200);
+            };
             claveInput.addEventListener('input', window.claveHandler);
+            claveInput.addEventListener('blur', window.claveBlurHandler);
         }
     }
 
@@ -552,35 +556,5 @@
         }
     }
 </script>
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
-<script>
-    // ========= TomSelect: copiar datos de productor existente =========
-    var copiarSelect = document.getElementById('copiar-productor');
-    if (copiarSelect) {
-        new TomSelect(copiarSelect, {
-            valueField: 'id',
-            labelField: 'display',
-            searchField: ['nombre', 'apellido_paterno', 'apellido_materno', 'clave'],
-            maxOptions: 15,
-            placeholder: 'Buscar y seleccionar productor…',
-            load: function(query, callback) {
-                if (query.length < 2) return callback();
-                fetch('{{ route("productores.buscar") }}?q=' + encodeURIComponent(query))
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        callback(data.map(function(p) {
-                            p.display = (p.clave ? '[' + p.clave + '] ' : '') + p.nombre + ' ' + p.apellido_paterno + (p.apellido_materno ? ' ' + p.apellido_materno : '');
-                            return p;
-                        }));
-                    });
-            },
-            onChange: function(value) {
-                if (value) {
-                    var option = this.options[value];
-                    if (option) window.llenarFormulario(option);
-                }
-            }
-        });
-    }
-</script>
+
 @endsection

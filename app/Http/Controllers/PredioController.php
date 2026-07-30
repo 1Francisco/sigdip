@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Predio;
 use App\Models\Productor;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class PredioController extends Controller
 {
@@ -32,7 +33,7 @@ class PredioController extends Controller
             });
         }
 
-        /** @var \Illuminate\Pagination\LengthAwarePaginator $predios */
+        /** @var LengthAwarePaginator $predios */
         $predios = $query->paginate(10);
         $predios = $predios->withQueryString();
 
@@ -139,9 +140,9 @@ class PredioController extends Controller
 
         $animalSearch = $request->get('animal_search');
         $animales = $predio->animales()
-            ->when($animalSearch, fn($q) => $q->where(function($q) use ($animalSearch) {
+            ->when($animalSearch, fn ($q) => $q->where(function ($q) use ($animalSearch) {
                 $q->where('numero_arete_siniiga', 'like', "%{$animalSearch}%")
-                  ->orWhere('raza', 'like', "%{$animalSearch}%");
+                    ->orWhere('raza', 'like', "%{$animalSearch}%");
             }))
             ->paginate(10);
 

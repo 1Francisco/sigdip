@@ -6,7 +6,6 @@
 @section('back_url', route('productores.index'))
 
 @section('styles')
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 @endsection
 
 @section('content')
@@ -196,6 +195,14 @@
                     });
             }, 300);
         });
+
+        claveInput.addEventListener('blur', function () {
+            setTimeout(function () {
+                resultadosClave.innerHTML = '';
+            }, 200);
+        });
+
+        resultadosClave.innerHTML = '';
     }
 
     // ========= GPS =========
@@ -233,34 +240,5 @@
         }
     }
 </script>
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
-<script>
-    var copiarSelect = document.getElementById('copiar-productor');
-    if (copiarSelect) {
-        new TomSelect(copiarSelect, {
-            valueField: 'id',
-            labelField: 'display',
-            searchField: ['nombre', 'apellido_paterno', 'apellido_materno', 'clave'],
-            maxOptions: 15,
-            placeholder: 'Buscar y seleccionar productor…',
-            load: function(query, callback) {
-                if (query.length < 2) return callback();
-                fetch('{{ route("productores.buscar") }}?q=' + encodeURIComponent(query))
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        callback(data.map(function(p) {
-                            p.display = (p.clave ? '[' + p.clave + '] ' : '') + p.nombre + ' ' + p.apellido_paterno + (p.apellido_materno ? ' ' + p.apellido_materno : '');
-                            return p;
-                        }));
-                    });
-            },
-            onChange: function(value) {
-                if (value) {
-                    var option = this.options[value];
-                    if (option) window.llenarFormulario(option);
-                }
-            }
-        });
-    }
-</script>
+
 @endsection

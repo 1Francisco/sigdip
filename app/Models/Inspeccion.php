@@ -103,26 +103,26 @@ class Inspeccion extends Model
             if ($tipoActividad === 'Cuarentenas Definitivas') {
                 $query->where(function ($q) {
                     $q->whereIn('inspecciones.motivo_prueba', ['Cuarentenas Definitivas', 'Definitiva', 'Cuarentena Definitiva'])
-                      ->orWhere('inspecciones.motivo_prueba', 'like', '%Definitiva%')
-                      ->orWhereHas('predio.productor', function ($pq) {
-                          $pq->whereNotNull('clave')
-                             ->where('clave', 'like', '%D%');
-                      });
+                        ->orWhere('inspecciones.motivo_prueba', 'like', '%Definitiva%')
+                        ->orWhereHas('predio.productor', function ($pq) {
+                            $pq->whereNotNull('clave')
+                                ->where('clave', 'like', '%D%');
+                        });
                 });
             } elseif ($tipoActividad === 'Cuarentenas Precautorias') {
                 $query->where(function ($q) {
                     $q->whereIn('inspecciones.motivo_prueba', ['Cuarentenas Precautorias', 'Precautoria', 'Cuarentena Precautoria'])
-                      ->orWhere('inspecciones.motivo_prueba', 'like', '%Precautoria%')
-                      ->orWhereHas('predio.productor', function ($pq) {
-                          $pq->whereNotNull('clave')
-                             ->where('clave', 'like', '%P%');
-                      });
+                        ->orWhere('inspecciones.motivo_prueba', 'like', '%Precautoria%')
+                        ->orWhereHas('predio.productor', function ($pq) {
+                            $pq->whereNotNull('clave')
+                                ->where('clave', 'like', '%P%');
+                        });
                 });
             } elseif ($tipoActividad === 'Hatos Relacionados y Expuestos') {
                 $query->where(function ($q) {
                     $q->whereIn('inspecciones.motivo_prueba', ['Hatos Relacionados y Expuestos', 'Hatos Relacionados', 'Relacionados', 'Expuestos'])
-                      ->orWhere('inspecciones.motivo_prueba', 'like', '%Hatos%')
-                      ->orWhere('inspecciones.motivo_prueba', 'like', '%Relacionados%');
+                        ->orWhere('inspecciones.motivo_prueba', 'like', '%Hatos%')
+                        ->orWhere('inspecciones.motivo_prueba', 'like', '%Relacionados%');
                 });
             } elseif ($tipoActividad === 'Seguimiento') {
                 $query->where(function ($q) {
@@ -135,31 +135,31 @@ class Inspeccion extends Model
                         'Definitiva',
                         'Precautoria',
                     ])
-                    ->orWhere('inspecciones.motivo_prueba', 'like', '%Cuarentena%')
-                    ->orWhere('inspecciones.motivo_prueba', 'like', '%Seguimiento%')
-                    ->orWhere('inspecciones.motivo_prueba', 'like', '%Hatos Relacionados%')
-                    ->orWhereHas('predio.productor', function ($pq) {
-                        $pq->whereNotNull('clave')
-                           ->where('clave', '!=', '');
-                    });
+                        ->orWhere('inspecciones.motivo_prueba', 'like', '%Cuarentena%')
+                        ->orWhere('inspecciones.motivo_prueba', 'like', '%Seguimiento%')
+                        ->orWhere('inspecciones.motivo_prueba', 'like', '%Hatos Relacionados%')
+                        ->orWhereHas('predio.productor', function ($pq) {
+                            $pq->whereNotNull('clave')
+                                ->where('clave', '!=', '');
+                        });
                 });
             } elseif ($tipoActividad === 'Buffer') {
                 $query->where(function ($q) {
                     $q->where('inspecciones.motivo_prueba', 'like', '%Buffer%')
-                      ->orWhere('inspecciones.tipo_prueba', 'like', '%Buffer%')
-                      ->orWhere('inspecciones.tipo_inspeccion', 'like', '%Buffer%');
+                        ->orWhere('inspecciones.tipo_prueba', 'like', '%Buffer%')
+                        ->orWhere('inspecciones.tipo_inspeccion', 'like', '%Buffer%');
                 });
             } elseif ($tipoActividad === 'Barrido') {
                 $query->where(function ($q) {
                     $q->where('inspecciones.motivo_prueba', 'like', '%Barrido%')
-                      ->orWhere('inspecciones.tipo_prueba', 'like', '%Barrido%')
-                      ->orWhere('inspecciones.tipo_inspeccion', 'like', '%Barrido%');
+                        ->orWhere('inspecciones.tipo_prueba', 'like', '%Barrido%')
+                        ->orWhere('inspecciones.tipo_inspeccion', 'like', '%Barrido%');
                 });
             } else {
                 $query->where(function ($q) use ($tipoActividad) {
                     $q->where('inspecciones.motivo_prueba', $tipoActividad)
-                      ->orWhere('inspecciones.tipo_prueba', $tipoActividad)
-                      ->orWhere('inspecciones.tipo_inspeccion', $tipoActividad);
+                        ->orWhere('inspecciones.tipo_prueba', $tipoActividad)
+                        ->orWhere('inspecciones.tipo_inspeccion', $tipoActividad);
                 });
             }
         }

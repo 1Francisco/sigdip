@@ -41,7 +41,7 @@ class Productor extends Model
                 $productor->zona = in_array($first, ['A', 'B'], true) ? $first : null;
             }
 
-            if (empty($productor->clave) && !empty($productor->tipo_actividad)) {
+            if (empty($productor->clave) && ! empty($productor->tipo_actividad)) {
                 $tipo = strtolower($productor->tipo_actividad);
                 $prefix = 'GP';
                 if ($tipo === 'barrido') {
@@ -51,7 +51,7 @@ class Productor extends Model
                 } elseif ($tipo === 'seguimiento') {
                     $zone = strtoupper($productor->zona ?? '');
                     if (empty($zone) && $productor->medico_id) {
-                        $medico = \App\Models\User::find($productor->medico_id);
+                        $medico = User::find($productor->medico_id);
                         if ($medico && $medico->zona) {
                             $zone = strtoupper($medico->zona);
                             $productor->zona = $zone;
@@ -61,19 +61,19 @@ class Productor extends Model
                         $zone = 'B';
                         $productor->zona = $zone;
                     }
-                    
+
                     $subType = strtolower($productor->sub_tipo_actividad ?? '');
                     $typeChar = 'P';
                     if (str_contains($subType, 'definitiva')) {
                         $typeChar = 'D';
                     }
-                    $prefix = $zone . $typeChar;
+                    $prefix = $zone.$typeChar;
                 }
 
-                $count = static::where('clave', 'like', $prefix . '-%')->count();
+                $count = static::where('clave', 'like', $prefix.'-%')->count();
                 $number = $count + 1;
                 do {
-                    $clave = $prefix . '-' . str_pad($number, 4, '0', STR_PAD_LEFT);
+                    $clave = $prefix.'-'.str_pad($number, 4, '0', STR_PAD_LEFT);
                     $number++;
                 } while (static::where('clave', $clave)->exists());
 

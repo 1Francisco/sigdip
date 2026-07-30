@@ -345,8 +345,8 @@ class ProductorTest extends TestCase
                     'curp' => 'MULT222222HSL00002',
                     'tipo_actividad' => 'Buffer',
                     'registrar_predio' => '0',
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $response->assertSessionHasNoErrors();
@@ -357,7 +357,7 @@ class ProductorTest extends TestCase
         $this->assertDatabaseHas('predios', ['nombre_rancho' => 'Rancho Multi 1']);
     }
 
-    // --- Tests para buscar endpoint y copia de datos (llenarFormulario) ---
+    // --- Tests para buscar endpoint ---
 
     public function test_buscar_endpoint_returns_productor_con_predio()
     {

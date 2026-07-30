@@ -25,9 +25,14 @@
       <div class="card border-0 shadow-sm p-0 overflow-hidden card-outer-mobile-flat">
         <div class="card-header bg-white d-flex justify-content-between align-items-center p-3 border-bottom border-slate-100">
           <h5 class="mb-0 fw-bold fs-6 text-dark">Listado de Productores</h5>
-          <button @click="$router.push('/productores/nuevo')" class="btn btn-primary btn-sm-custom d-flex align-items-center gap-1-5 px-3 py-2">
-            <i class="bi bi-person-plus"></i> Nuevo Productor
-          </button>
+          <div class="d-flex flex-column align-items-end gap-1">
+            <button @click="$router.push('/productores/nuevo')" class="btn btn-primary btn-sm-custom d-flex align-items-center gap-1-5 px-3 py-2">
+              <i class="bi bi-person-plus"></i> Nuevo Productor
+            </button>
+            <button @click="$router.push('/productores/nuevo')" class="btn btn-sm btn-link text-primary p-0 text-decoration-none" style="font-size: 0.78rem;">
+              <i class="bi bi-plus-circle me-1"></i> Nuevo Productor
+            </button>
+          </div>
         </div>
 
         <!-- Inline Live Search Bar (Premium Added Value) -->
@@ -455,10 +460,10 @@ export default {
       return Math.ceil(this.totalResults / 20) || 1;
     },
     startResult() {
-      return this.totalResults === 0 ? 0 : (this.currentPage - 1) * 10 + 1;
+      return this.totalResults === 0 ? 0 : (this.currentPage - 1) * 20 + 1;
     },
     endResult() {
-      return Math.min(this.currentPage * 10, this.totalResults);
+      return Math.min(this.currentPage * 20, this.totalResults);
     },
     paginatedProductores() {
       return this.filteredProductores.slice((this.currentPage - 1) * 20, this.currentPage * 20);

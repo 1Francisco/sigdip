@@ -210,10 +210,10 @@ export default {
       return Math.max(1, Math.ceil(this.totalResults / 20));
     },
     startResult() {
-      return this.totalResults === 0 ? 0 : ((this.currentPage - 1) * 10) + 1;
+      return this.totalResults === 0 ? 0 : ((this.currentPage - 1) * 20) + 1;
     },
     endResult() {
-      return Math.min(this.currentPage * 10, this.totalResults);
+      return Math.min(this.currentPage * 20, this.totalResults);
     },
     paginatedPredios() {
       return this.filteredPredios.slice((this.currentPage - 1) * 20, this.currentPage * 20);
