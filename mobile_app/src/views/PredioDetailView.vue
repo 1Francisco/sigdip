@@ -90,6 +90,9 @@
           <button class="btn btn-outline-primary rounded-pill px-4" @click="$router.push(`/inspeccion/${predio.id}`)">
             <i class="bi bi-file-earmark-plus me-1"></i> Nuevo Dictamen
           </button>
+          <button class="btn btn-outline-danger rounded-pill px-4" @click="deletePredio">
+            <i class="bi bi-trash me-1"></i> Eliminar
+          </button>
           <button class="btn btn-outline-secondary rounded-pill px-4" @click="$router.push('/predios')">
             Volver
           </button>
@@ -141,6 +144,17 @@ export default {
         this.errorMsg = e.message || 'No se pudo cargar el predio.';
       } finally {
         this.loading = false;
+      }
+    },
+    async deletePredio() {
+      if (!this.predio) return;
+      if (!confirm(`¿Estás seguro de eliminar el predio "${this.predio.nombre_rancho}"? Esta acción no se puede deshacer.`)) return;
+      this.errorMsg = '';
+      try {
+        await api.deletePredio(this.predio.id);
+        this.$router.push('/predios');
+      } catch (e) {
+        this.errorMsg = e.message || 'No se pudo eliminar el predio.';
       }
     }
   }

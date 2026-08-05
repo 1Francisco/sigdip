@@ -1,12 +1,19 @@
 <template>
   <AppLayout>
-    <div class="welcome-header mb-4 text-start d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div>
-        <h2 class="h4 fw-bold mb-1">Rendimiento de Médicos</h2>
-        <p class="text-secondary small mb-0">Reportes de actividad y productividad en campo</p>
-      </div>
-
-    </div>
+        <div class="welcome-header mb-4 text-start d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <h2 class="h4 fw-bold mb-1">Rendimiento de Médicos</h2>
+            <p class="text-secondary small mb-0">Reportes de actividad y productividad en campo</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm btn-download-excel" @click="downloadExcelGeneral">
+              <i class="bi bi-file-earmark-excel me-1"></i> Excel
+            </button>
+            <button class="btn btn-sm btn-danger rounded-pill px-3 shadow-sm btn-download-pdf" @click="downloadPdfGeneral">
+              <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+            </button>
+          </div>
+        </div>
 
     <!-- Alerta Offline -->
     <div v-if="!isOnline" class="card border-0 shadow-sm p-4 rounded-4 mb-4 text-center bg-white border-start border-danger border-4">
@@ -300,6 +307,9 @@
                         <td class="text-center pe-4 col-download">
                           <button class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF este mes" @click="downloadRowFile(row, 'pdf')">
                             <i class="bi bi-file-earmark-pdf"></i>
+                          </button>
+                          <button class="btn btn-sm px-1 py-0 text-success" title="Descargar Excel este mes" @click="downloadRowFile(row, 'xlsx')">
+                            <i class="bi bi-file-earmark-excel"></i>
                           </button>
                         </td>
                       </tr>
@@ -693,10 +703,33 @@ export default {
       const lastDayDate = new Date(year, month, 0);
       const lastDay = `${parts[0]}-${parts[1]}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
       
-      const filename = `rendimiento_${row.medico_nombre}_${row.mes}.${type === 'pdf' ? 'pdf' : 'xlsx'}`;
-      const url = `${CONFIG.API_BASE_URL}/reportes/rendimiento/${type}?medico_id=${row.veterinario_id}&fecha_desde=${firstDay}&fecha_hasta=${lastDay}`;
+      const filename = `rendimiento_${row.medico_nombre}_${row.mes}.${type === 'xlsx' ? 'xlsx' : 'pdf'}`;
+      const endpoint = type === 'xlsx' ? 'excel' : 'pdf';
+      const url = `${CONFIG.API_BASE_URL}/reportes/rendimiento/${endpoint}?medico_id=${row.veterinario_id}&fecha_desde=${firstDay}&fecha_hasta=${lastDay}`;
       
       this.downloadBlob(url, filename);
+    },
+    buildExportParams() {
+      const p = new URLSearchParams();
+      if (this.filterParams.estado) p.set('estado', this.filterParams.estado);
+      if (this.filterParams.zona) p.set('zona', this.filterParams.zona);
+      if (this.filterParams.localidad) p.set('localidad', this.filterParams.localidad);
+      if (this.filterParams.medico_id) p.set('medico_id', this.filterParams.medico_id);
+      if (this.filterParams.year) {
+        p.set('fecha_desde', `${this.filterParams.year}-01-01`);
+        p.set('fecha_hasta', `${this.filterParams.year}-12-31`);
+      }
+      return p.toString();
+    },
+    downloadExcelGeneral() {
+      const params = this.buildExportParams();
+      const url = `${CONFIG.API_BASE_URL}/reportes/rendimiento/excel${params ? `?${params}` : ''}`;
+      this.downloadBlob(url, `rendimiento_medicos_${this.selectedYear || new Date().getFullYear()}.xlsx`);
+    },
+    downloadPdfGeneral() {
+      const params = this.buildExportParams();
+      const url = `${CONFIG.API_BASE_URL}/reportes/rendimiento/pdf${params ? `?${params}` : ''}`;
+      this.downloadBlob(url, `rendimiento_medicos_${this.selectedYear || new Date().getFullYear()}.pdf`);
     },
 
 

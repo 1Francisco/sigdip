@@ -11,6 +11,7 @@ use App\Models\Productor;
 use App\Models\User;
 use App\Models\Visita;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -88,6 +89,7 @@ class SyncController extends Controller
             $productoresQuery->where('updated_at', '>', $since);
         }
         $productores = $paginate ? $productoresQuery->paginate($perPage, ['*'], 'productores_page', $page) : $productoresQuery->get();
+        $productoresData = Productor::attachVinculados(collect($paginate ? $productores->items() : $productores));
 
         // ---- MÉDICOS (sin paginación, siempre completo) ----
         $medicos = User::role('Medico_Campo')
@@ -99,7 +101,7 @@ class SyncController extends Controller
             'status' => 'success',
             'data' => [
                 'predios' => $paginate ? $predios->items() : $predios,
-                'productores' => $paginate ? $productores->items() : $productores,
+                'productores' => $productoresData,
                 'medicos' => $medicos,
                 'visitas' => $visitas,
             ],
@@ -149,6 +151,47 @@ class SyncController extends Controller
         try {
             foreach ($request->inspecciones as $data) {
                 $isDraft = ($data['estado'] ?? 'sincronizado') === 'borrador';
+                $estadoFinal = ! $isDraft || ! empty($data['inyeccion_realizada']);
+
+                // Validación de fechas (paridad con el flujo web: no se permite finalizar
+                // antes de la fecha programada de la visita ni antes de la lectura)
+                if ($estadoFinal && ! empty($data['visita_id'])) {
+                    $visitaSync = Visita::find($data['visita_id']);
+                    if ($visitaSync) {
+                        $hoy = Carbon::now()->startOfDay();
+                        if (! $visitaSync->inyeccion && $visitaSync->fecha_programada) {
+                            $fechaProg = Carbon::parse($visitaSync->fecha_programada)->startOfDay();
+                            if ($hoy->lt($fechaProg)) {
+                                $errores[] = [
+                                    'folio' => $data['folio'] ?? $data['clave_interna'] ?? 'Desconocido',
+                                    'error' => 'No se puede finalizar la inyección antes de la fecha programada de la visita ('.$fechaProg->format('d/m/Y').').',
+                                ];
+
+                                continue;
+                            }
+                        }
+                        if ($visitaSync->inyeccion && ! empty($data['fecha_lectura'])) {
+                            $fechaLectura = Carbon::parse($data['fecha_lectura'])->startOfDay();
+                            if ($hoy->lt($fechaLectura)) {
+                                $errores[] = [
+                                    'folio' => $data['folio'] ?? $data['clave_interna'] ?? 'Desconocido',
+                                    'error' => 'No se puede finalizar el dictamen antes de la fecha programada de la lectura ('.$fechaLectura->format('d/m/Y').').',
+                                ];
+
+                                continue;
+                            }
+                        }
+                    }
+                }
+
+                // Fallback: fecha_lectura = fecha_inyeccion + 3 días (paridad con el flujo web)
+                if ($estadoFinal && empty($data['fecha_lectura']) && ! empty($data['fecha_inyeccion'])) {
+                    try {
+                        $data['fecha_lectura'] = Carbon::parse($data['fecha_inyeccion'])->addDays(3)->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        // fecha_inyeccion inválida: se ignora el fallback
+                    }
+                }
 
                 // Validación básica de cada objeto
                 if (! isset($data['predio_id']) || (! $isDraft && ! isset($data['folio']))) {
@@ -192,6 +235,12 @@ class SyncController extends Controller
                             'vaquillas' => $data['vaquillas'] ?? 0,
                             'becerras' => $data['becerras'] ?? 0,
                             'becerros' => $data['becerros'] ?? 0,
+                            'fecha_prueba_anterior' => $data['fecha_prueba_anterior'] ?? null,
+                            'dictamen_anterior_no' => $data['dictamen_anterior_no'] ?? null,
+                            'exencion_no' => $data['exencion_no'] ?? null,
+                            'exencion_fecha' => $data['exencion_fecha'] ?? null,
+                            'hato_libre_no' => $data['hato_libre_no'] ?? null,
+                            'hato_libre_fecha' => $data['hato_libre_fecha'] ?? null,
                             'estado' => $data['estado'] ?? 'sincronizado',
                             'clave_interna' => $data['clave_interna'],
                         ]);
@@ -219,6 +268,12 @@ class SyncController extends Controller
                                 'vaquillas' => $data['vaquillas'] ?? 0,
                                 'becerras' => $data['becerras'] ?? 0,
                                 'becerros' => $data['becerros'] ?? 0,
+                                'fecha_prueba_anterior' => $data['fecha_prueba_anterior'] ?? null,
+                                'dictamen_anterior_no' => $data['dictamen_anterior_no'] ?? null,
+                                'exencion_no' => $data['exencion_no'] ?? null,
+                                'exencion_fecha' => $data['exencion_fecha'] ?? null,
+                                'hato_libre_no' => $data['hato_libre_no'] ?? null,
+                                'hato_libre_fecha' => $data['hato_libre_fecha'] ?? null,
                                 'estado' => $data['estado'] ?? 'sincronizado',
                                 'clave_interna' => $data['clave_interna'] ?? null,
                             ]
@@ -247,6 +302,12 @@ class SyncController extends Controller
                             'vaquillas' => $data['vaquillas'] ?? 0,
                             'becerras' => $data['becerras'] ?? 0,
                             'becerros' => $data['becerros'] ?? 0,
+                            'fecha_prueba_anterior' => $data['fecha_prueba_anterior'] ?? null,
+                            'dictamen_anterior_no' => $data['dictamen_anterior_no'] ?? null,
+                            'exencion_no' => $data['exencion_no'] ?? null,
+                            'exencion_fecha' => $data['exencion_fecha'] ?? null,
+                            'hato_libre_no' => $data['hato_libre_no'] ?? null,
+                            'hato_libre_fecha' => $data['hato_libre_fecha'] ?? null,
                             'estado' => $data['estado'] ?? 'sincronizado',
                         ]
                     );
@@ -422,7 +483,7 @@ class SyncController extends Controller
             'productores.*.id' => 'required|string',
             'productores.*.nombre' => 'required|string',
             'productores.*.apellido_paterno' => 'required|string',
-            'productores.*.clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
+            'productores.*.clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
             'productores.*.zona' => 'nullable|string|in:A,B',
         ]);
 

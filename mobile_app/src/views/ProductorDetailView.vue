@@ -95,6 +95,9 @@
           <button v-if="productor.clave" class="btn btn-outline-primary rounded-pill px-4" @click="$router.push(`/productores/${productor.id}/gestionar-hato`)">
             <i class="bi bi-people me-1"></i> Gestionar Hato
           </button>
+          <button class="btn btn-outline-danger rounded-pill px-4" @click="deleteProductor">
+            <i class="bi bi-trash me-1"></i> Eliminar
+          </button>
           <button class="btn btn-outline-secondary rounded-pill px-4" @click="$router.push('/productores')">
             Volver
           </button>
@@ -151,6 +154,17 @@ export default {
     },
     goToProductor(id) {
       this.$router.push(`/productores/${id}`);
+    },
+    async deleteProductor() {
+      if (!this.productor) return;
+      if (!confirm(`¿Estás seguro de eliminar al productor "${this.nombreCompleto}" y todos sus predios? Esta acción no se puede deshacer.`)) return;
+      this.errorMsg = '';
+      try {
+        await api.deleteProductor(this.productor.id);
+        this.$router.push('/productores');
+      } catch (e) {
+        this.errorMsg = e.message || 'No se pudo eliminar el productor.';
+      }
     }
   }
 };

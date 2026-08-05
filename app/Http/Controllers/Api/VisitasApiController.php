@@ -181,6 +181,19 @@ class VisitasApiController extends Controller
         return response()->json(['exists' => false]);
     }
 
+    public function destroy(Request $request, $id)
+    {
+        $visita = Visita::findOrFail($id);
+        $this->authorizeVisita($request, $visita);
+
+        $visita->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Visita eliminada con éxito.',
+        ]);
+    }
+
     public function reprogramar(Request $request, $id)
     {
         $visita = Visita::findOrFail($id);

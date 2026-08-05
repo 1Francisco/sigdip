@@ -526,18 +526,23 @@
                           <i class="bi bi-slash-circle me-1 flex-shrink-0"></i>
                           <span>No Aplica · {{ animal.edad_meses || '?' }}m{{ animal.motivo_no_aplica ? ' / ' + animal.motivo_no_aplica : '' }}</span>
                         </span>
-                        <span v-else class="badge bg-light text-secondary fw-normal px-2 py-1" style="font-size: 0.75rem;">
-                          <i class="bi bi-hourglass-split me-1"></i> Pendiente
-                        </span>
-                      </td>
-                      <td>
-                        <input type="text" v-model="animal.observaciones" class="form-control form-control-sm" placeholder="Detalles..." />
-                      </td>
-                      <td class="text-center">
-                        <button type="button" class="btn btn-link text-danger p-0" @click="removeAnimal(animal)" title="Eliminar">
-                          <i class="bi bi-trash fs-5"></i>
-                        </button>
-                      </td>
+                    <span v-else class="badge bg-light text-secondary fw-normal px-2 py-1" style="font-size: 0.75rem;">
+                      <i class="bi bi-hourglass-split me-1"></i> Pendiente
+                    </span>
+                  </td>
+                  <td>
+                    <span v-if="animal.sacrificado" class="badge bg-warning text-dark px-2 py-1 small" title="Este arete está marcado como sacrificado en el censo">
+                      <i class="bi bi-exclamation-triangle me-1"></i> Sacrificado
+                    </span>
+                  </td>
+                  <td>
+                    <input type="text" v-model="animal.observaciones" class="form-control form-control-sm" placeholder="Detalles..." />
+                  </td>
+                  <td class="text-center">
+                    <button type="button" class="btn btn-link text-danger p-0" @click="removeAnimal(animal)" title="Eliminar">
+                      <i class="bi bi-trash fs-5"></i>
+                    </button>
+                  </td>
                     </tr>
                   </tbody>
                 </table>
@@ -581,6 +586,9 @@
                     <button class="btn btn-primary btn-sm lectura-btn-scan" type="button" @click="scanSingleAnimal(animal)" title="Escanear" disabled>
                       <i class="bi bi-camera-fill"></i>
                     </button>
+                    <span v-if="animal.sacrificado" class="badge bg-warning text-dark flex-shrink-0" style="font-size: 0.65rem;" title="Sacrificado en el censo">
+                      <i class="bi bi-exclamation-triangle me-1"></i>Sacrificado
+                    </span>
                   </div>
 
                   <!-- Línea 2: Resultado + Observaciones + Eliminar -->
@@ -655,7 +663,12 @@
                 >
                   <!-- Card Header: Animal Number & Delete -->
                   <div class="card-header-custom d-flex justify-content-between align-items-center mb-2.5 pb-2 border-bottom">
-                    <span class="fw-bold text-slate-700 fs-7-5">ANIMAL #{{ animalIndexMap.get(animal) + 1 }}</span>
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="fw-bold text-slate-700 fs-7-5">ANIMAL #{{ animalIndexMap.get(animal) + 1 }}</span>
+                      <span v-if="animal.sacrificado" class="badge bg-warning text-dark" style="font-size: 0.65rem;">
+                        <i class="bi bi-exclamation-triangle me-1"></i>Sacrificado
+                      </span>
+                    </div>
                     <button type="button" class="btn btn-link text-danger p-0 d-flex align-items-center gap-1 text-decoration-none fs-7-5" @click="removeAnimal(animal)">
                       <i class="bi bi-trash"></i> Eliminar
                     </button>
@@ -1216,7 +1229,8 @@ export default {
           observaciones: detalle.observaciones_animal || '',
           motivo_no_aplica: detalle.motivo_no_aplica || '',
           en_base_datos: (detalle.tipo_arete && detalle.tipo_arete !== 'SINIIGA') ? false : true,
-          agregado_en_lectura: detalle.agregado_en_lectura || false
+          agregado_en_lectura: detalle.agregado_en_lectura || false,
+          sacrificado: detalle.animal?.sacrificio || false
         }));
       } else if (Array.isArray(data.animales)) {
         this.form.animales = data.animales.map(a => ({
@@ -1230,7 +1244,8 @@ export default {
           observaciones: a.observaciones || '',
           motivo_no_aplica: a.motivo_no_aplica || '',
           en_base_datos: a.en_base_datos !== undefined ? a.en_base_datos : false,
-          agregado_en_lectura: a.agregado_en_lectura || false
+          agregado_en_lectura: a.agregado_en_lectura || false,
+          sacrificado: a.sacrificado || false
         }));
       }
     },
@@ -1381,7 +1396,8 @@ export default {
         observaciones: '',
         motivo_no_aplica: '',
         en_base_datos: false,
-        agregado_en_lectura: this.puedoEditarResultados()
+        agregado_en_lectura: this.puedoEditarResultados(),
+        sacrificado: false
       });
       const newIndex = this.form.animales.length - 1;
       this.activeScanIndex = newIndex;
@@ -1408,7 +1424,8 @@ export default {
         observaciones: '',
         motivo_no_aplica: '',
         en_base_datos: false,
-        agregado_en_lectura: this.puedoEditarResultados()
+        agregado_en_lectura: this.puedoEditarResultados(),
+        sacrificado: false
       });
 
       this.quickArete = '';
@@ -1510,6 +1527,13 @@ export default {
           if (res.success && res.data) {
             const data = res.data;
             animal.en_base_datos = true;
+            
+            if (data.sacrificio) {
+              animal.sacrificado = true;
+              this.mostrarToast?.('warning', 'Este animal está marcado como sacrificado en el censo.');
+            } else {
+              animal.sacrificado = false;
+            }
             
             // Establecer edad en base a la fecha de nacimiento, o fallback a edad_meses
             if (data.fecha_nacimiento) {

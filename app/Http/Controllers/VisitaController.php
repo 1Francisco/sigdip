@@ -151,7 +151,7 @@ class VisitaController extends Controller
             abort(403, 'No tienes permiso para acceder a esta visita.');
         }
 
-        $visita->load(['predio.productor', 'veterinario', 'inspeccion']);
+        $visita->load(['predio.productor', 'veterinario', 'inspecciones.predio.productor']);
 
         return view('visitas.show', compact('visita'));
     }

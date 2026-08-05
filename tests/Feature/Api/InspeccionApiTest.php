@@ -105,6 +105,52 @@ class InspeccionApiTest extends TestCase
         $this->assertDatabaseMissing('inspecciones', ['id' => $inspeccion->id]);
     }
 
+    public function test_medico_elimina_borrador_propio()
+    {
+        Sanctum::actingAs($this->medico);
+
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->medico->id,
+            'estado' => 'borrador',
+        ]);
+
+        $response = $this->deleteJson("/api/inspecciones/{$inspeccion->id}");
+
+        $response->assertStatus(200);
+        $this->assertDatabaseMissing('inspecciones', ['id' => $inspeccion->id]);
+    }
+
+    public function test_medico_no_elimina_dictamen_finalizado_propio()
+    {
+        Sanctum::actingAs($this->medico);
+
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->medico->id,
+            'estado' => 'finalizado',
+        ]);
+
+        $response = $this->deleteJson("/api/inspecciones/{$inspeccion->id}");
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('inspecciones', ['id' => $inspeccion->id]);
+    }
+
+    public function test_admin_elimina_dictamen_finalizado()
+    {
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->medico->id,
+            'estado' => 'finalizado',
+        ]);
+
+        $response = $this->deleteJson("/api/inspecciones/{$inspeccion->id}");
+
+        $response->assertStatus(200);
+        $this->assertDatabaseMissing('inspecciones', ['id' => $inspeccion->id]);
+    }
+
     public function test_sync_detalles()
     {
         $inspeccion = Inspeccion::factory()->create([

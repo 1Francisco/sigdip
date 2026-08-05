@@ -848,18 +848,8 @@ export default {
           }
         }
         
-        for (const insp of inspecciones) {
-          try {
-            const syncRes = await this.syncInspection(insp);
-            if (syncRes && syncRes.status === 'success') {
-              totalSincronizados++;
-            }
-          } catch (err) {
-            console.error(`Error al sincronizar dictamen ${insp.folio}:`, err);
-            totalErrores++;
-          }
-        }
-
+        // 3. Subir visitas offline (primero: el servidor valida las fechas de
+        // inyección/lectura de los dictámenes contra la visita existente)
         for (const vis of visitas) {
           try {
             const res = await api.uploadVisitas([vis]);
@@ -873,6 +863,19 @@ export default {
             }
           } catch (err) {
             console.error(`Error al subir visita ${vis.codigo}:`, err);
+            totalErrores++;
+          }
+        }
+
+        // 4. Subir dictámenes offline
+        for (const insp of inspecciones) {
+          try {
+            const syncRes = await this.syncInspection(insp);
+            if (syncRes && syncRes.status === 'success') {
+              totalSincronizados++;
+            }
+          } catch (err) {
+            console.error(`Error al sincronizar dictamen ${insp.folio}:`, err);
             totalErrores++;
           }
         }

@@ -39,6 +39,7 @@
                         <th>Raza</th>
                         <th>Sexo</th>
                         <th>Edad (meses)</th>
+                        <th>Sacrificio</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -53,6 +54,13 @@
                         <td data-label="Raza">{{ $arete->raza ?? 'N/A' }}</td>
                         <td data-label="Sexo">{{ $arete->sexo ?? 'N/A' }}</td>
                         <td data-label="Edad">{{ $arete->edad_meses ?? 'N/A' }}</td>
+                        <td data-label="Sacrificio">
+                            @if($arete->sacrificio)
+                                <span class="badge bg-danger">Sí</span>
+                            @else
+                                <span class="badge bg-secondary">No</span>
+                            @endif
+                        </td>
                         <td data-label="Acciones">
                             <div class="d-flex gap-2">
                                 <a href="{{ route('aretes-censo.show', $arete->id) }}" class="btn btn-sm btn-outline-info" title="Ver Detalle">

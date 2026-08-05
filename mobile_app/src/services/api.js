@@ -312,10 +312,19 @@ export default {
     return await request('GET', `/productores/buscar-por-clave?clave=${encodeURIComponent(clave)}`);
   },
 
+  async previewClaveProductor(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return await request('GET', `/productores/preview-clave${query ? `?${query}` : ''}`);
+  },
+
   async vincularProductorAHato(productorId, productorAAsignarId) {
     return await request('POST', `/productores/${productorId}/vincular-a-hato`, {
       productor_id: productorAAsignarId
     });
+  },
+
+  async desvincularProductorDeHato(productorId) {
+    return await request('POST', `/productores/${productorId}/desvincular-de-hato`);
   },
 
   async getPredios() {
@@ -363,6 +372,10 @@ export default {
     return await request('PATCH', `/visitas/${id}/reprogramar`, { fecha_programada });
   },
 
+  async deleteVisita(id) {
+    return await request('DELETE', `/visitas/${id}`);
+  },
+
   async getInspecciones(params = {}) {
     if (!params.perPage) params.perPage = 500;
     const query = new URLSearchParams(params).toString();
@@ -380,6 +393,10 @@ export default {
 
   async updateInspeccion(id, inspeccion) {
     return await request('PATCH', `/inspecciones/${id}`, inspeccion);
+  },
+
+  async deleteInspeccion(id) {
+    return await request('DELETE', `/inspecciones/${id}`);
   },
 
   async syncDetalles(id, detalles) {

@@ -104,12 +104,13 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Zona / Sector</label>
-                            <select id="zona_select" class="form-select rounded-3 bg-light" disabled>
+                            <select id="zona_select" class="form-select rounded-3 bg-light">
                                 <option value="">-- Sin Zona --</option>
                                 <option value="A" {{ old('zona', $productor->zona) == 'A' ? 'selected' : '' }}>Sector A</option>
                                 <option value="B" {{ old('zona', $productor->zona) == 'B' ? 'selected' : '' }}>Sector B</option>
                             </select>
                             <input type="hidden" name="zona" id="zona" value="{{ old('zona', $productor->zona) }}">
+                            <div class="form-text small text-muted">Se sugiere automáticamente según la clave; puedes modificarla.</div>
                         </div>
 
                         <div class="col-md-12">
@@ -183,8 +184,13 @@
             } else if (val.startsWith('BD') || val.startsWith('BP')) {
                 finalZona = 'B';
             }
-            if (zonaSelect) zonaSelect.value = finalZona;
-            if (zonaHidden) zonaHidden.value = finalZona;
+            if (zonaSelect && !zonaSelect.value) zonaSelect.value = finalZona;
+            if (zonaHidden && !zonaHidden.value) zonaHidden.value = finalZona;
+        });
+    }
+    if (zonaSelect && zonaHidden) {
+        zonaSelect.addEventListener('change', function() {
+            zonaHidden.value = zonaSelect.value;
         });
     }
 

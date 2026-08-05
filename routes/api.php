@@ -66,6 +66,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Gestión de Productores y Predios desde la App Móvil
     Route::get('/productores/buscar-por-clave', [ProductorController::class, 'buscarPorClave']);
     Route::get('/productores/buscar', [ProductoresApiController::class, 'buscar']);
+    Route::get('/productores/preview-clave', [ProductoresApiController::class, 'previewClave']);
     Route::get('/productores', [ProductoresApiController::class, 'index']);
     Route::get('/productores/{id}', [ProductoresApiController::class, 'show']);
     Route::get('/predios', [ProductoresApiController::class, 'predios']);
@@ -78,6 +79,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/predios/{id}', [ProductoresApiController::class, 'destroyPredio']);
     Route::post('/predios/{id}/coordenadas', [ProductoresApiController::class, 'updateCoordenadas']);
     Route::post('/productores/{productor}/vincular-a-hato', [ProductoresApiController::class, 'vincularAHato']);
+    Route::post('/productores/{productor}/desvincular-de-hato', [ProductoresApiController::class, 'desvincularDeHato']);
 
     // Visitas desde la App Móvil
     Route::get('/visitas', [VisitasApiController::class, 'index']);
@@ -88,6 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/visitas/{id}', [VisitasApiController::class, 'update']);
     Route::patch('/visitas/{id}/estado', [VisitasApiController::class, 'updateEstado']);
     Route::patch('/visitas/{id}/reprogramar', [VisitasApiController::class, 'reprogramar']);
+    Route::delete('/visitas/{id}', [VisitasApiController::class, 'destroy']);
 
     // Inspecciones desde la App Móvil
     Route::get('/inspecciones', [InspeccionesApiController::class, 'index']);

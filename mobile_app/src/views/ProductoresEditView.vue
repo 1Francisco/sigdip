@@ -157,7 +157,7 @@
                 <div class="col-12 col-md-6">
                   <div class="form-group-custom">
                     <label class="form-label-custom">Zona / Sector</label>
-                    <select v-model="form.zona" class="form-select form-control-custom bg-light" disabled>
+                    <select v-model="form.zona" class="form-select form-control-custom bg-light">
                       <option value="">-- Sin Zona --</option>
                       <option value="A">Sector A</option>
                       <option value="B">Sector B</option>
@@ -342,7 +342,7 @@ export default {
     autoSelectZona() {
       if (!this.form.clave) return;
       const first = this.form.clave.toUpperCase()[0];
-      this.form.zona = (first === 'A' || first === 'B') ? first : '';
+      if (first === 'A' || first === 'B') this.form.zona = first;
     },
 
     onClaveInput() {

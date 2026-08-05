@@ -141,4 +141,53 @@ describe('PredioDetailView', () => {
     cy.wait('@getPredioError', { timeout: 10000 })
     cy.contains('no encontrado', { timeout: 5000 }).should('be.visible')
   })
+
+  it('elimina predio con confirmacion', () => {
+    cy.intercept('GET', '**/api/predios/1', {
+      statusCode: 200,
+      body: { data: fakePredio },
+    }).as('getPredio')
+
+    cy.intercept('DELETE', '**/api/predios/1', {
+      statusCode: 200,
+      body: { success: true },
+    }).as('deletePredio')
+
+    const router = buildRouter()
+    router.push('/predios/1')
+    mount(PredioDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getPredio', { timeout: 10000 })
+
+    cy.window().then((win) => {
+      cy.stub(win, 'confirm').returns(true)
+    })
+    cy.contains('Eliminar', { timeout: 5000 }).click()
+    cy.wait('@deletePredio', { timeout: 10000 })
+    cy.location('hash', { timeout: 5000 }).should('include', '/predios')
+  })
+
+  it('cancela eliminacion cuando confirm es false', () => {
+    cy.intercept('GET', '**/api/predios/1', {
+      statusCode: 200,
+      body: { data: fakePredio },
+    }).as('getPredio')
+
+    cy.intercept('DELETE', '**/api/predios/1', {
+      statusCode: 200,
+      body: { success: true },
+    }).as('deletePredio')
+
+    const router = buildRouter()
+    router.push('/predios/1')
+    mount(PredioDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getPredio', { timeout: 10000 })
+
+    cy.window().then((win) => {
+      cy.stub(win, 'confirm').returns(false)
+    })
+    cy.contains('Eliminar', { timeout: 5000 }).click()
+    cy.get('@deletePredio').should('not.exist')
+  })
 })

@@ -8,6 +8,19 @@
 @php $showWizard = $errors->any(); @endphp
 
 @section('styles')
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<style>
+    .ts-control {
+        border-radius: 12px !important;
+        padding: 0.6rem 1rem !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: none !important;
+        font-size: 0.95rem !important;
+    }
+    .ts-dropdown .option {
+        padding: 8px 12px;
+    }
+</style>
 @endsection
 
 @section('content')
@@ -33,12 +46,28 @@
                             <strong>Modo Pre-llenado Activo:</strong> Se copiarán automáticamente los datos de localización y MVZ del productor <strong>{{ $prefillProductor->nombre_completo }}</strong>.
                         </div>
                     </div>
+                    @else
+                    <!-- Alerta de pre-llenado dinámico (oculta por defecto) -->
+                    <div id="dynamic-prefill-alert" class="alert alert-info border-0 shadow-sm rounded-4 mx-auto mb-4 small text-start align-items-center" style="max-width: 500px; display: none !important;">
+                        <i class="bi bi-info-circle-fill me-3 fs-5 text-primary"></i>
+                        <div>
+                            <strong>Modo Pre-llenado Activo:</strong> Se copiarán automáticamente los datos de localización y MVZ del productor <strong id="dynamic-prefill-name"></strong>.
+                        </div>
+                    </div>
+
+                    <div class="row justify-content-center mb-4">
+                        <div class="col-md-5 col-8 text-start">
+                            <label for="config-productor-select" class="form-label fw-bold small text-muted">VINCULAR A UN PRODUCTOR EXISTENTE <span class="text-danger">*</span></label>
+                            <select id="config-productor-select" class="form-select" placeholder="Buscar y seleccionar productor existente…"></select>
+                            <div class="form-text small">Seleccione el productor al que desea anexar los nuevos registros.</div>
+                        </div>
+                    </div>
                     @endif
 
                     <div class="row justify-content-center mt-4">
                         <div class="col-md-4 col-8">
                             <label for="cantidad_productores" class="form-label fw-bold fs-5">Cantidad de productores</label>
-                            <input type="number" id="cantidad_productores" class="form-control form-control-lg text-center" value="2" min="1" max="15">
+                            <input type="number" id="cantidad_productores" class="form-control form-control-lg text-center" value="{{ old('cantidad_productores', $cantidad ?? 1) }}" min="1" max="15">
                             <div class="form-text">Mínimo 1, máximo 15</div>
                         </div>
                     </div>
@@ -87,7 +116,7 @@
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-primary bg-opacity-10 py-3 border-0">
                         <h5 class="mb-0 fw-bold text-primary">
-                            <i class="bi bi-person-fill me-2"></i>Productor <span id="productor-actual-num">1</span> de <span id="productor-total-num">2</span>
+                            <i class="bi bi-person-fill me-2"></i>Productor <span id="productor-actual-num">1</span> de <span id="productor-total-num">{{ $cantidad ?? 1 }}</span>
                         </h5>
                     </div>
                     <div class="card-body p-4" id="wizard-panel">
@@ -143,7 +172,81 @@
 @endsection
 
 @section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var configProductorSelect = document.getElementById('config-productor-select');
+        var dynamicPrefillAlert = document.getElementById('dynamic-prefill-alert');
+        var dynamicPrefillName = document.getElementById('dynamic-prefill-name');
+        
+        if (configProductorSelect) {
+            new TomSelect(configProductorSelect, {
+                valueField: 'id',
+                labelField: 'display',
+                searchField: ['nombre', 'apellido_paterno', 'apellido_materno', 'clave'],
+                maxOptions: 15,
+                placeholder: 'Buscar y seleccionar productor…',
+                load: function(query, callback) {
+                    if (query.length < 1) return callback();
+                    fetch('{{ route("productores.buscar") }}?q=' + encodeURIComponent(query))
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            callback(data.map(function(p) {
+                                p.display = (p.clave ? '[' + p.clave + '] ' : '') + p.nombre + ' ' + p.apellido_paterno + (p.apellido_materno ? ' ' + p.apellido_materno : '');
+                                return p;
+                            }));
+                        })
+                        .catch(function() {
+                            callback();
+                        });
+                },
+                onChange: function(value) {
+                    if (!value) {
+                        // Reset prefill object
+                        for (var k in prefill) {
+                            prefill[k] = '';
+                        }
+                        if (dynamicPrefillAlert) {
+                            dynamicPrefillAlert.style.setProperty('display', 'none', 'important');
+                        }
+                        return;
+                    }
+                    
+                    var tom = this;
+                    var selectedItem = tom.options[value];
+                    if (selectedItem) {
+                        prefill.domicilio = selectedItem.domicilio || '';
+                        prefill.municipio = selectedItem.municipio || '';
+                        prefill.localidad = selectedItem.localidad || '';
+                        prefill.estado = selectedItem.estado || 'Nayarit';
+                        prefill.medico_id = selectedItem.medico_id || '';
+                        prefill.tipo_actividad = selectedItem.tipo_actividad || '';
+                        prefill.sub_tipo_actividad = selectedItem.sub_tipo_actividad || '';
+                        prefill.telefono = selectedItem.telefono || '';
+                        prefill.email = selectedItem.email || '';
+                        prefill.clave = selectedItem.clave || '';
+                        prefill.zona = selectedItem.zona || '';
+                        
+                        prefill.nombre_rancho = selectedItem._predio_nombre_rancho || '';
+                        prefill.clave_unidad_produccion = selectedItem._predio_clave_unidad_produccion || '';
+                        prefill.predio_domicilio = selectedItem._predio_domicilio || '';
+                        prefill.predio_municipio = selectedItem._predio_municipio || '';
+                        prefill.predio_localidad = selectedItem._predio_localidad || '';
+                        prefill.latitud = selectedItem._predio_latitud || '';
+                        prefill.longitud = selectedItem._predio_longitud || '';
+                        
+                        var fullName = [selectedItem.nombre, selectedItem.apellido_paterno, selectedItem.apellido_materno].filter(Boolean).join(' ');
+                        if (dynamicPrefillName) {
+                            dynamicPrefillName.textContent = fullName;
+                        }
+                        if (dynamicPrefillAlert) {
+                            dynamicPrefillAlert.style.setProperty('display', 'flex', 'important');
+                        }
+                    }
+                }
+            });
+        }
+    });
     const isAdmin = {{ auth()->user()->hasRole('Administrador') ? 'true' : 'false' }};
     const medicos = @json($medicos);
 
@@ -172,7 +275,7 @@
         @endif
     };
 
-    let totalCount = 2;
+    let totalCount = {{ $cantidad ?? 1 }};
     let currentIndex = 0;
     let productors = [];
 
@@ -183,9 +286,20 @@
     @endif
 
     function startSequential() {
+        @if(!$prefillProductor)
+        const selectEl = document.getElementById('config-productor-select');
+        if (!selectEl || !selectEl.value) {
+            alert('Por favor, seleccione un productor existente.');
+            return;
+        }
+        @endif
+
         const cantidadInput = document.getElementById('cantidad_productores');
         let count = parseInt(cantidadInput.value);
-        if (isNaN(count) || count < 1) count = 1;
+        if (isNaN(count) || count < 1) {
+            alert('Por favor, ingrese una cantidad válida de productores a añadir (mínimo 1).');
+            return;
+        }
         if (count > 15) count = 15;
         cantidadInput.value = count;
 
@@ -196,7 +310,7 @@
     }
 
     function generateForms() {
-        totalCount = parseInt(document.getElementById('cantidad_productores').value) || 2;
+        totalCount = parseInt(document.getElementById('cantidad_productores').value) || 1;
         currentIndex = 0;
         productors = new Array(totalCount).fill(null);
 
@@ -258,6 +372,8 @@
 
         var resultadosClave = document.getElementById('resultadosClave');
         if (resultadosClave) resultadosClave.innerHTML = '';
+
+        if (typeof window.previewClave === 'function') window.previewClave();
     }
 
     function applyPrefill() {
@@ -289,6 +405,7 @@
         }
 
         if (prefill.tipo_actividad && typeof toggleSubTipo === 'function') toggleSubTipo();
+        if (typeof window.previewClave === 'function') window.previewClave();
     }
 
     function saveAndAdvanceProductor(index, conPredio) {
@@ -456,14 +573,10 @@
             claveField.removeEventListener('input', window.autoZonaHandler);
             window.autoZonaHandler = function() {
                 var val = this.value.toUpperCase();
-                var finalZona = '';
-                if (val.startsWith('AD') || val.startsWith('AP')) {
-                    finalZona = 'A';
-                } else if (val.startsWith('BD') || val.startsWith('BP')) {
-                    finalZona = 'B';
-                }
-                if (zonaSel) zonaSel.value = finalZona;
-                if (zonaHid) zonaHid.value = finalZona;
+                var first = val.charAt(0);
+                var finalZona = (first === 'A' || first === 'B') ? first : '';
+                if (zonaSel && !zonaSel.value) zonaSel.value = finalZona;
+                if (zonaHid && !zonaHid.value) zonaHid.value = finalZona;
             };
             claveField.addEventListener('input', window.autoZonaHandler);
         }

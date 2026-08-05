@@ -243,6 +243,11 @@ class ReporteController extends Controller
         $tipoActividad = $request->get('tipo_actividad') ?? $request->get('tipo_prueba');
         $medicoId = $request->get('medico_id');
 
+        $user = auth()->user();
+        if ($user && ! $user->hasRole('Administrador')) {
+            $medicoId = $user->id;
+        }
+
         $suffixParts = [];
         if ($zona) {
             $suffixParts[] = 'zona_'.$zona;

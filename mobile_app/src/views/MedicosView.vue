@@ -110,6 +110,13 @@
                     <td>
                       <div class="d-flex justify-content-center gap-2">
                         <button 
+                          @click="$router.push('/medicos/' + medico.id)" 
+                          class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center gap-1.5 px-3 py-1-5 bg-transparent border-primary text-primary rounded-3" 
+                          title="Ver detalle del médico"
+                        >
+                          <i class="bi bi-eye"></i> Ver
+                        </button>
+                        <button 
                           @click="$router.push('/medicos/asignar/' + medico.id)" 
                           class="btn btn-sm btn-outline-success d-flex align-items-center justify-content-center gap-1.5 px-3 py-1-5 bg-transparent border-success text-success rounded-3" 
                           title="Asignar productores a este médico"
@@ -140,7 +147,7 @@
             <!-- 2. MOBILE CARDS VIEW (Mobile only) -->
             <div class="mobile-cards d-lg-none">
               <div class="mobile-cards-grid">
-                <article v-for="medico in paginatedMedicos" :key="medico.id" class="medico-mobile-card shadow-sm item-card" style="cursor: pointer;" @click="$router.push('/medicos/editar/' + medico.id)">
+                <article v-for="medico in paginatedMedicos" :key="medico.id" class="medico-mobile-card shadow-sm item-card" style="cursor: pointer;" @click="$router.push('/medicos/' + medico.id)">
                   <div class="medico-content">
                     <div class="field-block">
                       <span class="field-label">MÉDICO VERIFICADOR</span>
@@ -167,6 +174,13 @@
                     <div class="medico-mobile-footer">
                     <span class="footer-actions-label">Acciones</span>
                     <div class="d-flex gap-2">
+                      <button 
+                        @click.stop="$router.push('/medicos/' + medico.id)" 
+                        class="btn-icon-square-blue" 
+                        title="Ver detalle del médico"
+                      >
+                        <i class="bi bi-eye"></i>
+                      </button>
                       <button 
                         @click.stop="$router.push('/medicos/asignar/' + medico.id)" 
                         class="btn-icon-square-green" 

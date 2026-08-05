@@ -116,6 +116,23 @@ class InspeccionesApiController extends Controller
         $validated = $request->validate([
             'observaciones' => 'nullable|string',
             'estado' => 'nullable|in:borrador,sincronizado',
+            'fecha_inyeccion' => 'nullable|date',
+            'hora_inyeccion' => 'nullable|string',
+            'fecha_lectura' => 'nullable|date',
+            'hora_lectura' => 'nullable|string',
+            'motivo_prueba' => 'nullable|string',
+            'funcion_zootecnica' => 'nullable|string',
+            'fecha_prueba_anterior' => 'nullable|date',
+            'dictamen_anterior_no' => 'nullable|string',
+            'exencion_no' => 'nullable|string',
+            'exencion_fecha' => 'nullable|date',
+            'hato_libre_no' => 'nullable|string',
+            'hato_libre_fecha' => 'nullable|date',
+            'sementales' => 'nullable|integer|min:0',
+            'vacas' => 'nullable|integer|min:0',
+            'vaquillas' => 'nullable|integer|min:0',
+            'becerras' => 'nullable|integer|min:0',
+            'becerros' => 'nullable|integer|min:0',
         ]);
 
         $inspeccion->update(array_merge($validated, ['modified_at' => now()]));
@@ -136,6 +153,11 @@ class InspeccionesApiController extends Controller
     {
         $inspeccion = Inspeccion::findOrFail($id);
         $this->authorizeInspection($request, $inspeccion);
+
+        if ($inspeccion->estado !== 'borrador' && ! $request->user()->hasRole('Administrador')) {
+            abort(403, 'No tienes permiso para eliminar un dictamen finalizado.');
+        }
+
         $inspeccion->delete();
 
         return response()->json([

@@ -53,6 +53,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/inspecciones/{inspeccion}', [InspeccionController::class, 'destroy'])->name('inspecciones.destroy');
 
     // Productores y Predios
+    Route::get('/productores/preview-clave', [ProductorController::class, 'previewClave'])->name('productores.preview-clave')->middleware('role:Administrador');
     Route::post('/productores/ajax', [ProductorController::class, 'storeAjax'])->name('productores.store.ajax');
     Route::get('/productores/buscar-por-clave', [ProductorController::class, 'buscarPorClave'])->name('productores.buscar-por-clave');
     Route::get('/productores/buscar', [ProductorController::class, 'buscar'])->name('productores.buscar');
@@ -60,6 +61,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/productores/store-multiple', [ProductorController::class, 'storeMultiple'])->name('productores.store-multiple');
     Route::get('/productores/{productor}/hato', [ProductorController::class, 'gestionarHato'])->name('productores.gestionar-hato');
     Route::post('/productores/{productor}/hato/vincular', [ProductorController::class, 'vincularExistenteAHato'])->name('productores.vincular-existente');
+    Route::post('/productores/{productor}/hato/desvincular', [ProductorController::class, 'desvincularDeHato'])->name('productores.desvincular-hato');
     Route::resource('productores', ProductorController::class)->parameters(['productores' => 'productor']);
     Route::post('/predios/{predio}/coordenadas', [PredioController::class, 'updateCoordenadas'])->name('predios.updateCoordenadas');
     Route::resource('predios', PredioController::class);
@@ -77,6 +79,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('role:Administrador')->group(function () {
         Route::resource('animales', AnimalController::class);
         Route::resource('aretes-censo', AreteCensoController::class);
+        Route::post('/aretes-censo/{aretes_censo}/toggle-sacrificio', [AreteCensoController::class, 'toggleSacrificio'])->name('aretes-censo.toggle-sacrificio');
     });
 
     // Importación de Excel (Exclusivo Administrador)

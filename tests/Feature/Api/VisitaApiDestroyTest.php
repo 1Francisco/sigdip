@@ -7,6 +7,7 @@ use App\Models\Productor;
 use App\Models\User;
 use App\Models\Visita;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -73,6 +74,56 @@ class VisitaApiDestroyTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->medico)->delete(route('visitas.destroy', $visita));
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('visitas', ['id' => $visita->id]);
+    }
+
+    public function test_admin_elimina_visita_api()
+    {
+        $visita = Visita::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->medico->id,
+        ]);
+
+        Sanctum::actingAs($this->admin);
+
+        $response = $this->deleteJson('/api/visitas/'.$visita->id);
+
+        $response->assertOk()
+            ->assertJson(['success' => true]);
+        $this->assertDatabaseMissing('visitas', ['id' => $visita->id]);
+    }
+
+    public function test_medico_elimina_su_propia_visita_api()
+    {
+        $visita = Visita::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->medico->id,
+        ]);
+
+        Sanctum::actingAs($this->medico);
+
+        $response = $this->deleteJson('/api/visitas/'.$visita->id);
+
+        $response->assertOk()
+            ->assertJson(['success' => true]);
+        $this->assertDatabaseMissing('visitas', ['id' => $visita->id]);
+    }
+
+    public function test_medico_no_elimina_visita_ajena_api()
+    {
+        $otroMedico = User::factory()->create();
+        $otroMedico->assignRole('Medico_Campo');
+
+        $visita = Visita::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $otroMedico->id,
+        ]);
+
+        Sanctum::actingAs($this->medico);
+
+        $response = $this->deleteJson('/api/visitas/'.$visita->id);
 
         $response->assertStatus(403);
         $this->assertDatabaseHas('visitas', ['id' => $visita->id]);

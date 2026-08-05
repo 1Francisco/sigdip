@@ -47,7 +47,7 @@ class AreteCensoTest extends TestCase
             'predio_id' => $predio->id,
             'raza' => 'Suizo',
             'sexo' => 'Macho',
-        ])->assertRedirect(route('aretes-censo.index'));
+        ])->assertRedirect(route('predios.index', ['tab' => 'aretes']));
 
         $this->assertDatabaseHas('aretes_censo', ['numero_arete' => 'CSO-TEST-001']);
     }
@@ -78,7 +78,7 @@ class AreteCensoTest extends TestCase
             'numero_arete' => 'CSO-TEST-UPD',
             'productor_id' => $arete->productor_id,
             'predio_id' => $arete->predio_id,
-        ])->assertRedirect(route('aretes-censo.index'));
+        ])->assertRedirect(route('predios.index', ['tab' => 'aretes']));
 
         $this->assertDatabaseHas('aretes_censo', ['numero_arete' => 'CSO-TEST-UPD']);
     }
@@ -89,7 +89,7 @@ class AreteCensoTest extends TestCase
 
         $this->actingAs($this->admin)
             ->delete(route('aretes-censo.destroy', $arete->id))
-            ->assertRedirect(route('aretes-censo.index'));
+            ->assertRedirect(route('predios.index', ['tab' => 'aretes']));
 
         $this->assertDatabaseMissing('aretes_censo', ['id' => $arete->id]);
     }

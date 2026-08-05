@@ -55,6 +55,12 @@
                                     <a href="{{ route('productores.edit', $p->id) }}" class="btn btn-sm btn-outline-secondary" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
+                                    <form action="{{ route('productores.desvincular-hato', $p->id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que deseas quitar a este productor del hato?');">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Quitar del Hato">
+                                            <i class="bi bi-person-x"></i>
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                             @endforeach
@@ -103,6 +109,30 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Advertencia Hato Existente -->
+<div class="modal fade" id="warningHatoModal" tabindex="-1" aria-labelledby="warningHatoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 bg-light py-3 rounded-top-4">
+                <h5 class="modal-title fw-bold text-danger" id="warningHatoModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Productor ya asignado
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-2">El productor <strong id="modalProductorName"></strong> ya pertenece a otro hato (Clave: <code id="modalCurrentClave"></code>).</p>
+                <p class="text-muted small mb-0">Primero debes quitarlo de ese hato antes de poder agregarlo al actual.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cerrar</button>
+                <a href="#" id="modalManageHatoBtn" class="btn btn-primary rounded-pill fw-bold">
+                    <i class="bi bi-gear me-1"></i> Gestionar Hato Actual
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -110,7 +140,11 @@
 <script>
     var vincularSelect = document.getElementById('vincular-select');
     if (vincularSelect) {
-        new TomSelect(vincularSelect, {
+        var currentProductorId = '{{ $productor->id }}';
+        var currentClave = @json($productor->clave);
+        var producersCache = {};
+
+        var tomSelectInstance = new TomSelect(vincularSelect, {
             valueField: 'id',
             labelField: 'display',
             searchField: ['nombre', 'apellido_paterno', 'apellido_materno', 'clave'],
@@ -121,7 +155,12 @@
                 fetch('{{ route("productores.buscar") }}?q=' + encodeURIComponent(query))
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
-                        callback(data.map(function(p) {
+                        data.forEach(function(p) {
+                            producersCache[p.id] = p;
+                        });
+                        callback(data.filter(function(p) {
+                            return String(p.id) !== currentProductorId && p.clave !== currentClave;
+                        }).map(function(p) {
                             p.display = (p.clave ? '[' + p.clave + '] ' : '') + p.nombre + ' ' + p.apellido_paterno + (p.apellido_materno ? ' ' + p.apellido_materno : '');
                             return p;
                         }));
@@ -131,6 +170,32 @@
                 document.getElementById('btnVincular').disabled = !value;
             }
         });
+
+        // Interceptar el submit del formulario de vinculación
+        var vincularForm = vincularSelect.closest('form');
+        if (vincularForm) {
+            vincularForm.addEventListener('submit', function(e) {
+                var selectedId = tomSelectInstance.getValue();
+                var selectedProductor = producersCache[selectedId];
+
+                // Si ya pertenece a un hato diferente (tiene clave asignada y no es la actual)
+                if (selectedProductor && selectedProductor.clave && selectedProductor.clave !== currentClave) {
+                    e.preventDefault(); // Bloquear envío
+
+                    // Configurar datos del modal
+                    document.getElementById('modalProductorName').innerText = selectedProductor.nombre + ' ' + selectedProductor.apellido_paterno + (selectedProductor.apellido_materno ? ' ' + selectedProductor.apellido_materno : '');
+                    document.getElementById('modalCurrentClave').innerText = selectedProductor.clave;
+
+                    // Configurar el enlace de gestión del hato del productor seleccionado
+                    var manageHatoUrl = '{{ route("productores.gestionar-hato", ":id") }}'.replace(':id', selectedProductor.id);
+                    document.getElementById('modalManageHatoBtn').setAttribute('href', manageHatoUrl);
+
+                    // Mostrar modal
+                    var warningModal = new bootstrap.Modal(document.getElementById('warningHatoModal'));
+                    warningModal.show();
+                }
+            });
+        }
     }
 </script>
 @endsection

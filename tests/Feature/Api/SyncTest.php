@@ -41,6 +41,30 @@ class SyncTest extends TestCase
             ->assertJsonStructure(['data' => ['productores', 'predios']]);
     }
 
+    public function test_catalogos_incluye_vinculados_de_hato()
+    {
+        $productorA = Productor::factory()->create(['clave' => 'BA-0001']);
+        $productorB = Productor::factory()->create(['clave' => 'BA-0001']);
+        $sinHato = Productor::factory()->create(['clave' => null]);
+
+        $response = $this->getJson('/api/sync/catalogos');
+
+        $response->assertStatus(200);
+        $productores = collect($response->json('data.productores'));
+
+        $a = $productores->firstWhere('id', $productorA->id);
+        $this->assertNotNull($a);
+        $this->assertCount(1, $a['vinculados']);
+        $this->assertEquals($productorB->id, $a['vinculados'][0]['id']);
+
+        $b = $productores->firstWhere('id', $productorB->id);
+        $this->assertCount(1, $b['vinculados']);
+        $this->assertEquals($productorA->id, $b['vinculados'][0]['id']);
+
+        $sinHatoArr = $productores->firstWhere('id', $sinHato->id);
+        $this->assertSame([], $sinHatoArr['vinculados']);
+    }
+
     public function test_dashboard_stats()
     {
         $response = $this->getJson('/api/dashboard/stats');

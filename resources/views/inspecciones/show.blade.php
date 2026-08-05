@@ -19,6 +19,22 @@
             </div>
         </div>
 
+        @if($inspeccionesGrupo->count() > 1)
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body py-3 px-4 bg-light d-flex align-items-center flex-wrap gap-2">
+                <span class="fw-bold small text-muted text-uppercase me-2"><i class="bi bi-people-fill"></i> Productores en este Hato:</span>
+                @foreach($inspeccionesGrupo as $insGrupo)
+                    <a href="{{ route('inspecciones.show', $insGrupo->id) }}" 
+                       class="btn btn-sm {{ $insGrupo->id === $inspeccion->id ? 'btn-primary fw-bold' : 'btn-outline-secondary' }} rounded-pill px-3">
+                        <i class="bi bi-person-badge"></i> 
+                        {{ $insGrupo->predio->productor->nombre_completo ?? 'N/A' }} 
+                        ({{ $insGrupo->folio ?? 'Borrador' }})
+                    </a>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
         <div class="card border-0 shadow-sm overflow-hidden" style="height: calc(100vh - 250px);">
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                 <span class="small fw-bold text-uppercase tracking-wider">Previsualización del Documento SENASICA</span>

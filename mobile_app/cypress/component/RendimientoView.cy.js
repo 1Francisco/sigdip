@@ -214,4 +214,80 @@ describe('RendimientoView Component Tests', () => {
     cy.contains('FOL-101').should('be.visible')
     cy.contains('Productor Test').should('be.visible')
   })
+
+  it('descarga Excel y PDF generales desde el encabezado', () => {
+    cy.intercept('GET', '**/api/reportes/rendimiento*', {
+      statusCode: 200,
+      body: mockRendimientoResponse
+    }).as('getRendimiento')
+
+    cy.intercept('GET', '**/api/reportes/rendimiento/excel*', {
+      statusCode: 200,
+      body: ''
+    }).as('getExcel')
+
+    cy.intercept('GET', '**/api/reportes/rendimiento/pdf*', {
+      statusCode: 200,
+      body: ''
+    }).as('getPdf')
+
+    const router = buildRouter()
+    router.push('/reportes/rendimiento')
+
+    cy.setLoginState({ user: userAdmin })
+    mount(RendimientoView, { global: { plugins: [router] } })
+
+    cy.wait('@getRendimiento')
+
+    cy.get('.btn-download-excel', { timeout: 5000 }).click()
+    cy.wait('@getExcel', { timeout: 10000 }).then((interception) => {
+      expect(interception.request.url).to.include('/reportes/rendimiento/excel')
+    })
+
+    cy.get('.btn-download-pdf', { timeout: 5000 }).click()
+    cy.wait('@getPdf', { timeout: 10000 }).then((interception) => {
+      expect(interception.request.url).to.include('/reportes/rendimiento/pdf')
+    })
+  })
+
+  it('descarga Excel y PDF por fila en detalle mensual', () => {
+    cy.intercept('GET', '**/api/reportes/rendimiento*', {
+      statusCode: 200,
+      body: mockRendimientoResponse
+    }).as('getRendimiento')
+
+    cy.intercept('GET', '**/api/reportes/rendimiento/excel*', {
+      statusCode: 200,
+      body: ''
+    }).as('getRowExcel')
+
+    cy.intercept('GET', '**/api/reportes/rendimiento/pdf*', {
+      statusCode: 200,
+      body: ''
+    }).as('getRowPdf')
+
+    const router = buildRouter()
+    router.push('/reportes/rendimiento')
+
+    cy.setLoginState({ user: userAdmin })
+    mount(RendimientoView, { global: { plugins: [router] } })
+
+    cy.wait('@getRendimiento')
+
+    cy.get('.tab-mensual').click()
+    cy.contains('Detalle Mensual (2026)').should('be.visible')
+
+    cy.get('.table-mensual button[title="Descargar Excel este mes"]').click()
+    cy.wait('@getRowExcel', { timeout: 10000 }).then((interception) => {
+      const url = new URL(interception.request.url)
+      expect(url.searchParams.get('medico_id')).to.eq('2')
+      expect(url.searchParams.get('fecha_desde')).to.eq('2026-06-01')
+      expect(url.searchParams.get('fecha_hasta')).to.eq('2026-06-30')
+    })
+
+    cy.get('.table-mensual button[title="Descargar PDF este mes"]').click()
+    cy.wait('@getRowPdf', { timeout: 10000 }).then((interception) => {
+      expect(interception.request.url).to.include('/reportes/rendimiento/pdf')
+    })
+  })
 })

@@ -12,6 +12,7 @@ function buildRouter() {
     routes: [
       { path: '/medicos', name: 'Medicos', component: MedicosView },
       { path: '/medicos/nuevo', component: EmptyView },
+      { path: '/medicos/:id', component: EmptyView },
       { path: '/dashboard', component: EmptyView },
       { path: '/login', component: EmptyView },
       { path: '/productores', component: EmptyView },
@@ -205,6 +206,21 @@ describe('MedicosView', () => {
       cy.contains('Eliminar').first().click()
       cy.wait('@deleteMedico', { timeout: 10000 })
       cy.contains('eliminado del sistema', { timeout: 5000 }).should('be.visible')
+    })
+
+    it('navega al detalle del medico con boton Ver', () => {
+      cy.intercept('GET', '**/api/medicos', {
+        statusCode: 200,
+        body: { data: fakeMedicos },
+      }).as('getMedicos')
+
+      const router = buildRouter()
+      router.push('/medicos')
+      mount(MedicosView, { global: { plugins: [router] } })
+
+      cy.wait('@getMedicos', { timeout: 10000 })
+      cy.get('button[title="Ver detalle del médico"]').first().click()
+      cy.location('hash', { timeout: 5000 }).should('include', '/medicos/1')
     })
 
     it('muestra empty state sin medicos', () => {

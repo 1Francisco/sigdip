@@ -29,8 +29,8 @@
             <button @click="$router.push('/productores/nuevo')" class="btn btn-primary btn-sm-custom d-flex align-items-center gap-1-5 px-3 py-2">
               <i class="bi bi-person-plus"></i> Nuevo Productor
             </button>
-            <button @click="$router.push('/productores/nuevo')" class="btn btn-sm btn-link text-primary p-0 text-decoration-none" style="font-size: 0.78rem;">
-              <i class="bi bi-plus-circle me-1"></i> Nuevo Productor
+            <button @click="$router.push('/productores/nuevo?vincular=true')" class="btn btn-sm btn-link text-primary p-0 text-decoration-none" style="font-size: 0.78rem;">
+              <i class="bi bi-plus-circle me-1"></i> Añadir Productor a uno existente
             </button>
           </div>
         </div>

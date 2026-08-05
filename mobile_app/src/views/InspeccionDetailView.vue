@@ -44,6 +44,9 @@
             <button v-if="inspeccion.estado === 'borrador'" class="btn btn-primary rounded-pill px-3" @click="continueInspection">
               Continuar edición
             </button>
+            <button v-if="canDelete" class="btn btn-outline-danger rounded-pill px-3" @click="deleteInspeccion">
+              <i class="bi bi-trash me-1"></i> Eliminar
+            </button>
             <button class="btn btn-outline-secondary rounded-pill px-3" @click="goBack()">
               Volver
             </button>
@@ -267,6 +270,25 @@ export default {
       } catch (e) {
         this.errorMsg = e.message || 'No se pudo abrir el PDF.';
       }
+    },
+    async deleteInspeccion() {
+      if (!this.inspeccion) return;
+      if (!confirm(`¿Estás seguro de eliminar el dictamen "${this.inspeccion.clave_interna || this.inspeccion.folio || 'Sin folio'}"? Esta acción no se puede deshacer.`)) return;
+      this.errorMsg = '';
+      try {
+        await api.deleteInspeccion(this.inspeccion.id);
+        this.goBack();
+      } catch (e) {
+        this.errorMsg = e.message || 'No se pudo eliminar el dictamen.';
+      }
+    }
+  },
+  computed: {
+    canDelete() {
+      if (!this.inspeccion) return false;
+      if (this.inspeccion.estado === 'borrador') return true;
+      const user = api.getCurrentUser();
+      return !!(user && Array.isArray(user.roles) && user.roles.includes('Administrador'));
     }
   }
 };

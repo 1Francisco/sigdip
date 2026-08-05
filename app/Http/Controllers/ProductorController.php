@@ -47,6 +47,28 @@ class ProductorController extends Controller
         return view('productores.create', compact('medicos'));
     }
 
+    public function previewClave(Request $request)
+    {
+        $validated = $request->validate([
+            'tipo_actividad' => 'required|string|in:Barrido,Buffer,Seguimiento',
+            'sub_tipo_actividad' => 'nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
+            'zona' => 'nullable|string|in:A,B',
+            'medico_id' => 'nullable|exists:users,id',
+        ]);
+
+        $generated = Productor::siguienteClave(
+            $validated['tipo_actividad'],
+            $validated['sub_tipo_actividad'] ?? null,
+            $validated['zona'] ?? null,
+            $validated['medico_id'] ?? null
+        );
+
+        return response()->json([
+            'clave' => $generated['clave'],
+            'zona' => $generated['zona'] ?? ($validated['zona'] ?? null),
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -62,7 +84,7 @@ class ProductorController extends Controller
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email',
             'medico_id' => 'nullable|exists:users,id',
-            'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
+            'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
             'zona' => 'nullable|string|in:A,B',
             'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
             'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
@@ -167,7 +189,7 @@ class ProductorController extends Controller
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email',
             'medico_id' => 'nullable|exists:users,id',
-            'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
+            'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
             'zona' => 'nullable|string|in:A,B',
             'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
             'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
@@ -271,10 +293,14 @@ class ProductorController extends Controller
             return response()->json([]);
         }
 
-        $productores = Productor::with('predios')->where('clave', 'like', $clave.'%')
-            ->orderBy('clave')
-            ->limit(50)
-            ->get();
+        $productores = Productor::with('predios')->where('clave', 'like', $clave.'%');
+
+        $user = auth()->user();
+        if ($user && ! $user->hasRole('Administrador')) {
+            $productores->where('medico_id', $user->id);
+        }
+
+        $productores = $productores->orderBy('clave')->limit(50)->get();
 
         $productores->each(function ($p) {
             $primerPredio = $p->predios->first();
@@ -296,7 +322,7 @@ class ProductorController extends Controller
         $q = $request->get('q', '');
         $q = trim($q);
 
-        if (strlen($q) < 2) {
+        if (strlen($q) < 1) {
             return response()->json([]);
         }
 
@@ -331,6 +357,7 @@ class ProductorController extends Controller
         $medicos = User::role('Medico_Campo')->orderBy('name')->get();
         $prefillProductor = null;
         $prefillPredio = null;
+        $cantidad = (int) $request->get('cantidad', 1);
 
         if ($request->has('prefill_from_productor_id')) {
             $prefillProductor = Productor::with('predios')->find($request->prefill_from_productor_id);
@@ -339,7 +366,7 @@ class ProductorController extends Controller
             }
         }
 
-        return view('productores.create-multiple', compact('medicos', 'prefillProductor', 'prefillPredio'));
+        return view('productores.create-multiple', compact('medicos', 'prefillProductor', 'prefillPredio', 'cantidad'));
     }
 
     public function storeMultiple(Request $request)
@@ -351,7 +378,7 @@ class ProductorController extends Controller
             'productores.*.apellido_materno' => 'nullable|string|max:255',
             'productores.*.curp' => 'nullable|string|size:18|unique:productores,curp',
             'productores.*.upp' => 'nullable|string|unique:productores,upp',
-            'productores.*.clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
+            'productores.*.clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
             'productores.*.domicilio' => 'nullable|string',
             'productores.*.municipio' => 'nullable|string',
             'productores.*.localidad' => 'nullable|string',
@@ -463,8 +490,36 @@ class ProductorController extends Controller
         }
 
         $vinculado = Productor::findOrFail($validated['productor_id']);
+
+        if (! $productor->clave) {
+            $productor->save();
+        }
+
+        if (! $productor->clave) {
+            return back()->with('error', 'El productor no tiene clave ni tipo de actividad para generar una.');
+        }
+
+        if ($vinculado->clave === $productor->clave) {
+            return back()->with('error', 'Este productor ya está vinculado a este hato.');
+        }
+
+        if ($vinculado->clave) {
+            return back()->with('error', "Este productor ya pertenece al hato {$vinculado->clave}. Gestiona ese hato para desvincularlo antes de asignarlo.");
+        }
+
         $vinculado->update(['clave' => $productor->clave]);
 
         return back()->with('success', 'Productor agregado al hato.');
+    }
+
+    public function desvincularDeHato(Request $request, Productor $productor)
+    {
+        if (! auth()->user()->hasRole('Administrador') && $productor->medico_id !== auth()->id()) {
+            abort(403, 'No tienes permiso para desvincular a este productor.');
+        }
+
+        $productor->update(['clave' => null]);
+
+        return back()->with('success', 'Productor quitado del hato con éxito.');
     }
 }

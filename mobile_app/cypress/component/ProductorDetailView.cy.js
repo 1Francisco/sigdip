@@ -196,4 +196,53 @@ describe('ProductorDetailView', () => {
     cy.wait('@getProductorError', { timeout: 10000 })
     cy.contains('no encontrado', { timeout: 5000 }).should('be.visible')
   })
+
+  it('elimina productor con confirmacion', () => {
+    cy.intercept('GET', '**/api/productores/1', {
+      statusCode: 200,
+      body: { data: fakeProductor },
+    }).as('getProductor')
+
+    cy.intercept('DELETE', '**/api/productores/1', {
+      statusCode: 200,
+      body: { success: true },
+    }).as('deleteProductor')
+
+    const router = buildRouter()
+    router.push('/productores/1')
+    mount(ProductorDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getProductor', { timeout: 10000 })
+
+    cy.window().then((win) => {
+      cy.stub(win, 'confirm').returns(true)
+    })
+    cy.contains('Eliminar', { timeout: 5000 }).click()
+    cy.wait('@deleteProductor', { timeout: 10000 })
+    cy.location('hash', { timeout: 5000 }).should('include', '/productores')
+  })
+
+  it('cancela eliminacion cuando confirm es false', () => {
+    cy.intercept('GET', '**/api/productores/1', {
+      statusCode: 200,
+      body: { data: fakeProductor },
+    }).as('getProductor')
+
+    cy.intercept('DELETE', '**/api/productores/1', {
+      statusCode: 200,
+      body: { success: true },
+    }).as('deleteProductor')
+
+    const router = buildRouter()
+    router.push('/productores/1')
+    mount(ProductorDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getProductor', { timeout: 10000 })
+
+    cy.window().then((win) => {
+      cy.stub(win, 'confirm').returns(false)
+    })
+    cy.contains('Eliminar', { timeout: 5000 }).click()
+    cy.get('@deleteProductor').should('not.exist')
+  })
 })

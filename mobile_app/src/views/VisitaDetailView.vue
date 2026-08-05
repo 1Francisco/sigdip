@@ -104,6 +104,9 @@
           <button class="btn btn-primary rounded-pill px-4" @click="$router.push(`/visitas/editar/${visita.id}`)">
             <i class="bi bi-pencil me-1"></i> Editar
           </button>
+          <button class="btn btn-outline-danger rounded-pill px-4" @click="deleteVisita">
+            <i class="bi bi-trash me-1"></i> Eliminar
+          </button>
           <button class="btn btn-outline-secondary rounded-pill px-4" @click="$router.push('/visitas')">
             Volver
           </button>
@@ -161,6 +164,17 @@ export default {
       if (!dateStr) return '—';
       const d = new Date(dateStr + 'T00:00:00');
       return d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    },
+    async deleteVisita() {
+      if (!this.visita) return;
+      if (!confirm(`¿Estás seguro de eliminar la visita ${this.visita.codigo ? `"${this.visita.codigo}"` : `#${this.visita.id}`}? Esta acción no se puede deshacer.`)) return;
+      this.errorMsg = '';
+      try {
+        await api.deleteVisita(this.visita.id);
+        this.$router.push('/visitas');
+      } catch (e) {
+        this.errorMsg = e.message || 'No se pudo eliminar la visita.';
+      }
     }
   }
 };

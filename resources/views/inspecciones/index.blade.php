@@ -91,13 +91,9 @@
                     @foreach($inspecciones as $inspeccion)
                     <tr>
                         <td class="ps-4" data-label="Folio">
-                            @if(empty($inspeccion->folio) || $inspeccion->folio === $inspeccion->clave_interna)
-                                <span class="text-muted fst-italic fw-bold">{{ $inspeccion->clave_interna ?: 'Sin Folio' }}</span>
-                            @else
-                                <a href="{{ route('inspecciones.show', $inspeccion->id) }}" class="text-decoration-none text-primary fw-bold">
-                                    {{ $inspeccion->folio }}
-                                </a>
-                            @endif
+                            <a href="{{ route('inspecciones.show', $inspeccion->id) }}" class="text-decoration-none text-primary fw-bold">
+                                {{ $inspeccion->folio ?: $inspeccion->clave_interna ?: 'Sin Folio' }}
+                            </a>
                         </td>
                         <td data-label="Fecha">{{ \Carbon\Carbon::parse($inspeccion->fecha)->format('d/m/Y') }}</td>
                         <td data-label="Predio">

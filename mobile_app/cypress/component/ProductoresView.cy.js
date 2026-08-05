@@ -91,6 +91,17 @@ describe('ProductoresView', () => {
       cy.contains('Nuevo Productor').should('be.visible')
     })
 
+    it('muestra boton de añadir productor a uno existente', () => {
+      seedPrediosInDB()
+      const router = buildRouter()
+      router.push('/productores')
+      mount(ProductoresView, { global: { plugins: [router] } })
+
+      cy.contains('Añadir Productor a uno existente', { timeout: 5000 }).should('be.visible')
+      cy.contains('Añadir Productor a uno existente').click()
+      cy.location('hash', { timeout: 5000 }).should('include', '/productores/nuevo')
+    })
+
     it('renderiza lista de productores desde IndexedDB', () => {
       seedPrediosInDB()
       const router = buildRouter()
@@ -176,7 +187,7 @@ describe('ProductoresView', () => {
     })
 
     it('navega entre paginas con paginacion', () => {
-      const manyProductores = Array.from({ length: 15 }, (_, i) => ({
+      const manyProductores = Array.from({ length: 25 }, (_, i) => ({
         id: i + 1,
         nombre: `Productor ${i + 1}`,
         apellido_paterno: 'Apellido',
@@ -193,7 +204,9 @@ describe('ProductoresView', () => {
       router.push('/productores')
       mount(ProductoresView, { global: { plugins: [router] } })
 
-      cy.contains('Mostrando 1 a 10 de 15 registros', { timeout: 5000 }).should('be.visible')
+      cy.contains('Mostrando 1 a 20 de 25 registros', { timeout: 5000 }).should('be.visible')
+      cy.contains('button', '2').click()
+      cy.contains('Mostrando 21 a 25 de 25 registros', { timeout: 5000 }).should('be.visible')
     })
 
     it('cierra sesion desde menu lateral', () => {

@@ -46,6 +46,36 @@ class ProductorTest extends TestCase
         $response->assertStatus(200);
     }
 
+    public function test_create_zona_habilitada_para_admin()
+    {
+        $response = $this->actingAs($this->admin)->get(route('productores.create'));
+
+        $response->assertStatus(200);
+        $response->assertSee('id="zona_select" class="form-select rounded-3 bg-light"', false);
+        $response->assertDontSee('id="zona_select" class="form-select rounded-3 bg-light" disabled', false);
+    }
+
+    public function test_create_multiple_zona_habilitada_para_admin()
+    {
+        $response = $this->actingAs($this->admin)->get(route('productores.create-multiple'));
+
+        $response->assertStatus(200);
+        $response->assertSee('id="zona_select" class="form-select rounded-3 bg-light"', false);
+        $response->assertDontSee('id="zona_select" class="form-select rounded-3 bg-light" disabled', false);
+    }
+
+    public function test_create_multiple_con_prefill_zona_habilitada()
+    {
+        $productor = Productor::factory()->create(['clave' => 'BA-0001', 'zona' => 'B']);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('productores.create-multiple', ['prefill_from_productor_id' => $productor->id]));
+
+        $response->assertStatus(200);
+        $response->assertSee('id="zona_select" class="form-select rounded-3 bg-light"', false);
+        $response->assertDontSee('id="zona_select" class="form-select rounded-3 bg-light" disabled', false);
+    }
+
     public function test_store()
     {
         $response = $this->actingAs($this->admin)->post(route('productores.store'), [
@@ -285,7 +315,7 @@ class ProductorTest extends TestCase
         ]);
 
         $this->assertNotNull($productor->clave);
-        $this->assertStringStartsWith('BF-', $productor->clave);
+        $this->assertStringStartsWith('BA-', $productor->clave);
     }
 
     public function test_autogenerates_clave_for_buffer()
@@ -320,8 +350,74 @@ class ProductorTest extends TestCase
         $p2 = Productor::create(['nombre' => 'P2', 'apellido_paterno' => 'T2', 'tipo_actividad' => 'Barrido']);
 
         $this->assertNotEquals($p1->clave, $p2->clave);
-        $this->assertStringStartsWith('BF-', $p1->clave);
-        $this->assertStringStartsWith('BF-', $p2->clave);
+        $this->assertStringStartsWith('BA-', $p1->clave);
+        $this->assertStringStartsWith('BA-', $p2->clave);
+    }
+
+    public function test_preview_clave_web_admin()
+    {
+        $response = $this->actingAs($this->admin)
+            ->get(route('productores.preview-clave').'?tipo_actividad=Buffer');
+
+        $response->assertOk();
+        $this->assertStringStartsWith('BFC-', $response->json('clave'));
+    }
+
+    public function test_preview_clave_web_seguimiento_infiere_zona_default_b()
+    {
+        $response = $this->actingAs($this->admin)
+            ->get(route('productores.preview-clave').'?tipo_actividad=Seguimiento&sub_tipo_actividad=Cuarentena%20Precautoria');
+
+        $response->assertOk();
+        $this->assertStringStartsWith('BP-', $response->json('clave'));
+        $this->assertEquals('B', $response->json('zona'));
+    }
+
+    public function test_preview_clave_web_bloqueada_para_medico()
+    {
+        $response = $this->actingAs($this->medico)
+            ->get(route('productores.preview-clave').'?tipo_actividad=Barrido');
+
+        $response->assertForbidden();
+    }
+
+    public function test_preview_clave_api_movil()
+    {
+        $response = $this->actingAs($this->admin, 'sanctum')
+            ->getJson('/api/productores/preview-clave?tipo_actividad=Barrido');
+
+        $response->assertOk();
+        $response->assertJsonPath('success', true);
+        $this->assertStringStartsWith('BA-', $response->json('clave'));
+    }
+
+    public function test_preview_clave_api_movil_usa_zona_del_medico()
+    {
+        $this->medico->update(['zona' => 'A']);
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+            ->getJson('/api/productores/preview-clave?tipo_actividad=Seguimiento&sub_tipo_actividad=Cuarentena%20Definitiva&medico_id='.$this->medico->id);
+
+        $response->assertOk();
+        $this->assertStringStartsWith('AD-', $response->json('clave'));
+        $this->assertEquals('A', $response->json('zona'));
+    }
+
+    public function test_preview_clave_no_guarda_registros()
+    {
+        $this->actingAs($this->admin)
+            ->get(route('productores.preview-clave').'?tipo_actividad=Buffer');
+
+        $this->assertDatabaseCount('productores', 0);
+    }
+
+    public function test_siguiente_clave_estatica_no_crea_registros()
+    {
+        $generated = Productor::siguienteClave('Barrido');
+
+        $this->assertStringStartsWith('BA-', $generated['clave']);
+        $this->assertNull($generated['zona']);
+        $this->assertDatabaseCount('productores', 0);
     }
 
     public function test_store_multiple_producers_with_predios()
@@ -391,11 +487,11 @@ class ProductorTest extends TestCase
         $this->assertEquals('Localidad Predio', $data['_predio_localidad']);
     }
 
-    public function test_buscar_endpoint_requiere_minimo_2_caracteres()
+    public function test_buscar_endpoint_requiere_minimo_1_caracter()
     {
         Productor::factory()->create(['nombre' => 'Juan']);
 
-        $response = $this->actingAs($this->admin)->getJson(route('productores.buscar', ['q' => 'a']));
+        $response = $this->actingAs($this->admin)->getJson(route('productores.buscar', ['q' => '']));
 
         $response->assertStatus(200);
         $response->assertJsonCount(0);
@@ -510,5 +606,46 @@ class ProductorTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonCount(1);
         $response->assertJsonFragment(['nombre' => 'Medico']);
+    }
+
+    public function test_admin_puede_desvincular_productor_de_hato()
+    {
+        $productor = Productor::factory()->create(['clave' => 'BA-0001']);
+
+        $response = $this->actingAs($this->admin)->post(route('productores.desvincular-hato', $productor));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+        $this->assertNull($productor->fresh()->clave);
+    }
+
+    public function test_admin_no_puede_sobrescribir_hato_de_otro_productor()
+    {
+        $productor = Productor::factory()->create(['clave' => 'BA-0001']);
+        $deOtroHato = Productor::factory()->create(['clave' => 'BF-9999']);
+
+        $response = $this->actingAs($this->admin)->post(route('productores.vincular-existente', $productor), [
+            'productor_id' => $deOtroHato->id,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+        $this->assertSame('BF-9999', $deOtroHato->fresh()->clave);
+    }
+
+    public function test_medico_no_autorizado_no_puede_desvincular_productor_de_hato()
+    {
+        $otroMedico = User::factory()->create();
+        $otroMedico->assignRole('Medico_Campo');
+
+        $productor = Productor::factory()->create([
+            'clave' => 'BA-0001',
+            'medico_id' => $otroMedico->id,
+        ]);
+
+        $response = $this->actingAs($this->medico)->post(route('productores.desvincular-hato', $productor));
+
+        $response->assertStatus(403);
+        $this->assertEquals('BA-0001', $productor->fresh()->clave);
     }
 }

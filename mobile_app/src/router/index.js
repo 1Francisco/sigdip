@@ -37,15 +37,15 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/productores/:id',
-    name: 'ProductorDetail',
-    component: () => import('../views/ProductorDetailView.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/productores/:id/gestionar-hato',
     name: 'GestionarHato',
     component: () => import('../views/GestionarHatoView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/productores/:id',
+    name: 'ProductorDetail',
+    component: () => import('../views/ProductorDetailView.vue'),
     meta: { requiresAuth: true }
   },
   {
@@ -142,6 +142,12 @@ const routes = [
     path: '/medicos/nuevo',
     name: 'NuevoMedico',
     component: () => import('../views/MedicoCreateView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/medicos/:id',
+    name: 'MedicoDetail',
+    component: () => import('../views/MedicoDetailView.vue'),
     meta: { requiresAuth: true }
   },
   {

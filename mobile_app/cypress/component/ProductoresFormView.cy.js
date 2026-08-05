@@ -178,10 +178,10 @@ describe('ProductoresFormView', () => {
     const router = buildRouter('/productores/nuevo')
     mount(ProductoresFormView, { global: { plugins: [router] } })
 
-    cy.contains('Clave de Cuarentena').should('be.visible')
+    cy.contains('label', /^Clave$/).should('be.visible')
     cy.get('input[placeholder*="BD-123421"]').should('be.visible')
     cy.contains('Zona / Sector').should('be.visible')
-    cy.get('select').should('be.visible')
+    cy.get('[data-testid="zona-select"]').should('be.visible')
     cy.contains('option', 'Sector A').should('be.visible')
     cy.contains('option', 'Sector B').should('be.visible')
   })
@@ -202,7 +202,7 @@ describe('ProductoresFormView', () => {
     mount(ProductoresFormView, { global: { plugins: [router] } })
 
     cy.get('input[placeholder*="BD-123421"]').type('AD-123')
-    cy.get('select').should('have.value', 'A')
+    cy.get('[data-testid="zona-select"]').should('have.value', 'A')
   })
 
   it('autoSelectZona asigna B para clave que empieza con B', () => {
@@ -210,7 +210,7 @@ describe('ProductoresFormView', () => {
     mount(ProductoresFormView, { global: { plugins: [router] } })
 
     cy.get('input[placeholder*="BD-123421"]').type('BP-456')
-    cy.get('select').should('have.value', 'B')
+    cy.get('[data-testid="zona-select"]').should('have.value', 'B')
   })
 
   it('payload incluye clave para Admin', () => {
@@ -290,5 +290,177 @@ describe('ProductoresFormView', () => {
       expect(saved.productor.clave).to.eq('BD-789')
       expect(saved.productor.zona).to.eq('B')
     })
+  })
+
+  // ---- Flujo "Añadir Productor a uno existente" (vincular=true) ----
+
+  const productorExistente = {
+    id: 5,
+    nombre: 'Maria',
+    apellido_paterno: 'Lopez',
+    apellido_materno: 'Ruiz',
+    upp: 'UPP-005',
+    curp: 'MALR850101HPLRRR01',
+    domicilio: 'Calle 1',
+    municipio: 'Tepic',
+    localidad: 'Tepic',
+    estado: 'Nayarit',
+    telefono: '311',
+    email: 'm@x.com',
+    clave: 'AD-999',
+    zona: 'A',
+    tipo_actividad: 'Barrido',
+    medico_id: 1,
+    _predio_nombre_rancho: 'El Mirador',
+    _predio_clave_unidad_produccion: 'CUP-005',
+  }
+
+  function interceptBuscar() {
+    cy.intercept('GET', '**/api/productores/buscar?q=*', {
+      statusCode: 200,
+      body: [productorExistente],
+    }).as('buscar')
+  }
+
+  it('vincular=true muestra pantalla de seleccion de productor', () => {
+    const router = buildRouter('/productores/nuevo?vincular=true')
+    cy.wrap(router.isReady()).then(() => {
+      mount(ProductoresFormView, { global: { plugins: [router] } })
+    })
+
+    cy.contains('Añadir Productor a uno existente', { timeout: 5000 }).should('be.visible')
+    cy.get('input[placeholder*="Buscar productor por nombre"]').should('be.visible')
+    cy.contains('Continuar al Paso 2').should('not.exist')
+  })
+
+  it('selecciona productor existente y prellena el formulario con su clave', () => {
+    interceptBuscar()
+
+    const router = buildRouter('/productores/nuevo?vincular=true')
+    cy.wrap(router.isReady()).then(() => {
+      mount(ProductoresFormView, { global: { plugins: [router] } })
+    })
+
+    cy.get('input[placeholder*="Buscar productor por nombre"]').type('Maria')
+    cy.wait('@buscar', { timeout: 10000 })
+    cy.contains('Maria Lopez Ruiz').click()
+
+    cy.contains('Cantidad de productores a registrar').should('be.visible')
+    cy.contains('Comenzar registro').click()
+
+    cy.contains('Vinculando nuevos productores al hato', { timeout: 5000 }).should('be.visible')
+    cy.contains('Productor 1 de 1').should('be.visible')
+    cy.get('input[placeholder*="BD-123421"]').should('have.value', 'AD-999')
+    cy.get('input[placeholder*="Calle"]').should('have.value', 'Calle 1')
+    cy.get('input[placeholder*="Pepito"]').type('Juan')
+    cy.get('input[placeholder*="Tejeda"]').type('Perez')
+    cy.get('input[maxlength="18"]').first().type('JUAP841212HDFRRN01')
+    cy.get('input[placeholder*="57625285"]').type('UPP-001')
+    cy.contains('Continuar al Paso 2').click()
+    cy.get('input[placeholder*="Mirador"]').should('have.value', 'El Mirador')
+  })
+
+  it('quita la seleccion y vuelve a la busqueda', () => {
+    interceptBuscar()
+
+    const router = buildRouter('/productores/nuevo?vincular=true')
+    cy.wrap(router.isReady()).then(() => {
+      mount(ProductoresFormView, { global: { plugins: [router] } })
+    })
+
+    cy.get('input[placeholder*="Buscar productor por nombre"]').type('Maria')
+    cy.wait('@buscar', { timeout: 10000 })
+    cy.contains('Maria Lopez Ruiz').click()
+    cy.contains('Comenzar registro').should('be.visible')
+
+    cy.get('.btn-outline-danger').click()
+    cy.contains('Cantidad de productores a registrar').should('not.exist')
+    cy.get('input[placeholder*="Buscar productor por nombre"]').should('be.visible')
+  })
+
+  it('guarda un productor vinculado al hato del seleccionado', () => {
+    cy.seedIndexedDB('catalogos', 'predios', [])
+    interceptBuscar()
+
+    cy.intercept('POST', '**/api/productores', {
+      statusCode: 200,
+      body: { success: true, productor: { id: 500, nombre: 'Juan', apellido_paterno: 'Perez', curp: 'JUAP841212HDFRRN01' } },
+    }).as('storeProductor')
+
+    const router = buildRouter('/productores/nuevo?vincular=true')
+    cy.wrap(router.isReady()).then(() => {
+      mount(ProductoresFormView, { global: { plugins: [router] } })
+    })
+
+    cy.get('input[placeholder*="Buscar productor por nombre"]').type('Maria')
+    cy.wait('@buscar', { timeout: 10000 })
+    cy.contains('Maria Lopez Ruiz').click()
+    cy.contains('Comenzar registro').click()
+
+    cy.get('input[placeholder*="Pepito"]').type('Juan')
+    cy.get('input[placeholder*="Tejeda"]').type('Perez')
+    cy.get('input[maxlength="18"]').first().type('JUAP841212HDFRRN01')
+    cy.get('input[placeholder*="57625285"]').type('UPP-001')
+    cy.get('form').submit()
+
+    cy.contains('No tiene predio (Solo Productor)').click()
+    cy.wait('@storeProductor', { timeout: 10000 }).then((interception) => {
+      expect(interception.request.body.clave).to.eq('AD-999')
+      expect(interception.request.body.zona).to.eq('A')
+    })
+    cy.window().should((win) => {
+      expect(win.alert.calledWithMatch(/al hato AD-999/)).to.be.true
+    })
+    cy.location('hash', { timeout: 5000 }).should('include', '/productores')
+  })
+
+  it('registra 2 productores de forma secuencial al mismo hato', () => {
+    cy.seedIndexedDB('catalogos', 'predios', [])
+    interceptBuscar()
+
+    cy.intercept('POST', '**/api/productores', (req) => {
+      const id = req.body.curp === 'JUAP841212HDFRRN01' ? 500 : 501
+      req.reply({ statusCode: 200, body: { success: true, productor: { id, nombre: 'X', apellido_paterno: 'Y', curp: req.body.curp } } })
+    }).as('storeProductor')
+
+    const router = buildRouter('/productores/nuevo?vincular=true')
+    cy.wrap(router.isReady()).then(() => {
+      mount(ProductoresFormView, { global: { plugins: [router] } })
+    })
+
+    cy.get('input[placeholder*="Buscar productor por nombre"]').type('Maria')
+    cy.wait('@buscar', { timeout: 10000 })
+    cy.contains('Maria Lopez Ruiz').click()
+    cy.get('input[type="number"]').type('{selectall}2')
+    cy.contains('Comenzar registro').click()
+
+    // Productor 1 de 2
+    cy.contains('Productor 1 de 2', { timeout: 5000 }).should('be.visible')
+    cy.get('input[placeholder*="Pepito"]').type('Juan')
+    cy.get('input[placeholder*="Tejeda"]').type('Perez')
+    cy.get('input[maxlength="18"]').first().type('JUAP841212HDFRRN01')
+    cy.get('input[placeholder*="57625285"]').type('UPP-001')
+    cy.get('form').submit()
+    cy.contains('No tiene predio (Solo Productor)').click()
+    cy.wait('@storeProductor', { timeout: 10000 })
+
+    // Productor 2 de 2: formulario limpio con clave heredada
+    cy.contains('Productor 2 de 2', { timeout: 5000 }).should('be.visible')
+    cy.get('input[placeholder*="Pepito"]').should('have.value', '')
+    cy.get('input[placeholder*="BD-123421"]').should('have.value', 'AD-999')
+    cy.get('input[placeholder*="Pepito"]').type('Ana')
+    cy.get('input[placeholder*="Tejeda"]').type('Garcia')
+    cy.get('input[maxlength="18"]').first().type('GARA851212MDFRRN01')
+    cy.get('input[placeholder*="57625285"]').type('UPP-002')
+    cy.get('form').submit()
+    cy.contains('No tiene predio (Solo Productor)').click()
+
+    cy.wait('@storeProductor', { timeout: 10000 }).then((interception) => {
+      expect(interception.request.body.clave).to.eq('AD-999')
+    })
+    cy.window().should((win) => {
+      expect(win.alert.calledWithMatch(/2 productor\(es\) registrado\(s\) al hato AD-999/)).to.be.true
+    })
+    cy.location('hash', { timeout: 5000 }).should('include', '/productores')
   })
 })

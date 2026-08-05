@@ -3,7 +3,7 @@
 @section('title', 'Registrar Arete')
 @section('header_title', 'Registrar Arete del Censo')
 @section('header_subtitle', 'Agregue un nuevo arete al censo')
-@section('back_url', route('aretes-censo.index'))
+@section('back_url', route('predios.index', ['tab' => 'aretes']))
 
 @section('content')
 <div class="row justify-content-center">
@@ -24,7 +24,7 @@
                     @csrf
                     @include('aretes-censo._form', ['aretes_censo' => null])
                     <div class="d-flex justify-content-end gap-3 mt-4">
-                        <a href="{{ route('aretes-censo.index') }}" class="btn btn-light px-4">Cancelar</a>
+                        <a href="{{ route('predios.index', ['tab' => 'aretes']) }}" class="btn btn-light px-4">Cancelar</a>
                         <button type="submit" class="btn btn-primary px-5">Guardar Arete</button>
                     </div>
                 </form>

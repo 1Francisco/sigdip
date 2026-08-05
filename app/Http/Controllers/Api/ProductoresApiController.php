@@ -32,11 +32,38 @@ class ProductoresApiController extends Controller
             });
         }
 
-        $productores = $query->get()->map(fn (Productor $productor) => $this->toProductorArray($productor));
+        $productores = Productor::attachVinculados($query->get())
+            ->map(fn (Productor $productor) => array_merge(
+                $this->toProductorArray($productor),
+                ['vinculados' => $productor->vinculados ?? []]
+            ));
 
         return response()->json([
             'success' => true,
             'data' => $productores,
+        ]);
+    }
+
+    public function previewClave(Request $request)
+    {
+        $validated = $request->validate([
+            'tipo_actividad' => 'required|string|in:Barrido,Buffer,Seguimiento',
+            'sub_tipo_actividad' => 'nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
+            'zona' => 'nullable|string|in:A,B',
+            'medico_id' => 'nullable|exists:users,id',
+        ]);
+
+        $generated = Productor::siguienteClave(
+            $validated['tipo_actividad'],
+            $validated['sub_tipo_actividad'] ?? null,
+            $validated['zona'] ?? null,
+            $validated['medico_id'] ?? null
+        );
+
+        return response()->json([
+            'success' => true,
+            'clave' => $generated['clave'],
+            'zona' => $generated['zona'] ?? ($validated['zona'] ?? null),
         ]);
     }
 
@@ -233,7 +260,7 @@ class ProductoresApiController extends Controller
                 'estado' => 'nullable|string',
                 'email' => 'nullable|email',
                 'medico_id' => 'nullable|exists:users,id',
-                'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
+                'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
                 'zona' => 'nullable|string|in:A,B',
                 'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
                 'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
@@ -441,7 +468,7 @@ class ProductoresApiController extends Controller
                 'estado' => 'nullable|string',
                 'email' => 'nullable|email',
                 'medico_id' => 'nullable|exists:users,id',
-                'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
+                'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
                 'zona' => 'nullable|string|in:A,B',
                 'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
                 'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
@@ -667,16 +694,34 @@ class ProductoresApiController extends Controller
     {
         try {
             $validated = $request->validate([
-                'productor_id' => 'required|exists:productores,id',
+                'productor_id' => 'required|exists:productores,id|different:'.$id,
             ]);
 
             $productor = Productor::findOrFail($id);
             $vinculado = Productor::findOrFail($validated['productor_id']);
 
             if (! $productor->clave) {
+                $productor->save();
+            }
+
+            if (! $productor->clave) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'El productor actual no tiene una clave asignada. Asigne una clave primero.',
+                    'message' => 'El productor no tiene clave ni tipo de actividad para generar una.',
+                ], 422);
+            }
+
+            if ($vinculado->clave === $productor->clave) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este productor ya está vinculado a este hato.',
+                ], 422);
+            }
+
+            if ($vinculado->clave) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Este productor ya pertenece al hato {$vinculado->clave}. Gestiona ese hato para desvincularlo antes de asignarlo.",
                 ], 422);
             }
 
@@ -697,6 +742,40 @@ class ProductoresApiController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error crítico en el servidor: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function desvincularDeHato(Request $request, $id)
+    {
+        try {
+            $productor = Productor::findOrFail($id);
+
+            if (! $productor->clave) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este productor no pertenece a ningún hato.',
+                ], 422);
+            }
+
+            $productor->update(['clave' => null]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Productor quitado del hato con éxito.',
+                'data' => $this->toProductorArray($productor->refresh()),
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Productor no encontrado.',
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error desvinculando productor del hato: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error crítico en el servidor: '.$e->getMessage(),

@@ -73,7 +73,7 @@ class AreteCensoController extends Controller
 
         AreteCenso::create($validated);
 
-        return redirect()->route('aretes-censo.index')->with('success', 'Arete del censo registrado correctamente.');
+        return redirect()->route('predios.index', ['tab' => 'aretes'])->with('success', 'Arete del censo registrado correctamente.');
     }
 
     public function edit(AreteCenso $aretes_censo)
@@ -99,13 +99,26 @@ class AreteCensoController extends Controller
 
         $aretes_censo->update($validated);
 
-        return redirect()->route('aretes-censo.index')->with('success', 'Arete del censo actualizado correctamente.');
+        return redirect()->route('predios.index', ['tab' => 'aretes'])->with('success', 'Arete del censo actualizado correctamente.');
     }
 
     public function destroy(AreteCenso $aretes_censo)
     {
         $aretes_censo->delete();
 
-        return redirect()->route('aretes-censo.index')->with('success', 'Arete del censo eliminado.');
+        return redirect()->route('predios.index', ['tab' => 'aretes'])->with('success', 'Arete del censo eliminado.');
+    }
+
+    public function toggleSacrificio(AreteCenso $aretes_censo)
+    {
+        $aretes_censo->update([
+            'sacrificio' => $aretes_censo->sacrificio ? null : 'SI',
+        ]);
+
+        $message = $aretes_censo->fresh()->sacrificio
+            ? 'Arete marcado como sacrificado.'
+            : 'Arete removido de sacrificio.';
+
+        return redirect()->back()->with('success', $message);
     }
 }

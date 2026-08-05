@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Support\Collection;
 
 class Productor extends Model
 {
@@ -42,44 +43,69 @@ class Productor extends Model
             }
 
             if (empty($productor->clave) && ! empty($productor->tipo_actividad)) {
-                $tipo = strtolower($productor->tipo_actividad);
-                $prefix = 'GP';
-                if ($tipo === 'barrido') {
-                    $prefix = 'BF';
-                } elseif ($tipo === 'buffer') {
-                    $prefix = 'BFC';
-                } elseif ($tipo === 'seguimiento') {
-                    $zone = strtoupper($productor->zona ?? '');
-                    if (empty($zone) && $productor->medico_id) {
-                        $medico = User::find($productor->medico_id);
-                        if ($medico && $medico->zona) {
-                            $zone = strtoupper($medico->zona);
-                            $productor->zona = $zone;
-                        }
-                    }
-                    if ($zone !== 'A' && $zone !== 'B') {
-                        $zone = 'B';
-                        $productor->zona = $zone;
-                    }
-
-                    $subType = strtolower($productor->sub_tipo_actividad ?? '');
-                    $typeChar = 'P';
-                    if (str_contains($subType, 'definitiva')) {
-                        $typeChar = 'D';
-                    }
-                    $prefix = $zone.$typeChar;
+                $generated = static::siguienteClave(
+                    $productor->tipo_actividad,
+                    $productor->sub_tipo_actividad,
+                    $productor->zona,
+                    $productor->medico_id
+                );
+                $productor->clave = $generated['clave'];
+                if ($generated['zona']) {
+                    $productor->zona = $generated['zona'];
                 }
-
-                $count = static::where('clave', 'like', $prefix.'-%')->count();
-                $number = $count + 1;
-                do {
-                    $clave = $prefix.'-'.str_pad($number, 4, '0', STR_PAD_LEFT);
-                    $number++;
-                } while (static::where('clave', $clave)->exists());
-
-                $productor->clave = $clave;
             }
         });
+    }
+
+    /**
+     * Calcular la siguiente clave disponible según el tipo de actividad
+     * (sin guardar). Barrido => BA-, Buffer => BFC-, Seguimiento => Zona + P/D.
+     *
+     * @return array{clave: string, zona: ?string}
+     */
+    public static function siguienteClave(
+        string $tipoActividad,
+        ?string $subTipoActividad = null,
+        ?string $zona = null,
+        ?int $medicoId = null
+    ): array {
+        $tipo = strtolower($tipoActividad);
+        $prefix = 'GP';
+        $efectivaZona = null;
+
+        if ($tipo === 'barrido') {
+            $prefix = 'BA';
+        } elseif ($tipo === 'buffer') {
+            $prefix = 'BFC';
+        } elseif ($tipo === 'seguimiento') {
+            $zone = strtoupper($zona ?? '');
+            if (empty($zone) && $medicoId) {
+                $medico = User::find($medicoId);
+                if ($medico && $medico->zona) {
+                    $zone = strtoupper($medico->zona);
+                }
+            }
+            if ($zone !== 'A' && $zone !== 'B') {
+                $zone = 'B';
+            }
+            $efectivaZona = $zone;
+
+            $subType = strtolower($subTipoActividad ?? '');
+            $typeChar = 'P';
+            if (str_contains($subType, 'definitiva')) {
+                $typeChar = 'D';
+            }
+            $prefix = $zone.$typeChar;
+        }
+
+        $count = static::where('clave', 'like', $prefix.'-%')->count();
+        $number = $count + 1;
+        do {
+            $clave = $prefix.'-'.str_pad($number, 4, '0', STR_PAD_LEFT);
+            $number++;
+        } while (static::where('clave', $clave)->exists());
+
+        return ['clave' => $clave, 'zona' => $efectivaZona];
     }
 
     /**
@@ -112,6 +138,61 @@ class Productor extends Model
     public function visitas(): HasManyThrough
     {
         return $this->hasManyThrough(Visita::class, Predio::class);
+    }
+
+    /**
+     * Productores agrupados por clave (hato) en una sola consulta.
+     */
+    public static function vinculadosPorClave(): Collection
+    {
+        return static::whereNotNull('clave')
+            ->get()
+            ->groupBy('clave');
+    }
+
+    /**
+     * Adjuntar el atributo 'vinculados' (mismos miembros del hato) a cada productor.
+     *
+     * @param  Collection  $productores
+     * @return Collection
+     */
+    public static function attachVinculados($productores)
+    {
+        $grupos = static::vinculadosPorClave();
+
+        return $productores->map(function (self $productor) use ($grupos) {
+            $productor->setAttribute('vinculados', static::vinculadosArray($productor, $grupos));
+
+            return $productor;
+        });
+    }
+
+    /**
+     * Lista ligera de los demás productores del mismo hato.
+     *
+     * @param  Collection  $grupos
+     */
+    private static function vinculadosArray(self $productor, $grupos): array
+    {
+        if (! filled($productor->clave)) {
+            return [];
+        }
+
+        return collect($grupos[$productor->clave] ?? [])
+            ->reject(fn (self $v) => $v->id === $productor->id)
+            ->map(fn (self $v) => [
+                'id' => $v->id,
+                'nombre_completo' => $v->nombre_completo,
+                'nombre' => $v->nombre,
+                'apellido_paterno' => $v->apellido_paterno,
+                'apellido_materno' => $v->apellido_materno,
+                'upp' => $v->upp,
+                'telefono' => $v->telefono,
+                'clave' => $v->clave,
+                'zona' => $v->zona,
+            ])
+            ->values()
+            ->all();
     }
 
     /**

@@ -95,17 +95,18 @@
     </div>
     <div class="col-md-6">
         <label class="form-label fw-semibold">Zona / Sector</label>
-        <select id="zona_select{{ $idSuffix }}" class="form-select rounded-3 bg-light" disabled>
+        <select id="zona_select{{ $idSuffix }}" class="form-select rounded-3 bg-light">
             <option value="">-- Sin Zona --</option>
             <option value="A" {{ $selected('zona', 'A') }}>Sector A</option>
             <option value="B" {{ $selected('zona', 'B') }}>Sector B</option>
         </select>
         <input type="hidden" name="{{ $nameFn('zona') }}" id="zona{{ $idSuffix }}" value="{{ $oldFn('zona') }}">
+        <div class="form-text small text-muted">Se sugiere automáticamente según la clave; puedes modificarla.</div>
     </div>
 
     <div class="col-md-12">
         <label class="form-label fw-semibold">Médico Veterinario Zootecnista (MVZ) Asignado</label>
-        <select name="{{ $nameFn('medico_id') }}" class="form-select rounded-3">
+        <select name="{{ $nameFn('medico_id') }}" id="medico_id{{ $idSuffix }}" class="form-select rounded-3">
             <option value="">-- Seleccionar Médico (Opcional) --</option>
             @foreach($medicos as $medico)
                 <option value="{{ $medico->id }}" {{ $selected('medico_id', $medico->id) }}>{{ $medico->name }} ({{ $medico->email }})</option>
@@ -124,31 +125,89 @@
 
     <script>
     (function() {
-        var input = document.getElementById('clave{{ $idSuffix }}');
-        var marker = document.getElementById('clave-marker{{ $idSuffix }}');
+        var suf = '{{ $idSuffix }}';
+        var input = document.getElementById('clave' + suf);
+        var marker = document.getElementById('clave-marker' + suf);
         if (!marker) return;
+
+        var zonaSelect = document.getElementById('zona_select' + suf);
+        var zonaHidden = document.getElementById('zona' + suf);
 
         function updateClaveMarker(val) {
             if (val === undefined) {
                 if (!input) return;
                 val = input.value.toUpperCase().trim();
             }
-            var prefix = val.substring(0, 2);
-            if (prefix === 'AD' || prefix === 'AP' || prefix === 'BD' || prefix === 'BP') {
-                var sector = (prefix === 'AD' || prefix === 'AP') ? 'A' : 'B';
+            var first = val.charAt(0);
+            if (first === 'A' || first === 'B') {
+                var sector = first;
                 marker.innerHTML = '<span class="badge bg-primary rounded-pill px-3 py-1 fs-6">' + val + '  ·  Zona ' + sector + '</span>';
                 marker.style.display = '';
+                if (zonaSelect && !zonaSelect.value) {
+                    zonaSelect.value = sector;
+                }
+                if (zonaHidden && !zonaHidden.value) {
+                    zonaHidden.value = sector;
+                }
             } else {
                 marker.style.display = 'none';
             }
         }
 
         if (input) {
-            input.addEventListener('input', function() { updateClaveMarker(); });
+            input.addEventListener('input', function() {
+                if (!this.value.trim() && typeof previewClave === 'function') {
+                    previewClave();
+                } else {
+                    updateClaveMarker();
+                }
+            });
             updateClaveMarker();
         }
 
-        marker._updateClave = updateClaveMarker;
+        // ========= Vista previa de clave auto-generada =========
+        var tipoSelect = document.getElementById('tipo_actividad' + suf);
+        var subSelect = document.getElementById('sub_tipo_actividad' + suf);
+        var medicoSelect = document.getElementById('medico_id' + suf);
+
+        function previewClave() {
+            if (!tipoSelect || !tipoSelect.value) {
+                marker.style.display = 'none';
+                return;
+            }
+            if (input && input.value.trim()) {
+                updateClaveMarker();
+                return;
+            }
+            var params = new URLSearchParams();
+            params.set('tipo_actividad', tipoSelect.value);
+            if (subSelect && subSelect.value) params.set('sub_tipo_actividad', subSelect.value);
+            if (zonaHidden && zonaHidden.value) params.set('zona', zonaHidden.value);
+            if (medicoSelect && medicoSelect.value) params.set('medico_id', medicoSelect.value);
+            fetch('{{ route("productores.preview-clave") }}?' + params.toString())
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data || !data.clave) return;
+                    if (zonaHidden && !zonaHidden.value && data.zona) zonaHidden.value = data.zona;
+                    if (zonaSelect && !zonaSelect.value && data.zona) zonaSelect.value = data.zona;
+                    marker.innerHTML = '<span class="badge bg-success rounded-pill px-3 py-1 fs-6"><i class="bi bi-magic me-1"></i>Se generará: ' + data.clave + (data.zona ? ' · Zona ' + data.zona : '') + '</span>';
+                    marker.style.display = '';
+                })
+                .catch(function() {});
+        }
+
+        if (tipoSelect) tipoSelect.addEventListener('change', previewClave);
+        if (subSelect) subSelect.addEventListener('change', previewClave);
+        if (medicoSelect) medicoSelect.addEventListener('change', previewClave);
+        if (zonaSelect) {
+            zonaSelect.addEventListener('change', function() {
+                if (zonaHidden) zonaHidden.value = zonaSelect.value;
+                previewClave();
+            });
+        }
+
+        window['previewClave' + (suf ? suf : '')] = previewClave;
+        marker._previewClave = previewClave;
     })();
     </script>
 </div>

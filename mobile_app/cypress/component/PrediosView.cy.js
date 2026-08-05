@@ -161,7 +161,7 @@ describe('PrediosView', () => {
     })
 
     it('navega entre paginas de predios', () => {
-      const manyPredios = Array.from({ length: 15 }, (_, i) => ({
+      const manyPredios = Array.from({ length: 25 }, (_, i) => ({
         id: i + 1,
         nombre_rancho: `Rancho Test ${i + 1}`,
         productor: { id: i + 1, nombre: 'Test' },
@@ -178,7 +178,9 @@ describe('PrediosView', () => {
       mount(PrediosView, { global: { plugins: [router] } })
 
       cy.wait('@getPrediosPaged', { timeout: 10000 })
-      cy.contains('Mostrando 1 a 10 de 15 registros', { timeout: 5000 }).should('be.visible')
+      cy.contains('Mostrando 1 a 20 de 25 registros', { timeout: 5000 }).should('be.visible')
+      cy.contains('.pagination-btn', '2').click()
+      cy.contains('Mostrando 21 a 25 de 25 registros').should('be.visible')
     })
 
     it('cierra sesion desde menu lateral', () => {

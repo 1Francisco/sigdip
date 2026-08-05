@@ -113,7 +113,7 @@
               <button
                 type="button"
                 class="btn-cancel-custom flex-grow-1"
-                @click="$router.push('/aretes-censo')"
+                @click="$router.push('/predios')"
               >
                 Cancelar
               </button>
@@ -257,7 +257,7 @@ export default {
         }
 
         setTimeout(() => {
-          this.$router.push('/aretes-censo');
+          this.$router.push('/predios');
         }, 1500);
       } catch (e) {
         this.errorMsg = e.message || 'No se pudo guardar el arete del censo.';

@@ -8,7 +8,7 @@
           <i class="bi bi-arrow-left fs-5"></i>
         </button>
         <div class="text-start title-text-wrapper">
-          <h1 class="h5 fw-bold mb-0 text-dark header-title">Registrar Productor</h1>
+          <h1 class="h5 fw-bold mb-0 text-dark header-title">{{ wizard ? 'Registrar Productores' : 'Registrar Productor' }}</h1>
           <div class="subtitle text-secondary small d-none d-sm-block">Complete los datos según el formato oficial de SENASICA</div>
         </div>
       </div>
@@ -29,7 +29,108 @@
     <main class="app-content main-content p-4">
       <div class="container-form-wrapper">
         <div class="card border-0 shadow-sm p-4 rounded-4 bg-white">
-          
+
+          <!-- ========================================== -->
+          <!-- FASE 0: AÑADIR PRODUCTOR A UNO EXISTENTE   -->
+          <!-- ========================================== -->
+          <div v-if="showSearch" class="animate-fade-in">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="text-primary fs-4"><i class="bi bi-link-45deg"></i></span>
+              <h4 class="h5 fw-bold mb-0 text-dark">Añadir Productor a uno existente</h4>
+            </div>
+            <p class="small text-muted mb-3 text-start">
+              Selecciona el productor cuyo hato recibirá los nuevos registros. Se copiarán automáticamente sus datos de localización, MVZ y clave.
+            </p>
+
+            <input
+              v-model="searchTerm"
+              type="text"
+              class="form-control-custom mb-2"
+              placeholder="Buscar productor por nombre, CURP, UPP o clave…"
+              @input="onSearchInput"
+            >
+            <div v-if="isSearching" class="text-muted small mb-2 text-start">Buscando…</div>
+
+            <div v-if="!vincularProductor && searchResults.length > 0" class="list-group mb-3 text-start">
+              <button
+                v-for="item in searchResults"
+                :key="item.id"
+                type="button"
+                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                @click="selectProductor(item)"
+              >
+                <div>
+                  <strong>{{ item.nombre }} {{ item.apellido_paterno }}{{ item.apellido_materno ? ' ' + item.apellido_materno : '' }}</strong>
+                  <div class="small text-muted">
+                    <span v-if="item.clave" class="badge badge-clave rounded-pill me-1">{{ item.clave }}</span>
+                    {{ item.upp || '—' }}
+                  </div>
+                </div>
+                <i class="bi bi-chevron-right text-secondary"></i>
+              </button>
+            </div>
+            <div v-if="!vincularProductor && searchTerm.length >= 2 && !isSearching && searchResults.length === 0" class="text-muted small mb-3 text-start">
+              Sin resultados
+            </div>
+
+            <div v-if="vincularProductor" class="border rounded-3 p-3 mb-3 text-start">
+              <div class="d-flex justify-content-between align-items-center gap-2">
+                <div>
+                  <div class="fw-bold">{{ vincularProductor.nombre }} {{ vincularProductor.apellido_paterno }}{{ vincularProductor.apellido_materno ? ' ' + vincularProductor.apellido_materno : '' }}</div>
+                  <div class="small text-muted">
+                    <span v-if="vincularProductor.clave" class="badge badge-clave rounded-pill me-1">{{ vincularProductor.clave }}</span>
+                    {{ vincularProductor.upp || '—' }}
+                  </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" @click="quitarSeleccion">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+              <div class="mt-3">
+                <label class="form-label-custom">Cantidad de productores a registrar</label>
+                <input
+                  v-model.number="cantidad"
+                  type="number"
+                  min="1"
+                  max="15"
+                  class="form-control-custom"
+                  @input="cantidad = Math.min(15, Math.max(1, Number(cantidad) || 1))"
+                >
+                <div class="form-text small text-muted">Mínimo 1, máximo 15</div>
+              </div>
+              <button type="button" class="btn btn-primary rounded-pill w-100 fw-bold mt-3" @click="iniciarWizard">
+                <i class="bi bi-arrow-right me-1"></i> Comenzar registro
+              </button>
+            </div>
+
+            <div class="d-flex gap-2 mt-3">
+              <button type="button" class="btn-cancel-custom rounded-pill px-4" @click="handleCancel">Cancelar</button>
+            </div>
+          </div>
+
+          <!-- ========================================== -->
+          <!-- WIZARD / FORMULARIO NORMAL                  -->
+          <!-- ========================================== -->
+          <template v-else>
+
+            <!-- Banner de vinculación al hato -->
+            <div v-if="wizard && vincularProductor" class="alert alert-info-custom d-flex align-items-center gap-2 text-start p-3 rounded-3 mb-3">
+              <i class="bi bi-link-45deg text-primary fs-5"></i>
+              <div class="small" style="font-size: 0.85rem;">
+                Vinculando nuevos productores al hato de <strong>{{ vincularProductor.nombre }} {{ vincularProductor.apellido_paterno }}</strong>
+                <span v-if="vincularProductor.clave">(Clave: <code class="fw-bold">{{ vincularProductor.clave }}</code>)</span>.
+                Se copiarán automáticamente sus datos de localización y MVZ.
+              </div>
+            </div>
+
+            <!-- Progreso secuencial del wizard -->
+            <div v-if="wizard" class="d-flex align-items-center justify-content-between gap-2 mb-3">
+              <div class="fw-bold text-dark small">Productor {{ indiceActual + 1 }} de {{ cantidad }}</div>
+              <div class="wizard-progress-track">
+                <div class="wizard-progress-fill" :style="{ width: (((indiceActual + 1) / cantidad) * 100) + '%' }"></div>
+              </div>
+            </div>
+
           <!-- STEPPER INDICATOR (Cloned from Web Screenshot) -->
           <div class="stepper-container">
             <!-- Paso 1 Circle -->
@@ -206,7 +307,7 @@
                   <div class="col-12 col-md-6">
                     <div class="form-group-custom">
                       <label class="form-label-custom">Zona / Sector</label>
-                      <select v-model="form.zona" class="form-select form-control-custom bg-light" disabled>
+                      <select v-model="form.zona" data-testid="zona-select" class="form-select form-control-custom bg-light">
                         <option value="">-- Sin Zona --</option>
                         <option value="A">Sector A</option>
                         <option value="B">Sector B</option>
@@ -228,8 +329,9 @@
                 </div>
 
                 <!-- Clave Marker (visible para todos) -->
-                <div v-if="claveBadge" class="col-12 mt-1">
-                  <span class="badge bg-primary rounded-pill px-3 py-1 fs-6">{{ claveBadge.clave }}  ·  Zona {{ claveBadge.zona }}</span>
+                <div v-if="claveBadge || clavePreview" class="col-12 mt-1">
+                  <span v-if="claveBadge" class="badge bg-primary rounded-pill px-3 py-1 fs-6">{{ claveBadge.clave }}  ·  Zona {{ claveBadge.zona }}</span>
+                  <span v-else-if="clavePreview" class="badge bg-success rounded-pill px-3 py-1 fs-6"><i class="bi bi-magic me-1"></i> Se generará: {{ clavePreview.clave }}{{ clavePreview.zona ? ' · Zona ' + clavePreview.zona : '' }}</span>
                 </div>
               </div>
 
@@ -335,12 +437,14 @@
                   No tiene predio (Solo Productor)
                 </button>
                 <button type="submit" class="btn-submit-green rounded-pill px-4 d-flex align-items-center justify-content-center gap-2">
-                  <i class="bi bi-check-circle-fill animate-pulse-soft"></i> Finalizar y Guardar Todo
+                  <i class="bi bi-check-circle-fill animate-pulse-soft"></i>
+                  {{ wizard && indiceActual < cantidad - 1 ? 'Guardar y Siguiente' : 'Finalizar y Guardar Todo' }}
                 </button>
               </div>
             </form>
           </div>
 
+          </template>
         </div>
       </div>
     </main>
@@ -371,12 +475,24 @@ export default {
 
       // Two-step logic
       registrarPredio: false,
+
+      // Flujo "Añadir Productor a uno existente" (vincular=true)
+      wizard: false,
+      showSearch: false,
+      searchTerm: '',
+      searchResults: [],
+      isSearching: false,
+      vincularProductor: null,
+      cantidad: 1,
+      indiceActual: 0,
+      prefill: {},
       
       // Clave autocomplete states
       resultadosClave: [],
       isSearchingClave: false,
       noClaveFound: false,
       claveDebounce: null,
+      clavePreview: null,
 
       // Form bindings
       form: {
@@ -419,6 +535,11 @@ export default {
       return null;
     }
   },
+  watch: {
+    'form.sub_tipo_actividad'() { this.fetchClavePreview(); },
+    'form.zona'() { this.fetchClavePreview(); },
+    'form.medico_id'() { this.fetchClavePreview(); }
+  },
   async mounted() {
     // 1. Cargar datos del usuario autenticado
     const user = api.getCurrentUser();
@@ -441,6 +562,7 @@ export default {
       if (prefillId) {
         await this.prefillFromProductor(prefillId);
       } else if (this.$route.query.vincular === 'true') {
+        this.wizard = true;
         this.showSearch = true;
       }
     }
@@ -548,6 +670,29 @@ export default {
       if (this.form.tipo_actividad !== 'Seguimiento') {
         this.form.sub_tipo_actividad = '';
       }
+      this.fetchClavePreview();
+    },
+
+    async fetchClavePreview() {
+      if (!this.form.tipo_actividad || !this.isOnline) {
+        this.clavePreview = null;
+        return;
+      }
+      if (this.form.clave && this.form.clave.trim()) {
+        this.clavePreview = null;
+        return;
+      }
+      try {
+        const params = { tipo_actividad: this.form.tipo_actividad };
+        if (this.form.sub_tipo_actividad) params.sub_tipo_actividad = this.form.sub_tipo_actividad;
+        if (this.form.zona) params.zona = this.form.zona;
+        if (this.form.medico_id) params.medico_id = this.form.medico_id;
+        const res = await api.previewClaveProductor(params);
+        this.clavePreview = res?.clave ? { clave: res.clave, zona: res.zona || null } : null;
+        if (res?.zona && !this.form.zona) this.form.zona = res.zona;
+      } catch (e) {
+        this.clavePreview = null;
+      }
     },
 
     // Detectar ubicación actual por GPS nativo o navegador
@@ -602,20 +747,22 @@ export default {
     autoSelectZona() {
       if (!this.form.clave) return;
       const first = this.form.clave.toUpperCase()[0];
-      this.form.zona = (first === 'A' || first === 'B') ? first : '';
+      if (first === 'A' || first === 'B') this.form.zona = first;
     },
 
     onClaveInput() {
       this.autoSelectZona();
-      
+
       clearTimeout(this.claveDebounce);
       const val = (this.form.clave || '').trim();
       if (val.length < 1) {
         this.resultadosClave = [];
         this.noClaveFound = false;
         this.isSearchingClave = false;
+        this.fetchClavePreview();
         return;
       }
+      this.clavePreview = null;
 
       this.isSearchingClave = true;
       this.noClaveFound = false;
@@ -655,6 +802,7 @@ export default {
       this.form.clave = clave;
       this.resultadosClave = [];
       this.noClaveFound = false;
+      this.clavePreview = null;
       this.autoSelectZona();
     },
 
@@ -715,6 +863,153 @@ export default {
         }
       } catch (err) {
         console.error('Error al pre-llenar productor:', err);
+      }
+    },
+
+    // ---- Flujo "Añadir Productor a uno existente" (vincular=true) ----
+
+    async onSearchInput() {
+      const q = this.searchTerm.trim();
+      if (q.length < 1) {
+        this.searchResults = [];
+        return;
+      }
+      this.isSearching = true;
+      try {
+        let results = [];
+        if (this.isOnline) {
+          try {
+            const res = await api.searchProductor(q);
+            results = Array.isArray(res) ? res : [];
+          } catch (err) {
+            console.warn('Error buscando productores en el servidor:', err.message);
+          }
+        }
+        if (results.length === 0) {
+          const local = await db.getProductores();
+          const term = q.toLowerCase();
+          results = local.filter(p => {
+            const haystack = [
+              p.nombre, p.nombre_completo, p.nombreRaw,
+              p.apellido_paterno, p.apellido_materno,
+              p.curp, p.upp, p.clave
+            ].filter(Boolean).join(' ').toLowerCase();
+            return haystack.includes(term);
+          });
+        }
+        this.searchResults = results.slice(0, 15);
+      } catch (e) {
+        console.warn('Error buscando productores:', e.message);
+        this.searchResults = [];
+      } finally {
+        this.isSearching = false;
+      }
+    },
+
+    selectProductor(item) {
+      this.vincularProductor = item;
+      this.prefill = {
+        domicilio: item.domicilio || '',
+        municipio: item.municipio || '',
+        localidad: item.localidad || '',
+        estado: item.estado || 'Nayarit',
+        telefono: item.telefono || '',
+        email: item.email || '',
+        medico_id: item.medico_id || '',
+        tipo_actividad: item.tipo_actividad || '',
+        sub_tipo_actividad: item.sub_tipo_actividad || '',
+        clave: item.clave || '',
+        zona: item.zona || '',
+        nombre_rancho: item._predio_nombre_rancho || item.nombre_rancho || '',
+        clave_unidad_produccion: item._predio_clave_unidad_produccion || item.clave_unidad_produccion || '',
+        predio_domicilio: item._predio_domicilio || item.predio_domicilio || '',
+        predio_municipio: item._predio_municipio || item.predio_municipio || '',
+        predio_localidad: item._predio_localidad || item.predio_localidad || '',
+        latitud: item._predio_latitud || item.latitud || '',
+        longitud: item._predio_longitud || item.longitud || ''
+      };
+      this.aplicarPrefill();
+      this.searchResults = [];
+      this.searchTerm = '';
+    },
+
+    aplicarPrefill() {
+      const p = this.prefill;
+      this.form.domicilio = p.domicilio || '';
+      this.form.municipio = p.municipio || '';
+      this.form.localidad = p.localidad || '';
+      this.form.estado = p.estado || 'Nayarit';
+      this.form.telefono = p.telefono || '';
+      this.form.email = p.email || '';
+      this.form.medico_id = p.medico_id || '';
+      this.form.tipo_actividad = p.tipo_actividad || '';
+      this.form.sub_tipo_actividad = p.sub_tipo_actividad || '';
+      this.form.clave = p.clave || '';
+      this.form.zona = p.zona || '';
+      this.form.nombre_rancho = p.nombre_rancho || '';
+      this.form.clave_unidad_produccion = p.clave_unidad_produccion || '';
+      this.form.predio_domicilio = p.predio_domicilio || '';
+      this.form.predio_municipio = p.predio_municipio || '';
+      this.form.predio_localidad = p.predio_localidad || '';
+      this.form.latitud = p.latitud || '';
+      this.form.longitud = p.longitud || '';
+      this.form.nombre = '';
+      this.form.apellido_paterno = '';
+      this.form.apellido_materno = '';
+      this.form.curp = '';
+      this.form.upp = '';
+      this.resultadosClave = [];
+      this.noClaveFound = false;
+      this.clavePreview = null;
+    },
+
+    quitarSeleccion() {
+      this.vincularProductor = null;
+      this.prefill = {};
+      this.showSearch = true;
+    },
+
+    iniciarWizard() {
+      if (!this.vincularProductor) {
+        alert('Selecciona primero un productor existente.');
+        return;
+      }
+      this.cantidad = Math.min(15, Math.max(1, Number(this.cantidad) || 1));
+      this.indiceActual = 0;
+      this.currentStep = 1;
+      this.showSearch = false;
+      window.scrollTo(0, 0);
+    },
+
+    async avanzarOFinalizar() {
+      this.prefill.domicilio = this.form.domicilio || this.prefill.domicilio || '';
+      this.prefill.municipio = this.form.municipio || this.prefill.municipio || '';
+      this.prefill.localidad = this.form.localidad || this.prefill.localidad || '';
+      this.prefill.estado = this.form.estado || this.prefill.estado || 'Nayarit';
+      this.prefill.telefono = this.form.telefono || this.prefill.telefono || '';
+      this.prefill.email = this.form.email || this.prefill.email || '';
+      this.prefill.medico_id = this.form.medico_id || this.prefill.medico_id || '';
+      this.prefill.tipo_actividad = this.form.tipo_actividad || this.prefill.tipo_actividad || '';
+      this.prefill.sub_tipo_actividad = this.form.sub_tipo_actividad || this.prefill.sub_tipo_actividad || '';
+      this.prefill.clave = this.form.clave || this.prefill.clave || '';
+      this.prefill.zona = this.form.zona || this.prefill.zona || '';
+      this.prefill.nombre_rancho = this.form.nombre_rancho || this.prefill.nombre_rancho || '';
+      this.prefill.clave_unidad_produccion = this.form.clave_unidad_produccion || this.prefill.clave_unidad_produccion || '';
+      this.prefill.predio_domicilio = this.form.predio_domicilio || this.prefill.predio_domicilio || '';
+      this.prefill.predio_municipio = this.form.predio_municipio || this.prefill.predio_municipio || '';
+      this.prefill.predio_localidad = this.form.predio_localidad || this.prefill.predio_localidad || '';
+      this.prefill.latitud = this.form.latitud || this.prefill.latitud || '';
+      this.prefill.longitud = this.form.longitud || this.prefill.longitud || '';
+
+      if (this.indiceActual < this.cantidad - 1) {
+        this.indiceActual += 1;
+        this.currentStep = 1;
+        this.aplicarPrefill();
+        window.scrollTo(0, 0);
+      } else {
+        const clave = this.vincularProductor?.clave || this.prefill.clave || '';
+        alert(`${this.cantidad} productor(es) registrado(s)${clave ? ` al hato ${clave}` : ''} con éxito.`);
+        this.$router.push('/productores');
       }
     },
 
@@ -907,10 +1202,12 @@ export default {
           });
           await db.saveProductores(productores);
           
-          alert(newPredio.nombre !== 'Sin Rancho' 
-            ? 'Productor y Rancho creados exitosamente!'
-            : 'Productor registrado exitosamente (Sin Rancho)!'
-          );
+          if (!this.wizard) {
+            alert(newPredio.nombre !== 'Sin Rancho' 
+              ? 'Productor y Rancho creados exitosamente!'
+              : 'Productor registrado exitosamente (Sin Rancho)!'
+            );
+          }
         } else {
           // Edición
           const targetId = String(this.productorId);
@@ -978,7 +1275,11 @@ export default {
           alert('¡Datos del productor actualizados con éxito!');
         }
 
-        this.$router.push('/productores');
+        if (this.wizard) {
+          await this.avanzarOFinalizar();
+        } else {
+          this.$router.push('/productores');
+        }
       } catch (err) {
         console.error('Error al guardar productor:', err);
         alert('Error al procesar la solicitud.');
@@ -1441,5 +1742,68 @@ export default {
 
 .border-slate-100 {
   border-color: #f1f5f9 !important;
+}
+
+/* Flujo "Añadir Productor a uno existente" */
+.btn-outline-danger {
+  background: #ffffff;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  transition: all 0.2s ease;
+}
+
+.btn-outline-danger:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
+}
+
+.btn-outline-danger:active {
+  background: #fee2e2;
+}
+
+.list-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.list-group-item {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.list-group-item-action {
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s ease;
+}
+
+.list-group-item-action:hover {
+  background: #f8fafc;
+}
+
+.badge-clave {
+  background-color: #334155 !important;
+  color: #fff !important;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.wizard-progress-track {
+  flex: 1;
+  max-width: 160px;
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.wizard-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #2563eb;
+  transition: width 0.3s ease;
 }
 </style>

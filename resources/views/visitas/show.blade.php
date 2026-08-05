@@ -80,22 +80,45 @@
                 </table>
             </div>
         </div>
-        @if ($visita->inspeccion)
+        @if ($visita->inspecciones->count() > 0)
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3">
-                <h5 class="mb-0 fw-bold">Dictamen Asociado</h5>
+                <h5 class="mb-0 fw-bold">Dictámenes Asociados ({{ $visita->inspecciones->count() }})</h5>
             </div>
-            <div class="card-body p-4">
-                <p>
-                    <strong>Folio:</strong> {{ $visita->inspeccion->folio ?? 'N/A' }}<br>
-                    <strong>Estado:</strong>
-                    <span class="badge bg-{{ $visita->inspeccion->estado === 'sincronizado' ? 'success' : 'secondary' }}">
-                        {{ $visita->inspeccion->estado }}
-                    </span>
-                </p>
-                <a href="{{ route('inspecciones.show', $visita->inspeccion->id) }}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-eye"></i> Ver Dictamen
-                </a>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    @foreach ($visita->inspecciones as $ins)
+                    <div class="list-group-item px-4 py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold text-dark mb-1">
+                                    Folio: {{ $ins->folio ?? 'Sin Folio (Borrador)' }}
+                                </div>
+                                <div class="small text-muted mb-1">
+                                    <strong>Productor:</strong> {{ $ins->predio->productor->nombre_completo ?? 'N/A' }} <br>
+                                    <strong>Rancho:</strong> {{ $ins->predio->nombre_rancho ?? 'N/A' }}
+                                </div>
+                                <span class="badge bg-{{ $ins->estado === 'sincronizado' ? 'success' : 'secondary' }} rounded-pill">
+                                    {{ ucfirst($ins->estado) }}
+                                </span>
+                            </div>
+                            <div class="d-flex gap-1">
+                                <a href="{{ route('inspecciones.show', $ins->id) }}" class="btn btn-sm btn-outline-primary" title="Ver Vista Previa / PDF">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ route('reportes.pdf', $ins->id) }}" class="btn btn-sm btn-outline-danger" title="Descargar PDF">
+                                    <i class="bi bi-file-earmark-pdf"></i>
+                                </a>
+                                @if($ins->estado === 'borrador' || auth()->user()->hasRole('Administrador'))
+                                <a href="{{ route('inspecciones.edit', $ins->id) }}" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
             </div>
         </div>
         @endif

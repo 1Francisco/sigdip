@@ -2,6 +2,7 @@ import { mount } from 'cypress/vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import InspeccionDetailView from '../../src/views/InspeccionDetailView.vue'
 import userAdmin from '../fixtures/user-admin.json'
+import userMedico from '../fixtures/user-medico.json'
 
 const EmptyView = { template: '<div>Other</div>' }
 
@@ -205,5 +206,99 @@ describe('InspeccionDetailView', () => {
 
     cy.wait('@getInspeccionError', { timeout: 10000 })
       cy.contains('No se encontro el dictamen', { timeout: 5000 }).should('be.visible')
+  })
+
+  it('muestra boton eliminar en dictamen borrador', () => {
+    const borrador = { ...fakeInspeccion, estado: 'borrador', folio: null, clave_interna: null }
+
+    cy.intercept('GET', '**/api/inspecciones/101', {
+      statusCode: 200,
+      body: { data: borrador },
+    }).as('getBorrador')
+
+    const router = buildRouter(101)
+    mount(InspeccionDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getBorrador', { timeout: 10000 })
+    cy.contains('Eliminar', { timeout: 5000 }).should('be.visible')
+  })
+
+  it('muestra boton eliminar para admin en dictamen finalizado', () => {
+    cy.intercept('GET', '**/api/inspecciones/100', {
+      statusCode: 200,
+      body: { data: fakeInspeccion },
+    }).as('getInspeccion')
+
+    const router = buildRouter(100)
+    mount(InspeccionDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getInspeccion', { timeout: 10000 })
+    cy.contains('Eliminar', { timeout: 5000 }).should('be.visible')
+  })
+
+  it('oculta boton eliminar para medico en dictamen finalizado', () => {
+    cy.setLoginState({ user: userMedico })
+
+    cy.intercept('GET', '**/api/inspecciones/100', {
+      statusCode: 200,
+      body: { data: fakeInspeccion },
+    }).as('getInspeccion')
+
+    const router = buildRouter(100)
+    mount(InspeccionDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getInspeccion', { timeout: 10000 })
+    cy.contains('Eliminar', { timeout: 5000 }).should('not.exist')
+  })
+
+  it.only('elimina dictamen borrador con confirmacion', () => {
+    const borrador = { ...fakeInspeccion, estado: 'borrador', folio: null, clave_interna: null }
+
+    cy.intercept('GET', '**/api/inspecciones/101', {
+      statusCode: 200,
+      body: { data: borrador },
+    }).as('getBorrador')
+
+    cy.intercept('DELETE', '**/api/inspecciones/101', {
+      statusCode: 200,
+      body: { success: true },
+    }).as('deleteInspeccion')
+
+    const router = buildRouter(101)
+
+    cy.window().then((win) => {
+      cy.stub(win, 'confirm').returns(true)
+    })
+    mount(InspeccionDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getBorrador', { timeout: 10000 })
+
+    cy.contains('Eliminar', { timeout: 5000 }).click()
+    cy.wait('@deleteInspeccion', { timeout: 10000 })
+  })
+
+  it('cancela eliminacion cuando confirm es false', () => {
+    const borrador = { ...fakeInspeccion, estado: 'borrador', folio: null, clave_interna: null }
+
+    cy.intercept('GET', '**/api/inspecciones/101', {
+      statusCode: 200,
+      body: { data: borrador },
+    }).as('getBorrador')
+
+    cy.intercept('DELETE', '**/api/inspecciones/101', {
+      statusCode: 200,
+      body: { success: true },
+    }).as('deleteInspeccion')
+
+    const router = buildRouter(101)
+    mount(InspeccionDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getBorrador', { timeout: 10000 })
+
+    cy.window().then((win) => {
+      cy.stub(win, 'confirm').returns(false)
+    })
+    cy.contains('Eliminar', { timeout: 5000 }).click()
+    cy.get('@deleteInspeccion').should('not.exist')
   })
 })

@@ -3,7 +3,7 @@
 @section('title', 'Editar Arete')
 @section('header_title', 'Editar Arete del Censo')
 @section('header_subtitle', 'Modifique los datos del arete')
-@section('back_url', route('aretes-censo.index'))
+@section('back_url', route('predios.index', ['tab' => 'aretes']))
 
 @section('content')
 <div class="row justify-content-center">
@@ -25,7 +25,7 @@
                     @method('PUT')
                     @include('aretes-censo._form', ['aretes_censo' => $aretes_censo])
                     <div class="d-flex justify-content-end gap-3 mt-4">
-                        <a href="{{ route('aretes-censo.index') }}" class="btn btn-light px-4">Cancelar</a>
+                        <a href="{{ route('predios.index', ['tab' => 'aretes']) }}" class="btn btn-light px-4">Cancelar</a>
                         <button type="submit" class="btn btn-primary px-5">Actualizar Arete</button>
                     </div>
                 </form>

@@ -217,6 +217,7 @@ class ImportExcelController extends Controller
                                         'SEXO' => ['sexo'],
                                         'NAC' => ['nac', 'nacimiento', 'f. nac', 'fecha nac', 'fecha_nac'],
                                         'SAC?' => ['sac?', 'sac', 'sacrificio', 'f_sac', 'destino'],
+                                        'PRODUCTOR' => ['productor', 'nombre', 'propietario', 'interesado', 'cliente', 'upp', 'curp'],
                                     ];
                                     $areteIndices = [];
                                     foreach ($areteMapping as $label => $patterns) {
@@ -230,7 +231,7 @@ class ImportExcelController extends Controller
                                         }
                                     }
 
-                                    $headers = ['ARETE', 'EDAD', 'RAZA', 'SEXO', 'NAC', 'SAC?'];
+                                    $headers = ['ARETE', 'EDAD', 'RAZA', 'SEXO', 'NAC', 'SAC?', 'PRODUCTOR'];
                                     $finalRows = [];
                                     $totalReal = 0;
                                     for ($i = 1; $i < count($tempData); $i++) {
@@ -268,6 +269,7 @@ class ImportExcelController extends Controller
                                             isset($areteIndices['SEXO']) ? trim((string) ($row[$areteIndices['SEXO']] ?? '')) : '',
                                             $nacFormatted,
                                             isset($areteIndices['SAC?']) ? trim((string) ($row[$areteIndices['SAC?']] ?? '')) : '',
+                                            isset($areteIndices['PRODUCTOR']) ? trim((string) ($row[$areteIndices['PRODUCTOR']] ?? '')) : '',
                                         ];
                                     }
                                 }
@@ -468,6 +470,7 @@ class ImportExcelController extends Controller
                             'SEXO' => ['sexo'],
                             'NAC' => ['nac', 'nacimiento', 'f. nac', 'fecha nac', 'fecha_nac'],
                             'SAC?' => ['sac?', 'sac', 'sacrificio', 'f_sac', 'destino'],
+                            'PRODUCTOR' => ['productor', 'nombre', 'propietario', 'interesado', 'cliente', 'upp', 'curp'],
                         ];
                         $areteIndices = [];
                         foreach ($areteMapping as $label => $patterns) {
@@ -481,7 +484,7 @@ class ImportExcelController extends Controller
                             }
                         }
 
-                        $headers = ['ARETE', 'EDAD', 'RAZA', 'SEXO', 'NAC', 'SAC?'];
+                        $headers = ['ARETE', 'EDAD', 'RAZA', 'SEXO', 'NAC', 'SAC?', 'PRODUCTOR'];
                         $finalRows = [];
                         $totalReal = 0;
                         for ($i = 1; $i < count($tempData); $i++) {
@@ -519,6 +522,7 @@ class ImportExcelController extends Controller
                                 isset($areteIndices['SEXO']) ? trim((string) ($row[$areteIndices['SEXO']] ?? '')) : '',
                                 $nacFormatted,
                                 isset($areteIndices['SAC?']) ? trim((string) ($row[$areteIndices['SAC?']] ?? '')) : '',
+                                isset($areteIndices['PRODUCTOR']) ? trim((string) ($row[$areteIndices['PRODUCTOR']] ?? '')) : '',
                             ];
                         }
                     }
@@ -869,6 +873,12 @@ class ImportExcelController extends Controller
                     $productorIds[] = [
                         'productor_id' => $productor->id,
                         'predio_id' => $predio->id,
+                        'nombre_completo' => $productor->nombre_completo,
+                        'nombre' => $productor->nombre,
+                        'apellido_paterno' => $productor->apellido_paterno,
+                        'apellido_materno' => $productor->apellido_materno,
+                        'upp' => $productor->upp,
+                        'curp' => $productor->curp,
                     ];
                     $productoresCreados++;
                 }
@@ -884,12 +894,14 @@ class ImportExcelController extends Controller
                 'sexo' => ['sexo'],
                 'nacimiento' => ['fecha nac', 'f. nac', 'nacimiento', 'fecha_nac'],
                 'sacrificio' => ['sac?', 'f_sac', 'sacrificado', 'destino', 'sacrificio'],
+                'productor' => ['productor', 'nombre', 'propietario', 'interesado', 'cliente', 'upp', 'curp'],
             ]) ?? $this->smartMapColumns(array_values($dataAretes), [
                 'arete' => ['arete', 'siniiga', 'numero', 'identificador'],
                 'raza' => ['raza'],
                 'sexo' => ['sexo'],
                 'nacimiento' => ['fecha nac', 'f. nac', 'nacimiento', 'fecha_nac'],
                 'sacrificio' => ['sac?', 'f_sac', 'sacrificado', 'destino', 'sacrificio'],
+                'productor' => ['productor', 'nombre', 'propietario', 'interesado', 'cliente', 'upp', 'curp'],
             ]);
 
             // Garantizar unicidad de columnas para aretes
@@ -904,7 +916,7 @@ class ImportExcelController extends Controller
                 }
             }
 
-            // Usar el primer productor/predio como referencia si solo hay uno
+            // Usar el primer productor/predio como referencia si no hay coincidencia
             $defaultProductor = $productorIds[0] ?? ['productor_id' => null, 'predio_id' => null];
 
             for ($i = 2; $i <= count($dataAretes); $i++) {
@@ -931,11 +943,15 @@ class ImportExcelController extends Controller
                     }
                 }
 
+                // Buscar el productor correspondiente de forma inteligente
+                $prodVal = $colAretes['productor'] ? trim($row[$colAretes['productor']] ?? '') : '';
+                $targetProductor = $this->findMatchingProductor($prodVal, $productorIds, $defaultProductor);
+
                 AreteCenso::updateOrCreate(
                     ['numero_arete' => $arete],
                     [
-                        'productor_id' => $defaultProductor['productor_id'],
-                        'predio_id' => $defaultProductor['predio_id'],
+                        'productor_id' => $targetProductor['productor_id'],
+                        'predio_id' => $targetProductor['predio_id'],
                         'raza' => $colAretes['raza'] ? trim($row[$colAretes['raza']] ?? '') : null,
                         'sexo' => $colAretes['sexo'] ? trim($row[$colAretes['sexo']] ?? '') : null,
                         'fecha_nacimiento' => $nacimiento,
@@ -1065,6 +1081,11 @@ class ImportExcelController extends Controller
                                 $score += 2;
                             }
                             break;
+                        case 'productor':
+                            if (strlen($val) > 4 && ! is_numeric($val)) {
+                                $score += 3;
+                            }
+                            break;
                     }
                 }
                 $scores[$colIdx] = $score;
@@ -1158,5 +1179,108 @@ class ImportExcelController extends Controller
         }
 
         return $result;
+    }
+
+    /**
+     * Busca el productor correspondiente a partir de un valor (nombre, upp, curp)
+     */
+    private function findMatchingProductor($value, array $productorIds, array $defaultProductor): array
+    {
+        $value = trim((string) $value);
+        if (empty($value)) {
+            return $defaultProductor;
+        }
+
+        $upperValue = strtoupper($value);
+
+        // 1. Intentar por UPP exacta o parcial
+        foreach ($productorIds as $p) {
+            if (! empty($p['upp']) && strtoupper(trim($p['upp'])) === $upperValue) {
+                return $p;
+            }
+        }
+
+        // 2. Intentar por CURP exacta
+        foreach ($productorIds as $p) {
+            if (! empty($p['curp']) && strtoupper(trim($p['curp'])) === $upperValue) {
+                return $p;
+            }
+        }
+
+        // 3. Intentar por coincidencia exacta de nombre completo
+        foreach ($productorIds as $p) {
+            $fullName = strtoupper(trim($p['nombre_completo'] ?? ''));
+            if (! empty($fullName) && $fullName === $upperValue) {
+                return $p;
+            }
+        }
+
+        // 4. Intentar coincidencia parcial de nombre completo
+        foreach ($productorIds as $p) {
+            $fullName = strtoupper(trim($p['nombre_completo'] ?? ''));
+            if (! empty($fullName) && (strpos($fullName, $upperValue) !== false || strpos($upperValue, $fullName) !== false)) {
+                return $p;
+            }
+        }
+
+        // 5. Intentar por intersección inteligente de palabras (tokens) del nombre completo (se busca la de mayor coincidencia)
+        $cleanString = function ($str) {
+            $str = preg_replace('/\b(DE|DEL|LA|LAS|EL|LOS|Y)\b/i', ' ', $str);
+            $str = preg_replace('/\s+/', ' ', $str);
+            $words = array_filter(explode(' ', trim($str)));
+
+            return array_values($words);
+        };
+
+        $valTokens = $cleanString($upperValue);
+        if (count($valTokens) >= 2) {
+            $bestMatch = null;
+            $maxIntersectCount = 0;
+
+            foreach ($productorIds as $p) {
+                $pFullName = strtoupper(trim($p['nombre_completo'] ?? ''));
+                $pTokens = $cleanString($pFullName);
+
+                if (count($pTokens) >= 2) {
+                    $intersect = array_intersect($valTokens, $pTokens);
+                    $intersectCount = count($intersect);
+                    if ($intersectCount >= 2 && $intersectCount > $maxIntersectCount) {
+                        $maxIntersectCount = $intersectCount;
+                        $bestMatch = $p;
+                    }
+                }
+            }
+
+            if ($bestMatch) {
+                return $bestMatch;
+            }
+        }
+
+        // 6. Intentar por primer nombre + primer apellido
+        foreach ($productorIds as $p) {
+            $nombre = strtoupper(trim($p['nombre'] ?? ''));
+            $paterno = strtoupper(trim($p['apellido_paterno'] ?? ''));
+            if (! empty($nombre) && ! empty($paterno)) {
+                $shortName = $nombre.' '.$paterno;
+                if (strpos($upperValue, $shortName) !== false || strpos($shortName, $upperValue) !== false) {
+                    return $p;
+                }
+            }
+        }
+
+        // 7. Intentar buscar si el primer nombre de algún productor (campo 'nombre') coincide con alguna palabra del valor de búsqueda
+        foreach ($productorIds as $p) {
+            $nombreProductor = strtoupper(trim($p['nombre'] ?? ''));
+            if (! empty($nombreProductor)) {
+                $pNombreTokens = array_filter(explode(' ', $nombreProductor));
+                foreach ($pNombreTokens as $tok) {
+                    if (strlen($tok) >= 3 && in_array($tok, $valTokens)) {
+                        return $p;
+                    }
+                }
+            }
+        }
+
+        return $defaultProductor;
     }
 }

@@ -24,8 +24,7 @@ class InspeccionController extends Controller
     public function index(Request $request)
     {
         $query = Inspeccion::with(['predio.productor', 'veterinario'])
-            ->orderBy(DB::raw('modified_at IS NULL'))
-            ->latest('modified_at')
+            ->orderByRaw('COALESCE(modified_at, created_at) DESC')
             ->latest('id');
 
         if ($search = $request->get('search')) {
@@ -282,12 +281,17 @@ class InspeccionController extends Controller
 
             // Determine group ID
             $grupoId = 'GRP-'.now()->format('YmdHis').'-'.uniqid();
-            if ($existingDraft && $existingDraft->grupo_id) {
-                $grupoId = $existingDraft->grupo_id;
-                // Delete other inspections in the group
-                $otherInspections = Inspeccion::where('grupo_id', $grupoId)
-                    ->where('id', '!=', $existingDraft->id)
-                    ->get();
+            if ($existingDraft) {
+                if ($existingDraft->grupo_id) {
+                    $grupoId = $existingDraft->grupo_id;
+                    $otherInspections = Inspeccion::where('grupo_id', $grupoId)
+                        ->where('id', '!=', $existingDraft->id)
+                        ->get();
+                } else {
+                    $otherInspections = Inspeccion::where('visita_id', $existingDraft->visita_id)
+                        ->where('id', '!=', $existingDraft->id)
+                        ->get();
+                }
                 foreach ($otherInspections as $other) {
                     $other->detalles()->delete();
                     $other->delete();
@@ -489,12 +493,18 @@ class InspeccionController extends Controller
 
         $productoresExtraSelected = [];
 
+        $grupoInspecciones = collect();
         if ($inspeccion->grupo_id) {
-            // Find all inspections in the same group
             $grupoInspecciones = Inspeccion::where('grupo_id', $inspeccion->grupo_id)
                 ->with(['detalles.animal', 'predio.productor'])
                 ->get();
+        } elseif ($inspeccion->visita_id) {
+            $grupoInspecciones = Inspeccion::where('visita_id', $inspeccion->visita_id)
+                ->with(['detalles.animal', 'predio.productor'])
+                ->get();
+        }
 
+        if ($grupoInspecciones->count() > 0) {
             $detalles = collect();
             foreach ($grupoInspecciones as $ins) {
                 foreach ($ins->detalles as $det) {
@@ -668,11 +678,20 @@ class InspeccionController extends Controller
             // Group ID
             $grupoId = $inspeccion->grupo_id ?: ('GRP-'.now()->format('YmdHis').'-'.uniqid());
 
-            // Fetch existing inspections in the group
-            $existingInspections = Inspeccion::where('grupo_id', $grupoId)->get();
+            // Fetch existing inspections in the group or same visit
+            if ($inspeccion->grupo_id) {
+                $existingInspections = Inspeccion::where('grupo_id', $grupoId)->get();
+            } elseif ($inspeccion->visita_id) {
+                $existingInspections = Inspeccion::where('visita_id', $inspeccion->visita_id)->get();
+            } else {
+                $existingInspections = collect([$inspeccion]);
+            }
+
             $existingInspectionsMap = [];
             foreach ($existingInspections as $exist) {
-                $existingInspectionsMap[$exist->predio->productor_id] = $exist;
+                if ($exist->predio) {
+                    $existingInspectionsMap[$exist->predio->productor_id] = $exist;
+                }
             }
 
             // Track existing animal tags in this group for "agregado_en_lectura" check
@@ -877,7 +896,14 @@ class InspeccionController extends Controller
 
         $inspeccion->load(['predio.productor', 'detalles.animal', 'veterinario']);
 
-        return view('inspecciones.show', compact('inspeccion'));
+        $inspeccionesGrupo = collect();
+        if ($inspeccion->grupo_id) {
+            $inspeccionesGrupo = Inspeccion::where('grupo_id', $inspeccion->grupo_id)
+                ->with('predio.productor')
+                ->get();
+        }
+
+        return view('inspecciones.show', compact('inspeccion', 'inspeccionesGrupo'));
     }
 
     /**
@@ -921,6 +947,7 @@ class InspeccionController extends Controller
                     'sexo' => $animal->sexo,
                     'edad_meses' => $animal->edad_meses,
                     'fecha_nacimiento' => $animal->fecha_nacimiento,
+                    'sacrificio' => $animal->sacrificio,
                 ],
             ]);
         }

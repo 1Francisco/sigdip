@@ -1328,6 +1328,20 @@
                           const s = data.sexo.charAt(0).toUpperCase();
                           sexoSelect.value = (s === 'H' || s === 'F') ? 'H' : 'M';
                       }
+                      if (data.sacrificio) {
+                          row.classList.add('table-danger');
+                          const warn = row.querySelector('.sacrificio-warning') || (function() {
+                              const el = document.createElement('div');
+                              el.className = 'sacrificio-warning alert alert-warning py-1 px-2 mb-0 mt-1 small rounded-2';
+                              el.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> Este animal está marcado como <strong>sacrificado</strong> en el censo.';
+                              razaInput.closest('.col-md-2')?.after?.(el) || edadInput.closest('.row')?.appendChild(el);
+                              return el;
+                          })();
+                      } else {
+                          row.classList.remove('table-danger');
+                          const warn = row.querySelector('.sacrificio-warning');
+                          if (warn) warn.remove();
+                      }
                       input.classList.remove('is-invalid');
                       input.classList.add('is-valid');
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AreteCenso;
 use App\Models\Predio;
 use App\Models\Productor;
 use Illuminate\Http\Request;
@@ -37,7 +38,27 @@ class PredioController extends Controller
         $predios = $query->paginate(10);
         $predios = $predios->withQueryString();
 
-        return view('predios.index', compact('predios'));
+        $aretes = null;
+        $tab = $request->get('tab', 'predios');
+        if ($user->hasRole('Administrador')) {
+            $aretesQuery = AreteCenso::with(['productor', 'predio']);
+
+            if ($searchArete = $request->get('search_arete')) {
+                $aretesQuery->where(function ($q) use ($searchArete) {
+                    $q->where('numero_arete', 'like', "%{$searchArete}%")
+                        ->orWhere('raza', 'like', "%{$searchArete}%")
+                        ->orWhereHas('productor', function ($pq) use ($searchArete) {
+                            $pq->where('nombre', 'like', "%{$searchArete}%")
+                                ->orWhere('apellido_paterno', 'like', "%{$searchArete}%");
+                        });
+                });
+            }
+
+            $aretes = $aretesQuery->latest()->paginate(20, ['*'], 'arete_page');
+            $aretes = $aretes->withQueryString();
+        }
+
+        return view('predios.index', compact('predios', 'aretes', 'tab'));
     }
 
     public function create()

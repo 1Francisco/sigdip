@@ -145,14 +145,10 @@
     if (claveField) {
         claveField.addEventListener('input', function() {
             var val = this.value.toUpperCase();
-            var finalZona = '';
-            if (val.startsWith('AD') || val.startsWith('AP')) {
-                finalZona = 'A';
-            } else if (val.startsWith('BD') || val.startsWith('BP')) {
-                finalZona = 'B';
-            }
-            if (zonaSel) zonaSel.value = finalZona;
-            if (zonaHid) zonaHid.value = finalZona;
+            var first = val.charAt(0);
+            var finalZona = (first === 'A' || first === 'B') ? first : '';
+            if (zonaSel && !zonaSel.value) zonaSel.value = finalZona;
+            if (zonaHid && !zonaHid.value) zonaHid.value = finalZona;
         });
     }
 

@@ -64,18 +64,8 @@ export default {
     console.log(`[BackgroundSync] Iniciando sincronización de ${pendientesCount} dictámenes y ${visitasPendientesCount} visitas...`);
 
     try {
-      // 1. Sync pending inspections
-      if (pendientesCount > 0) {
-        const inspecciones = await db.getInspeccionesPendientes();
-        const res = await api.uploadInspecciones(inspecciones);
-
-        if (res.status === 'success' && res.procesados && res.procesados.length > 0) {
-          await db.clearInspeccionesSincronizadas(res.procesados);
-          console.log(`[BackgroundSync] Sincronizados exitosamente: ${res.procesados.length} dictámenes.`);
-        }
-      }
-
-      // 2. Sync pending visits
+      // 1. Sync pending visits (primero: el servidor valida las fechas de
+      // inyección/lectura de los dictámenes contra la visita existente)
       let visitasSincronizadas = 0;
       if (visitasPendientesCount > 0) {
         const visitas = await db.getVisitasPendientes();
@@ -87,7 +77,20 @@ export default {
         }
       }
 
-      const totalSync = (res && res.procesados ? res.procesados.length : 0) + visitasSincronizadas;
+      // 2. Sync pending inspections
+      let inspeccionesSincronizadas = 0;
+      if (pendientesCount > 0) {
+        const inspecciones = await db.getInspeccionesPendientes();
+        const res = await api.uploadInspecciones(inspecciones);
+
+        if (res.status === 'success' && res.procesados && res.procesados.length > 0) {
+          await db.clearInspeccionesSincronizadas(res.procesados);
+          inspeccionesSincronizadas = res.procesados.length;
+          console.log(`[BackgroundSync] Sincronizados exitosamente: ${res.procesados.length} dictámenes.`);
+        }
+      }
+
+      const totalSync = inspeccionesSincronizadas + visitasSincronizadas;
       if (totalSync > 0) {
         // Disparar evento global para que las pantallas Vue recarguen sus datos
         window.dispatchEvent(new CustomEvent('sigdip-sync-complete', {

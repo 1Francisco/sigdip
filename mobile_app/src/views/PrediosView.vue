@@ -6,6 +6,27 @@
         <p class="page-subtitle">Administre las unidades de producción registradas</p>
       </div>
 
+      <div class="tabs-container mx-3 mb-2">
+        <div class="tabs-nav d-flex gap-2 bg-light rounded-3 p-2">
+          <button
+            class="tab-btn flex-fill py-3 px-4 rounded-3 fw-semibold fs-5"
+            :class="{ 'tab-active': activeTab === 'predios' }"
+            @click="activeTab = 'predios'"
+          >
+            <i class="bi bi-house-door fs-5 me-1"></i> Predios
+          </button>
+          <button
+            v-if="isAdmin"
+            class="tab-btn flex-fill py-3 px-4 rounded-3 fw-semibold fs-5"
+            :class="{ 'tab-active': activeTab === 'aretes' }"
+            @click="activeTab = 'aretes'; loadAretes(true)"
+          >
+            <i class="bi bi-upc-scan fs-5 me-1"></i> Aretes
+          </button>
+        </div>
+      </div>
+
+      <template v-if="activeTab === 'predios'">
       <div class="mobile-panel shadow-sm">
         <div class="mobile-panel-title">Listado de Predios</div>
         <button class="btn-new-predio-mobile" @click="$router.push('/predios/nuevo')">
@@ -28,6 +49,7 @@
       </div>
 
       <div v-if="errorMsg" class="alert alert-danger shadow-sm border-0 rounded-4">{{ errorMsg }}</div>
+      <div v-if="successMsg" class="alert alert-success shadow-sm border-0 rounded-4">{{ successMsg }}</div>
 
       <div class="mobile-cards d-lg-none">
         <div v-if="paginatedPredios.length === 0" class="empty-state-card shadow-sm">
@@ -159,6 +181,179 @@
           </div>
         </div>
       </div>
+      </template>
+
+      <template v-if="activeTab === 'aretes'">
+      <div class="mobile-panel shadow-sm">
+        <div class="mobile-panel-title">Listado de Aretes del Censo</div>
+        <button class="btn-new-predio-mobile" @click="$router.push('/aretes-censo/nuevo')" style="background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 100%); box-shadow: 0 10px 20px rgba(14, 165, 233, 0.18);">
+          <i class="bi bi-plus-lg me-2"></i> Nuevo Arete
+        </button>
+      </div>
+
+      <div class="p-3 bg-light-subtle border-bottom border-slate-100 mx-3 mb-2 rounded-3 d-lg-none">
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+          <input
+            v-model="areteSearch"
+            type="text"
+            class="form-control border-start-0 px-2 py-2 fs-6-5"
+            placeholder="Buscar por número de arete, raza o productor..."
+            style="outline: none; box-shadow: none; border-color: #dee2e6;"
+          >
+        </div>
+      </div>
+
+      <div v-if="areteLoading" class="text-center py-5 text-muted">
+        <span class="spinner-border spinner-border-sm me-2"></span>Cargando aretes...
+      </div>
+
+      <div class="mobile-cards d-lg-none" v-if="!areteLoading">
+        <div v-if="paginatedAretes.length === 0" class="empty-state-card shadow-sm">
+          <i class="bi bi-upc-scan display-6 d-block mb-2 text-muted"></i>
+          <div class="text-muted">No hay aretes para mostrar</div>
+        </div>
+
+        <div class="mobile-cards-grid">
+          <article v-for="arete in paginatedAretes" :key="arete.id" class="predio-mobile-card shadow-sm item-card">
+            <div class="predio-content">
+              <div class="field-block">
+                <span class="field-label">ARETE</span>
+                <span class="field-value fw-bold">{{ arete.numero_arete }}</span>
+              </div>
+              <div class="field-block" v-if="arete.raza">
+                <span class="field-label">RAZA</span>
+                <span class="field-value">{{ arete.raza }}</span>
+              </div>
+              <div class="field-block" v-if="arete.sexo">
+                <span class="field-label">SEXO</span>
+                <span class="field-value">{{ arete.sexo }}</span>
+              </div>
+              <div class="field-block" v-if="arete.edad_meses != null">
+                <span class="field-label">EDAD (MESES)</span>
+                <span class="field-value">{{ arete.edad_meses }}</span>
+              </div>
+              <div class="field-block">
+                <span class="field-label">SACRIFICIO</span>
+                <span v-if="arete.sacrificio" class="badge bg-danger">Sí</span>
+                <span v-else class="badge bg-secondary">No</span>
+              </div>
+              <div class="field-block">
+                <span class="field-label">PRODUCTOR</span>
+                <span class="field-value">{{ getAreteProductorName(arete.productor) }}</span>
+              </div>
+              <div class="field-block">
+                <span class="field-label">PREDIO</span>
+                <span class="field-value">{{ arete.predio?.nombre_rancho || '—' }}</span>
+              </div>
+            </div>
+            <div class="predio-mobile-footer">
+              <span class="footer-actions-label">Acciones</span>
+              <div class="d-flex gap-2">
+                <button class="btn-icon-square-gray" @click.stop="$router.push('/aretes-censo/' + arete.id)" title="Ver arete">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn-icon-square-gray" @click.stop="$router.push('/aretes-censo/editar/' + arete.id)" title="Editar arete">
+                  <i class="bi bi-pencil"></i>
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="desktop-card card border-0 shadow-sm overflow-hidden d-none d-lg-block" v-if="!areteLoading">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center p-3 p-md-4 border-bottom border-slate-100">
+          <h5 class="mb-0 fw-bold fs-5 text-dark">Listado de Aretes del Censo</h5>
+          <button class="btn btn-primary btn-sm-custom d-flex align-items-center gap-1-5 px-3 py-2" style="background: #0ea5e9;" @click="$router.push('/aretes-censo/nuevo')">
+            <i class="bi bi-plus-lg"></i> Nuevo Arete
+          </button>
+        </div>
+
+        <div class="p-3 bg-light-subtle border-bottom border-slate-100">
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+            <input
+              v-model="areteSearch"
+              type="text"
+              class="form-control border-start-0 px-2 py-2 fs-6-5"
+              placeholder="Buscar por número de arete, raza o productor..."
+              style="outline: none; box-shadow: none; border-color: #dee2e6;"
+            >
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-middle mb-0 predios-table">
+            <thead>
+              <tr>
+                <th class="ps-4">Arete</th>
+                <th>Raza</th>
+                <th>Sexo</th>
+                <th>Edad (meses)</th>
+                <th>Sacrificio</th>
+                <th>Productor</th>
+                <th>Predio</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="paginatedAretes.length === 0">
+                <td colspan="8" class="text-center py-5 text-muted">
+                  <i class="bi bi-upc-scan display-6 d-block mb-2"></i>
+                  No hay aretes para mostrar
+                </td>
+              </tr>
+              <tr v-for="arete in paginatedAretes" :key="arete.id">
+                <td class="ps-4">
+                  <span class="fw-bold text-dark"><code>{{ arete.numero_arete }}</code></span>
+                </td>
+                <td class="text-dark">{{ arete.raza || '—' }}</td>
+                <td class="text-dark">{{ arete.sexo || '—' }}</td>
+                <td class="text-dark">{{ arete.edad_meses != null ? arete.edad_meses : '—' }}</td>
+                <td>
+                  <span v-if="arete.sacrificio" class="badge bg-danger">Sí</span>
+                  <span v-else class="badge bg-secondary">No</span>
+                </td>
+                <td class="text-dark">{{ getAreteProductorName(arete.productor) }}</td>
+                <td class="text-dark">{{ arete.predio?.nombre_rancho || '—' }}</td>
+                <td class="text-center">
+                  <button class="btn-edit" @click="$router.push('/aretes-censo/' + arete.id)" title="Ver arete">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="btn-edit" @click="$router.push('/aretes-censo/editar/' + arete.id)" title="Editar arete">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-4 border-top">
+          <div class="text-secondary small">
+            Mostrando <strong class="text-dark">{{ areteStartResult }}</strong> a <strong class="text-dark">{{ areteEndResult }}</strong> de <strong class="text-dark">{{ areteTotalResults }}</strong> registros
+          </div>
+          <div class="pagination-box">
+            <button class="pagination-btn" :disabled="areteCurrentPage === 1" @click="areteCurrentPage--">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <button
+              v-for="page in areteTotalPages"
+              :key="page"
+              class="pagination-btn"
+              :class="{ active: areteCurrentPage === page }"
+              @click="areteCurrentPage = page"
+            >
+              {{ page }}
+            </button>
+            <button class="pagination-btn" :disabled="areteCurrentPage === areteTotalPages" @click="areteCurrentPage++">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      </template>
     </PullToRefresh>
   </AppLayout>
 </template>
@@ -178,10 +373,17 @@ export default {
       isAdmin: false,
       isOnline: true,
       refreshing: false,
+      activeTab: 'predios',
       search: '',
       predios: [],
       currentPage: 1,
-      errorMsg: ''
+      errorMsg: '',
+      successMsg: '',
+      aretes: [],
+      areteSearch: '',
+      areteCurrentPage: 1,
+      areteLoading: false,
+      aretePerPage: 20
     };
   },
   computed: {
@@ -217,11 +419,40 @@ export default {
     },
     paginatedPredios() {
       return this.filteredPredios.slice((this.currentPage - 1) * 20, this.currentPage * 20);
+    },
+    filteredAretes() {
+      const term = this.areteSearch.toLowerCase().trim();
+      if (!term) return this.aretes;
+      return this.aretes.filter(a => {
+        const name = a.productor ? [a.productor.nombre, a.productor.apellido_paterno].filter(Boolean).join(' ').toLowerCase() : '';
+        return (a.numero_arete && a.numero_arete.toLowerCase().includes(term)) ||
+               (a.raza && a.raza.toLowerCase().includes(term)) ||
+               name.includes(term);
+      });
+    },
+    areteTotalResults() {
+      return this.filteredAretes.length;
+    },
+    areteTotalPages() {
+      return Math.max(1, Math.ceil(this.areteTotalResults / this.aretePerPage));
+    },
+    areteStartResult() {
+      return this.areteTotalResults === 0 ? 0 : ((this.areteCurrentPage - 1) * this.aretePerPage) + 1;
+    },
+    areteEndResult() {
+      return Math.min(this.areteCurrentPage * this.aretePerPage, this.areteTotalResults);
+    },
+    paginatedAretes() {
+      const start = (this.areteCurrentPage - 1) * this.aretePerPage;
+      return this.filteredAretes.slice(start, start + this.aretePerPage);
     }
   },
   watch: {
     search() {
       this.currentPage = 1;
+    },
+    areteSearch() {
+      this.areteCurrentPage = 1;
     }
   },
   async mounted() {
@@ -231,6 +462,7 @@ export default {
     this.isOnline = navigator.onLine;
 
     await this.loadPredios();
+    await this.loadAretes(true);
     window.addEventListener('online', this.handleOnline);
     window.addEventListener('offline', this.handleOffline);
   },
@@ -246,10 +478,8 @@ export default {
       this.isOnline = false;
     },
     async loadPredios() {
-      // 1. Mostrar datos locales inmediatamente (offline-first)
       this.predios = await db.getPredios();
 
-      // 2. Intentar actualizar desde el servidor en segundo plano
       try {
         const isReachable = await api.checkRealConnectivity();
         if (!isReachable) {
@@ -268,7 +498,6 @@ export default {
           this.errorMsg = '';
         }
       } catch (e) {
-        // Si ya tenemos datos locales, no mostrar error alarmante
         if (this.predios.length > 0) {
           console.warn('No se pudo actualizar predios desde el servidor, mostrando datos locales:', e.message);
         } else {
@@ -276,10 +505,48 @@ export default {
         }
       }
     },
+    async loadAretes(force = false) {
+      if (this.aretes.length > 0 && !force) return;
+      this.areteLoading = true;
+      this.errorMsg = '';
+
+      const cached = await db.getAretesCenso();
+      if (cached.length > 0 && !force) {
+        this.aretes = cached;
+      }
+
+      try {
+        const isReachable = await api.checkRealConnectivity();
+        if (!isReachable) {
+          if (cached.length === 0) {
+            this.errorMsg = 'Sin conexión al servidor. No hay datos locales disponibles.';
+          }
+          return;
+        }
+
+        const res = await api.getAretesCenso();
+        if (res.data) {
+          this.aretes = res.data;
+          this.errorMsg = '';
+          await db.saveAretesCenso(res.data);
+        }
+      } catch (e) {
+        if (this.aretes.length === 0) {
+          this.errorMsg = e.message || 'No se pudieron cargar los aretes.';
+        }
+      } finally {
+        this.areteLoading = false;
+      }
+    },
     async onRefresh() {
       this.refreshing = true;
       try {
-        await this.loadPredios();
+        if (this.activeTab === 'predios') {
+          await this.loadPredios();
+        } else {
+          this.aretes = [];
+          await this.loadAretes();
+        }
       } catch (e) {
         console.warn('Refresh error:', e);
       } finally {
@@ -293,6 +560,11 @@ export default {
         productor.apellido_paterno,
         productor.apellido_materno
       ].filter(Boolean).join(' ') || 'Sin productor';
+    },
+    getAreteProductorName(productor) {
+      if (!productor) return '—';
+      const parts = [productor.nombre, productor.apellido_paterno].filter(Boolean);
+      return parts.length ? parts.join(' ') : '—';
     },
     editPredio(predio) {
       this.$router.push(`/predios/editar/${predio.id}`);
@@ -730,6 +1002,34 @@ export default {
   .page-subtitle {
     font-size: 1.03rem;
   }
+}
+
+.tabs-container {
+  max-width: 1180px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.tabs-nav {
+  background: #f1f5f9;
+}
+
+.tab-btn {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.tab-btn.tab-active {
+  background: #ffffff;
+  color: #2563eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.tab-btn:not(.tab-active):hover {
+  color: #334155;
 }
 
 @media (max-width: 991.98px) {

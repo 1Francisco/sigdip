@@ -2,6 +2,7 @@
   <AppLayout>
     <div class="container-form-wrapper">
       <div v-if="errorMsg" class="alert alert-danger shadow-sm rounded-4 border-0">{{ errorMsg }}</div>
+      <div v-if="successMsg" class="alert alert-success shadow-sm rounded-4 border-0">{{ successMsg }}</div>
       <div v-if="loading" class="text-center text-muted py-5">Cargando arete...</div>
 
       <template v-if="arete">
@@ -38,7 +39,21 @@
             </div>
             <div class="col-12 col-md-6">
               <div class="text-muted small">Sacrificio</div>
-              <div class="fw-semibold">{{ arete.sacrificio ? 'Sí' : 'No' }}</div>
+              <div class="d-flex align-items-center gap-2 mt-1">
+                <span class="badge rounded-pill px-3 py-2" :class="arete.sacrificio ? 'bg-danger' : 'bg-secondary'">
+                  {{ arete.sacrificio ? 'Sacrificado' : 'Activo' }}
+                </span>
+                <button
+                  class="btn btn-sm rounded-pill px-3"
+                  :class="arete.sacrificio ? 'btn-outline-success' : 'btn-outline-danger'"
+                  :disabled="toggling"
+                  @click="toggleSacrificio"
+                >
+                  <span v-if="toggling" class="spinner-border spinner-border-sm me-1"></span>
+                  <i v-else :class="arete.sacrificio ? 'bi-arrow-counterclockwise' : 'bi-x-circle'" class="me-1"></i>
+                  {{ arete.sacrificio ? 'Reactivar' : 'Sacrificar' }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -83,7 +98,7 @@
           <button class="btn btn-primary rounded-pill px-4" @click="$router.push(`/aretes-censo/editar/${arete.id}`)">
             <i class="bi bi-pencil me-1"></i> Editar
           </button>
-          <button class="btn btn-outline-secondary rounded-pill px-4" @click="$router.push('/aretes-censo')">
+           <button class="btn btn-outline-secondary rounded-pill px-4" @click="$router.push('/predios')">
             Volver
           </button>
         </div>
@@ -102,7 +117,9 @@ export default {
   data() {
     return {
       loading: false,
+      toggling: false,
       errorMsg: '',
+      successMsg: '',
       arete: null
     };
   },
@@ -113,6 +130,7 @@ export default {
     async loadDetail() {
       this.loading = true;
       this.errorMsg = '';
+      this.successMsg = '';
       try {
         const res = await api.getAreteCenso(this.$route.params.id);
         this.arete = res.data;
@@ -120,6 +138,21 @@ export default {
         this.errorMsg = e.message || 'No se pudo cargar el arete.';
       } finally {
         this.loading = false;
+      }
+    },
+    async toggleSacrificio() {
+      this.toggling = true;
+      this.errorMsg = '';
+      this.successMsg = '';
+      try {
+        const newVal = !this.arete.sacrificio;
+        await api.updateAreteCenso(this.arete.id, { sacrificio: newVal });
+        this.arete.sacrificio = newVal;
+        this.successMsg = newVal ? 'Arete marcado como sacrificado.' : 'Arete removido de sacrificio.';
+      } catch (e) {
+        this.errorMsg = e.message || 'Error al cambiar estado de sacrificio.';
+      } finally {
+        this.toggling = false;
       }
     }
   }

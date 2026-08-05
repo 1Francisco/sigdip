@@ -182,4 +182,53 @@ describe('VisitaDetailView', () => {
     cy.wait('@getVisitaError', { timeout: 10000 })
     cy.contains('no encontrada', { timeout: 5000 }).should('be.visible')
   })
+
+  it('elimina visita con confirmacion', () => {
+    cy.intercept('GET', '**/api/visitas/1', {
+      statusCode: 200,
+      body: { data: fakeVisita },
+    }).as('getVisita')
+
+    cy.intercept('DELETE', '**/api/visitas/1', {
+      statusCode: 200,
+      body: { success: true },
+    }).as('deleteVisita')
+
+    const router = buildRouter()
+    router.push('/visitas/1')
+    mount(VisitaDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getVisita', { timeout: 10000 })
+
+    cy.window().then((win) => {
+      cy.stub(win, 'confirm').returns(true)
+    })
+    cy.contains('Eliminar', { timeout: 5000 }).click()
+    cy.wait('@deleteVisita', { timeout: 10000 })
+    cy.location('hash', { timeout: 5000 }).should('include', '/visitas')
+  })
+
+  it('cancela eliminacion cuando confirm es false', () => {
+    cy.intercept('GET', '**/api/visitas/1', {
+      statusCode: 200,
+      body: { data: fakeVisita },
+    }).as('getVisita')
+
+    cy.intercept('DELETE', '**/api/visitas/1', {
+      statusCode: 200,
+      body: { success: true },
+    }).as('deleteVisita')
+
+    const router = buildRouter()
+    router.push('/visitas/1')
+    mount(VisitaDetailView, { global: { plugins: [router] } })
+
+    cy.wait('@getVisita', { timeout: 10000 })
+
+    cy.window().then((win) => {
+      cy.stub(win, 'confirm').returns(false)
+    })
+    cy.contains('Eliminar', { timeout: 5000 }).click()
+    cy.get('@deleteVisita').should('not.exist')
+  })
 })

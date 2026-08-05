@@ -304,4 +304,50 @@ class ProductorApiTest extends TestCase
 
         $response->assertStatus(422);
     }
+
+    // --- desvincular-de-hato API ---
+
+    public function test_api_vincular_a_hato_rechaza_productor_de_otro_hato()
+    {
+        $productor = Productor::factory()->create(['clave' => 'BA-0001']);
+        $deOtroHato = Productor::factory()->create(['clave' => 'BF-9999']);
+
+        $response = $this->postJson("/api/productores/{$productor->id}/vincular-a-hato", [
+            'productor_id' => $deOtroHato->id,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Este productor ya pertenece al hato BF-9999. Gestiona ese hato para desvincularlo antes de asignarlo.');
+        $this->assertSame('BF-9999', $deOtroHato->fresh()->clave);
+    }
+
+    public function test_api_desvincula_productor_de_hato()
+    {
+        $productor = Productor::factory()->create(['clave' => 'BA-0001']);
+
+        $response = $this->postJson("/api/productores/{$productor->id}/desvincular-de-hato");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true);
+        $this->assertNull($productor->fresh()->clave);
+    }
+
+    public function test_api_desvincular_productor_sin_clave()
+    {
+        $productor = Productor::factory()->create(['clave' => null]);
+
+        $response = $this->postJson("/api/productores/{$productor->id}/desvincular-de-hato");
+
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false);
+    }
+
+    public function test_api_desvincular_productor_no_encontrado()
+    {
+        $response = $this->postJson('/api/productores/999999/desvincular-de-hato');
+
+        $response->assertStatus(404)
+            ->assertJsonPath('success', false);
+    }
 }
