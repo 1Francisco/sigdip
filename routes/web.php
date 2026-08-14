@@ -19,6 +19,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\VisitaController;
 use App\Http\Controllers\WebAuthController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -103,6 +104,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('role:Administrador|Medico_Campo')->group(function () {
         Route::get('/reportes/sabana-excel', [ReporteController::class, 'indexSabana'])->name('reportes.sabana');
         Route::get('/reportes/sabana-excel/descargar', [ReporteController::class, 'exportExcel'])->name('reportes.excel.download');
+        Route::get('/reportes/sabana-excel/descargar-pdf', [ReporteController::class, 'exportPdfSabana'])->name('reportes.sabana.pdf');
     });
 
     // API para búsqueda de aretes (Autocompletado en Dictámenes)
@@ -120,10 +122,11 @@ Route::middleware(['auth'])->group(function () {
 
     // Fallback de servidor de archivos para almacenar/mostrar archivos en Windows/XAMPP sin symlinks
     Route::get('/storage/{path}', function ($path) {
-        $filePath = \Illuminate\Support\Facades\Storage::disk('public')->path($path);
-        if (!file_exists($filePath)) {
+        $filePath = Storage::disk('public')->path($path);
+        if (! file_exists($filePath)) {
             abort(404);
         }
+
         return response()->file($filePath);
     })->where('path', '.*');
 });

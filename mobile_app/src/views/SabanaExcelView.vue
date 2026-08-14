@@ -128,9 +128,14 @@
           <div class="card border-0 shadow-sm rounded-4 mb-4" style="overflow: visible;">
             <div class="card-header bg-white fw-bold py-3 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
               <span><i class="bi bi-table text-primary me-2"></i> Vista Previa de la Sábana</span>
-              <button class="btn rounded-3 px-4 shadow fw-bold" style="background-color: #198754 !important; color: #fff !important; border: none !important;" @click="downloadExcel" :disabled="downloading">
-                <i class="bi bi-download me-1"></i> {{ downloading ? 'Descargando...' : 'Excel' }}
-              </button>
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn rounded-3 px-4 shadow fw-bold" style="background-color: #198754 !important; color: #fff !important; border: none !important;" @click="downloadExcel" :disabled="downloading">
+                  <i class="bi bi-download me-1"></i> {{ downloading ? 'Descargando...' : 'Excel' }}
+                </button>
+                <button class="btn rounded-3 px-4 shadow fw-bold" style="background-color: #dc3545 !important; color: #fff !important; border: none !important;" @click="downloadPdf" :disabled="downloadingPdf">
+                  <i class="bi bi-file-earmark-pdf me-1"></i> {{ downloadingPdf ? 'Descargando...' : 'PDFs' }}
+                </button>
+              </div>
             </div>
             <div class="card-body p-0 text-start">
               <div v-if="inspecciones.length === 0" class="text-center p-5 text-muted">
@@ -218,6 +223,7 @@ export default {
       isOnline: true,
       showFilters: false,
       downloading: false,
+      downloadingPdf: false,
       kpis: {
         total_inspecciones: 0,
         total_probados: 0,
@@ -307,44 +313,62 @@ export default {
         if (this.filterParams.medico_id) params.medico_id = this.filterParams.medico_id;
         const blob = await api.getSábanaExcel(params);
         const fileName = `sabana_dictamenes_${new Date().toISOString().slice(0, 10)}.xlsx`;
-
-        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-          const { Filesystem, Directory } = await import('@capacitor/filesystem');
-          const { LocalNotifications } = await import('@capacitor/local-notifications');
-          const reader = new FileReader();
-          reader.readAsDataURL(blob);
-          reader.onloadend = async () => {
-            const base64data = reader.result.split(',')[1];
-            try {
-              await Filesystem.writeFile({ path: fileName, data: base64data, directory: Directory.Downloads, recursive: true });
-            } catch (_) {
-              await Filesystem.writeFile({ path: fileName, data: base64data, directory: Directory.Documents, recursive: true });
-            }
-            try {
-              await LocalNotifications.schedule({
-                notifications: [{
-                  title: 'Descarga Completa',
-                  body: `El archivo "${fileName}" se descargó exitosamente.`,
-                  id: Math.floor(Math.random() * 1000000),
-                  sound: true,
-                }]
-              });
-            } catch (_) { /* ignore */ }
-          };
-        } else {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = fileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          setTimeout(() => URL.revokeObjectURL(url), 15000);
-        }
+        await this.saveBlob(blob, fileName);
       } catch (e) {
         alert('Error al descargar: ' + (e.message || 'desconocido'));
       } finally {
         this.downloading = false;
+      }
+    },
+    async downloadPdf() {
+      this.downloadingPdf = true;
+      try {
+        const params = {};
+        if (this.filterParams.zona) params.zona = this.filterParams.zona;
+        if (this.filterParams.tipo_actividad) params.tipo_actividad = this.filterParams.tipo_actividad;
+        if (this.filterParams.medico_id) params.medico_id = this.filterParams.medico_id;
+        const blob = await api.getSabanaPdf(params);
+        const fileName = `dictamenes_sabana_${new Date().toISOString().slice(0, 10)}.pdf`;
+        await this.saveBlob(blob, fileName);
+      } catch (e) {
+        alert('Error al descargar: ' + (e.message || 'desconocido'));
+      } finally {
+        this.downloadingPdf = false;
+      }
+    },
+    async saveBlob(blob, fileName) {
+      if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        const { Filesystem, Directory } = await import('@capacitor/filesystem');
+        const { LocalNotifications } = await import('@capacitor/local-notifications');
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+          const base64data = reader.result.split(',')[1];
+          try {
+            await Filesystem.writeFile({ path: fileName, data: base64data, directory: Directory.Downloads, recursive: true });
+          } catch (_) {
+            await Filesystem.writeFile({ path: fileName, data: base64data, directory: Directory.Documents, recursive: true });
+          }
+          try {
+            await LocalNotifications.schedule({
+              notifications: [{
+                title: 'Descarga Completa',
+                body: `El archivo "${fileName}" se descargó exitosamente.`,
+                id: Math.floor(Math.random() * 1000000),
+                sound: true,
+              }]
+            });
+          } catch (_) { /* ignore */ }
+        };
+      } else {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 15000);
       }
     },
     clearFilters() {

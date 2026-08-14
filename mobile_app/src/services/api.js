@@ -399,10 +399,6 @@ export default {
     return await request('DELETE', `/inspecciones/${id}`);
   },
 
-  async syncDetalles(id, detalles) {
-    return await request('POST', `/inspecciones/${id}/sync-detalles`, { detalles });
-  },
-
   async getInspectionPdf(id) {
     return await requestBlob(`/inspecciones/${id}/pdf`);
   },
@@ -447,6 +443,11 @@ export default {
   async getSábanaExcel(params = {}) {
     const query = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
     return await requestBlob('/reportes/sábana-excel' + query, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  },
+
+  async getSabanaPdf(params = {}) {
+    const query = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
+    return await requestBlob('/reportes/sabana-excel/pdf' + query, 'application/pdf');
   },
 
   async getSabanaData(params = {}) {

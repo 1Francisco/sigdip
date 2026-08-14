@@ -83,7 +83,7 @@ class PredioController extends Controller
                 'string',
                 Rule::unique('predios')->where(function ($query) use ($request) {
                     return $query->where('productor_id', $request->productor_id);
-                })
+                }),
             ],
             'latitud' => 'nullable|numeric',
             'longitud' => 'nullable|numeric',
@@ -147,7 +147,7 @@ class PredioController extends Controller
                 'string',
                 Rule::unique('predios')->ignore($predio->id)->where(function ($query) use ($request) {
                     return $query->where('productor_id', $request->productor_id);
-                })
+                }),
             ],
             'latitud' => 'nullable|numeric',
             'longitud' => 'nullable|numeric',
@@ -180,12 +180,14 @@ class PredioController extends Controller
             }))
             ->paginate(10);
 
-        // Obtener otros predios/productores con la misma clave de unidad de producción (UPP)
+        // Obtener otros predios/productores con la misma clave de hato (clave)
         $otrosPredios = collect();
-        if ($predio->clave_unidad_produccion) {
+        if ($predio->productor && $predio->productor->clave) {
             $otrosPredios = Predio::with(['productor', 'productor.medico'])
-                ->where('clave_unidad_produccion', $predio->clave_unidad_produccion)
-                ->where('productor_id', '!=', $predio->productor_id)
+                ->whereHas('productor', function ($q) use ($predio) {
+                    $q->where('clave', $predio->productor->clave)
+                        ->where('id', '!=', $predio->productor_id);
+                })
                 ->get();
         }
 

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Inspeccion extends Model
 {
@@ -50,8 +51,8 @@ class Inspeccion extends Model
 
     public function getDictamenComiteUrlAttribute(): ?string
     {
-        return $this->dictamen_comite_path 
-            ? \Illuminate\Support\Facades\Storage::url($this->dictamen_comite_path) 
+        return $this->dictamen_comite_path
+            ? Storage::url($this->dictamen_comite_path)
             : null;
     }
 

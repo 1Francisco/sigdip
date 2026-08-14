@@ -99,21 +99,30 @@
     </div>
 </div>
 
-<ul class="nav nav-pills nav-pills-premium mb-4" id="reportTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-        <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'medicos'])) }}"
-           class="nav-link">
-            <i class="bi bi-person-badge"></i> Médicos
+<!-- Pestañas / Tabs y Descargas -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <ul class="nav nav-pills nav-pills-premium mb-0" id="reportTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a href="{{ route('reportes.rendimiento', array_merge(request()->query(), ['tab' => 'medicos'])) }}"
+               class="nav-link">
+                <i class="bi bi-person-badge"></i> Médicos
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a href="{{ route('reportes.rendimiento.mensual', request()->query()) }}"
+               class="nav-link active"
+               role="tab">
+                <i class="bi bi-table"></i> Detalle Mensual
+            </a>
+        </li>
+    </ul>
+
+    <div class="d-flex gap-2">
+        <a href="{{ route('reportes.rendimiento.mensual.pdf', request()->query()) }}" class="btn btn-sm btn-danger rounded-pill px-3 shadow-sm">
+            <i class="bi bi-file-earmark-pdf me-1"></i> PDF Mensual
         </a>
-    </li>
-    <li class="nav-item" role="presentation">
-        <a href="{{ route('reportes.rendimiento.mensual', request()->query()) }}"
-           class="nav-link active"
-           role="tab">
-            <i class="bi bi-table"></i> Detalle Mensual
-        </a>
-    </li>
-</ul>
+    </div>
+</div>
 
 <style>
 .table-mensual { table-layout: fixed; }

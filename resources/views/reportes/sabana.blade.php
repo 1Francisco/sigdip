@@ -153,6 +153,9 @@
                 <a href="{{ route('reportes.excel.download', request()->all()) }}" class="btn btn-success rounded-pill px-4 shadow-sm fw-semibold">
                     <i class="bi bi-download me-1"></i> Descargar Excel (.xlsx)
                 </a>
+                <a href="{{ route('reportes.sabana.pdf', request()->all()) }}" class="btn btn-danger rounded-pill px-4 shadow-sm fw-semibold">
+                    <i class="bi bi-file-earmark-pdf me-1"></i> Descargar PDFs (.pdf)
+                </a>
             </div>
         </div>
         <div class="card-body p-0">

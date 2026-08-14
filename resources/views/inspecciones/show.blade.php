@@ -113,13 +113,13 @@
             </div>
             <div class="card-body p-0 h-100 bg-secondary">
                 <!-- Iframe para mostrar el PDF en tiempo real -->
-                <iframe id="pdf-iframe" src="{{ route('reportes.stream', $inspeccion->id) }}" 
+                <iframe id="pdf-iframe" src="{{ route('reportes.stream', [$inspeccion->id, 'prototype' => 1]) }}" 
                         width="100%" 
                         height="100%" 
                         frameborder="0"
                         style="border: none;">
                     Tu navegador no soporta la previsualización de PDF. 
-                    <a href="{{ route('reportes.stream', $inspeccion->id) }}">Descarga aquí</a>.
+                    <a href="{{ route('reportes.stream', [$inspeccion->id, 'prototype' => 1]) }}">Descarga aquí</a>.
                 </iframe>
             </div>
         </div>
@@ -128,7 +128,7 @@
 
 <script>
     let currentPreview = 'generated'; // 'generated' or 'committee'
-    const generatedUrl = "{{ route('reportes.stream', $inspeccion->id) }}";
+    const generatedUrl = "{{ route('reportes.stream', [$inspeccion->id, 'prototype' => 1]) }}";
     const committeeUrl = "{{ $inspeccion->dictamen_comite_path ? Storage::url($inspeccion->dictamen_comite_path) : '' }}";
 
     function togglePdfPreview() {

@@ -107,7 +107,7 @@ class Productor extends Model
         ?int $medicoId = null
     ): array {
         $tipo = strtolower($tipoActividad);
-        
+
         // Determine effective zone
         $zone = strtoupper($zona ?? '');
         if (empty($zone) && $medicoId) {
@@ -120,7 +120,7 @@ class Productor extends Model
             $zone = 'B';
         }
         $efectivaZona = $zone;
-        
+
         $prefix = 'GP';
 
         if ($tipo === 'barrido') {

@@ -15,7 +15,6 @@ use App\Http\Controllers\Api\DashboardApiController;
 |
 */
 
-use App\Http\Controllers\Api\InspeccionController as InspeccionDetallesController;
 use App\Http\Controllers\Api\InspeccionesApiController;
 use App\Http\Controllers\Api\MedicosApiController;
 use App\Http\Controllers\Api\ProductoresApiController;
@@ -96,15 +95,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/inspecciones', [InspeccionesApiController::class, 'index']);
     Route::get('/inspecciones/{id}', [InspeccionesApiController::class, 'show']);
     Route::get('/inspecciones/{id}/pdf', [InspeccionesApiController::class, 'pdf']);
-    Route::get('/inspecciones/{id}/ver', [InspeccionesApiController::class, 'ver']);
     Route::patch('/inspecciones/{id}', [InspeccionesApiController::class, 'update']);
     Route::delete('/inspecciones/{id}', [InspeccionesApiController::class, 'destroy']);
-    Route::post('/inspecciones/{id}/sync-detalles', [InspeccionDetallesController::class, 'sync']);
     Route::post('/inspecciones/{id}/upload-dictamen-comite', [InspeccionesApiController::class, 'uploadDictamenComite']);
     Route::get('/inspecciones/{id}/download-dictamen-comite', [InspeccionesApiController::class, 'downloadDictamenComite']);
     Route::delete('/inspecciones/{id}/delete-dictamen-comite', [InspeccionesApiController::class, 'deleteDictamenComite']);
     Route::get('/reportes/sabana-excel', [ReporteController::class, 'exportExcel']);
     Route::get('/reportes/sábana-excel', [ReporteController::class, 'exportExcel']);
+    Route::get('/reportes/sabana-excel/pdf', [ReporteController::class, 'exportPdfSabana']);
+    Route::get('/reportes/sábana-excel/pdf', [ReporteController::class, 'exportPdfSabana']);
     Route::get('/reportes/sabana-excel/data', [ReporteController::class, 'apiSabana']);
     Route::get('/censo/buscar-arete/{numero}', [InspeccionController::class, 'buscarArete']);
     Route::get('/reportes/rendimiento', [ReportesRendimientoApiController::class, 'index']);

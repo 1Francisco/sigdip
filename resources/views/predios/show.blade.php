@@ -56,7 +56,7 @@
 
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3">
-                <h5 class="mb-0 fw-bold"><i class="bi bi-people text-primary me-2"></i>Otros Productores en este Predio</h5>
+                <h5 class="mb-0 fw-bold"><i class="bi bi-people text-primary me-2"></i>Otros Productores del mismo Hato</h5>
             </div>
             <div class="card-body p-4">
                 @if($otrosPredios->count() > 0)
@@ -89,7 +89,7 @@
                 @else
                     <div class="text-center py-4 text-muted">
                         <i class="bi bi-person-dash fs-2 d-block mb-2"></i>
-                        No hay otros productores registrados con esta misma clave de unidad de producción (UPP).
+                        No hay otros productores registrados con esta misma clave de hato.
                     </div>
                 @endif
             </div>

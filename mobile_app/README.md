@@ -91,7 +91,7 @@ Métodos principales en `api.js`:
 - `getProductores()`, `getProductor(id)`, `searchProductor(q)`, `storeProductor()`, `updateProductor()`
 - `getPredios()`, `getPredio(id)`, `storeRancho()`, `updateRancho()`
 - `getVisitas()`, `createVisita()`, `updateVisita()`
-- `getInspecciones()`, `updateInspeccion()`, `syncDetalles()` — gestión de lecturas / dictámenes
+- `getInspecciones()`, `updateInspeccion()` — gestión de lecturas / dictámenes
 - `getMedicos()`, `storeMedico()`, `updateMedico()`
 - `downloadCatalogos()` — sincronización masiva
 

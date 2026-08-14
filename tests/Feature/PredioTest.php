@@ -136,18 +136,20 @@ class PredioTest extends TestCase
     public function test_show_displays_other_producers_in_same_predio()
     {
         $upp = 'UPP-SHARED-123';
-        
+        $this->productor->update(['clave' => 'BF-001']);
+
         $predio1 = Predio::factory()->create([
             'productor_id' => $this->productor->id,
             'clave_unidad_produccion' => $upp,
             'nombre_rancho' => 'Rancho 1',
         ]);
-        
+
         $otroProductor = Productor::factory()->create([
             'nombre' => 'María',
             'apellido_paterno' => 'Gómez',
+            'clave' => 'BF-001',
         ]);
-        
+
         $predio2 = Predio::factory()->create([
             'productor_id' => $otroProductor->id,
             'clave_unidad_produccion' => $upp,
@@ -158,11 +160,11 @@ class PredioTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertViewHas('otrosPredios');
-        
+
         // Debe ver el nombre del otro productor y de su rancho
         $response->assertSee('María Gómez');
         $response->assertSee('Rancho 2');
-        
+
         // No debe listarse a sí mismo en "Otros Productores"
         $this->assertCount(1, $response->viewData('otrosPredios'));
         $this->assertEquals($predio2->id, $response->viewData('otrosPredios')->first()->id);

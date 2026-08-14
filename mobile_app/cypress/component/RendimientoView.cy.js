@@ -136,6 +136,25 @@ describe('RendimientoView Component Tests', () => {
     cy.get('.table-mensual').should('be.visible')
   })
 
+  it('renderiza grafica de lecturas por medico', () => {
+    cy.intercept('GET', '**/api/reportes/rendimiento*', {
+      statusCode: 200,
+      body: mockRendimientoResponse
+    }).as('getRendimiento')
+
+    const router = buildRouter()
+    router.push('/reportes/rendimiento')
+
+    cy.setLoginState({ user: userAdmin })
+    mount(RendimientoView, { global: { plugins: [router] } })
+
+    cy.wait('@getRendimiento')
+
+    cy.get('.chart-card-medicos', { timeout: 5000 }).should('be.visible')
+    cy.contains('Lecturas por Médico').should('be.visible')
+    cy.get('.chart-card-medicos canvas', { timeout: 5000 }).should('exist')
+  })
+
   it('permite colapsar y usar filtros', () => {
     cy.intercept('GET', '**/api/reportes/rendimiento*', {
       statusCode: 200,

@@ -203,10 +203,12 @@ class ProductoresApiController extends Controller
         }
 
         $otrosPredios = collect();
-        if ($predio->clave_unidad_produccion) {
+        if ($predio->productor && $predio->productor->clave) {
             $otrosPredios = Predio::with(['productor', 'productor.medico'])
-                ->where('clave_unidad_produccion', $predio->clave_unidad_produccion)
-                ->where('productor_id', '!=', $predio->productor_id)
+                ->whereHas('productor', function ($q) use ($predio) {
+                    $q->where('clave', $predio->productor->clave)
+                        ->where('id', '!=', $predio->productor_id);
+                })
                 ->get()
                 ->map(function ($item) {
                     return [

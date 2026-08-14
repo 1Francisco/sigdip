@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\InspeccionExport;
+use App\Http\Controllers\Concerns\MergesDictamenPdf;
 use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
 use App\Models\Productor;
@@ -11,10 +12,13 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ReporteController extends Controller
 {
+    use MergesDictamenPdf;
+
     /**
      * Interfaz web para visualizar y filtrar la "Sábana" de inspecciones.
      */
@@ -214,20 +218,36 @@ class ReporteController extends Controller
     /**
      * Exporta los resultados de una inspección a PDF.
      */
-    public function streamPdf($id)
+    public function streamPdf(Request $request, $id)
     {
         $inspeccion = Inspeccion::with(['predio.productor', 'detalles.animal', 'veterinario'])
             ->findOrFail($id);
+
+        if (! $request->has('prototype') && $inspeccion->dictamen_comite_path) {
+            $filePath = Storage::disk('public')->path($inspeccion->dictamen_comite_path);
+            if (file_exists($filePath)) {
+                return response()->file($filePath, [
+                    'Content-Disposition' => 'inline; filename="'.$inspeccion->buildPdfFilename().'"',
+                ]);
+            }
+        }
 
         $pdf = Pdf::loadView('reports.inspeccion_pdf', compact('inspeccion'));
 
         return $pdf->stream($inspeccion->buildPdfFilename());
     }
 
-    public function exportPdf($id)
+    public function exportPdf(Request $request, $id)
     {
         $inspeccion = Inspeccion::with(['predio.productor', 'detalles.animal', 'veterinario'])
             ->findOrFail($id);
+
+        if (! $request->has('prototype') && $inspeccion->dictamen_comite_path) {
+            $filePath = Storage::disk('public')->path($inspeccion->dictamen_comite_path);
+            if (file_exists($filePath)) {
+                return response()->download($filePath, $inspeccion->buildPdfFilename());
+            }
+        }
 
         $pdf = Pdf::loadView('reports.inspeccion_pdf', compact('inspeccion'));
 
@@ -263,5 +283,69 @@ class ReporteController extends Controller
             new InspeccionExport($zona, $tipoActividad, $medicoId),
             $filename
         );
+    }
+
+    /**
+     * Exporta los dictámenes de la "Sábana" a un PDF consolidado aplicando los filtros.
+     */
+    public function exportPdfSabana(Request $request)
+    {
+        $zona = $request->get('zona');
+        $tipoActividad = $request->get('tipo_actividad') ?? $request->get('tipo_prueba');
+        $medicoId = $request->get('medico_id');
+
+        $user = auth()->user();
+        if ($user && ! $user->hasRole('Administrador')) {
+            $medicoId = $user->id;
+        }
+
+        $inspecciones = Inspeccion::with(['predio.productor', 'detalles.animal', 'veterinario'])
+            ->applySabanaFilters($zona, $tipoActividad, $medicoId)
+            ->latest('fecha')
+            ->latest('id')
+            ->get();
+
+        if ($inspecciones->isEmpty()) {
+            return $this->sabanaPdfError($request, 'No hay dictámenes que coincidan con los filtros seleccionados.');
+        }
+
+        if ($inspecciones->count() > 50) {
+            return $this->sabanaPdfError($request, 'Hay más de 50 dictámenes con los filtros seleccionados. Refina los filtros para descargar el PDF.');
+        }
+
+        $pageEstimate = $inspecciones->sum(function ($ins) {
+            return 1 + (int) ceil(($ins->detalles->count() ?? 0) / 30);
+        });
+
+        if ($pageEstimate > 200) {
+            return $this->sabanaPdfError($request, 'El PDF supera el límite de páginas estimadas ('.$pageEstimate.'). Refina los filtros.');
+        }
+
+        $output = $this->mergeDictamenPdf($inspecciones);
+
+        $suffixParts = [];
+        if ($zona) {
+            $suffixParts[] = 'zona_'.$zona;
+        }
+        if ($tipoActividad) {
+            $suffixParts[] = 'act_'.$tipoActividad;
+        }
+
+        $suffix = ! empty($suffixParts) ? implode('_', $suffixParts) : date('d-m-Y');
+        $filename = 'dictamenes_sabana_'.$suffix.'.pdf';
+
+        return response($output, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
+    private function sabanaPdfError(Request $request, string $message)
+    {
+        if ($request->is('api/*')) {
+            return response()->json(['message' => $message], 400);
+        }
+
+        return redirect()->back()->with('error', $message);
     }
 }

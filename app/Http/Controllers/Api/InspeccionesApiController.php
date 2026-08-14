@@ -94,17 +94,22 @@ class InspeccionesApiController extends Controller
 
         $this->authorizeInspection($request, $inspeccion);
 
+        if (! $request->has('prototype') && $inspeccion->dictamen_comite_path) {
+            $filePath = Storage::disk('public')->path($inspeccion->dictamen_comite_path);
+            if (file_exists($filePath)) {
+                return response()->file($filePath, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="'.$inspeccion->buildPdfFilename().'"',
+                ]);
+            }
+        }
+
         $pdf = Pdf::loadView('reports.inspeccion_pdf', compact('inspeccion'));
         $filename = $inspeccion->buildPdfFilename();
 
         return response($pdf->output(), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="'.$filename.'"');
-    }
-
-    public function ver(Request $request, $id)
-    {
-        return $this->pdf($request, $id);
     }
 
     /**

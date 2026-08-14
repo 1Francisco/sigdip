@@ -6,22 +6,22 @@
         <p class="page-subtitle">Administre las unidades de producción registradas</p>
       </div>
 
-      <div class="tabs-container mx-3 mb-2">
-        <div class="tabs-nav d-flex gap-2 bg-light rounded-3 p-2">
+      <div class="tabs-container mx-3">
+        <div class="tabs-nav d-flex gap-2">
           <button
-            class="tab-btn flex-fill py-3 px-4 rounded-3 fw-semibold fs-5"
+            class="tab-btn flex-fill"
             :class="{ 'tab-active': activeTab === 'predios' }"
             @click="activeTab = 'predios'"
           >
-            <i class="bi bi-house-door fs-5 me-1"></i> Predios
+            <i class="bi bi-house-door"></i> Predios
           </button>
           <button
             v-if="isAdmin"
-            class="tab-btn flex-fill py-3 px-4 rounded-3 fw-semibold fs-5"
+            class="tab-btn flex-fill"
             :class="{ 'tab-active': activeTab === 'aretes' }"
             @click="activeTab = 'aretes'; loadAretes(true)"
           >
-            <i class="bi bi-upc-scan fs-5 me-1"></i> Aretes
+            <i class="bi bi-upc-scan"></i> Aretes
           </button>
         </div>
       </div>
@@ -230,7 +230,7 @@
         </div>
 
         <div class="table-responsive">
-          <table class="table align-middle mb-0 predios-table">
+          <table class="table align-middle mb-0 predios-table text-nowrap" style="min-width: 950px;">
             <thead>
               <tr>
                 <th class="ps-4">Arete</th>
@@ -954,28 +954,41 @@ export default {
   max-width: 1180px;
   margin-left: auto !important;
   margin-right: auto !important;
+  margin-top: 10px;
+  margin-bottom: 20px;
 }
 
 .tabs-nav {
-  background: #f1f5f9;
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  padding: 5px;
+  border-radius: 14px;
 }
 
 .tab-btn {
   border: none;
   background: transparent;
-  color: #64748b;
-  transition: all 0.2s ease;
+  color: #475569;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  padding: 12px 16px !important;
+  border-radius: 10px;
+  transition: all 0.25s ease;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .tab-btn.tab-active {
-  background: #ffffff;
-  color: #2563eb;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
 }
 
 .tab-btn:not(.tab-active):hover {
-  color: #334155;
+  color: #1e293b;
 }
 
 @media (max-width: 991.98px) {

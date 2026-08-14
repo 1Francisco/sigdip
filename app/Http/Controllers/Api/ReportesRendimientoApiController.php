@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Exports\RendimientoExport;
 use App\Exports\RendimientoMensualExport;
+use App\Http\Controllers\Concerns\MergesDictamenPdf;
 use App\Http\Controllers\Controller;
 use App\Models\DetalleInspeccion;
 use App\Models\Inspeccion;
@@ -15,10 +16,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
-use setasign\Fpdi\Fpdi;
 
 class ReportesRendimientoApiController extends Controller
 {
+    use MergesDictamenPdf;
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -712,29 +714,9 @@ class ReportesRendimientoApiController extends Controller
             return response()->json(['success' => false, 'message' => "La selección generaría aproximadamente {$pageEstimate} páginas. Refina los filtros para reducir el tamaño del PDF."], 400);
         }
 
-        $pdf = new Fpdi;
-        $tmpFiles = [];
+        $output = $this->mergeDictamenPdf($inspecciones);
 
-        foreach ($inspecciones as $inspeccion) {
-            $individual = Pdf::loadView('reports.inspeccion_pdf', ['inspeccion' => $inspeccion])->output();
-            $tmp = tempnam(sys_get_temp_dir(), 'pdf_');
-            file_put_contents($tmp, $individual);
-            $tmpFiles[] = $tmp;
-            $pageCount = $pdf->setSourceFile($tmp);
-            for ($i = 1; $i <= $pageCount; $i++) {
-                $tpl = $pdf->importPage($i);
-                $size = $pdf->getTemplateSize($tpl);
-                $orientation = $size['width'] > $size['height'] ? 'L' : 'P';
-                $pdf->AddPage($orientation, [$size['width'], $size['height']]);
-                $pdf->useTemplate($tpl);
-            }
-        }
-
-        foreach ($tmpFiles as $tmp) {
-            unlink($tmp);
-        }
-
-        return response($pdf->Output('S'), 200)
+        return response($output, 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'attachment; filename="dictamenes_consolidados.pdf"');
     }

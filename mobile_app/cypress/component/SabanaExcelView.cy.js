@@ -315,6 +315,37 @@ describe('SabanaExcelView', () => {
       cy.location('hash', { timeout: 5000 }).should('include', '/inspecciones/1')
     })
 
+    it('descarga PDFs con filtros al hacer clic en boton PDFs', () => {
+      cy.intercept('GET', '**/api/reportes/sabana-excel/data*', {
+        statusCode: 200,
+        body: mockApiResponse(true),
+      }).as('getSabanaData')
+
+      cy.intercept('GET', '**/api/reportes/sabana-excel/pdf*', {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/pdf' },
+        body: new Blob(['%PDF-1.4 test'], { type: 'application/pdf' }),
+      }).as('getSabanaPdf')
+
+      const router = buildRouter()
+      router.push('/sabana-excel')
+      mount(SabanaExcelView, { global: { plugins: [router] } })
+
+      cy.wait('@getSabanaData', { timeout: 10000 })
+
+      cy.contains('Mostrar Filtros', { timeout: 5000 }).click()
+      cy.get('.form-select').first().select('A', { force: true })
+      cy.get('.form-select').eq(1).select('Barrido', { force: true })
+      cy.get('.form-select').eq(2).select('2', { force: true })
+      cy.contains('Filtrar').click()
+      cy.wait('@getSabanaData', { timeout: 10000 })
+
+      cy.contains('PDFs', { timeout: 5000 }).click()
+      cy.wait('@getSabanaPdf', { timeout: 10000 })
+        .its('request.query')
+        .should('deep.include', { zona: 'A', tipo_actividad: 'Barrido', medico_id: '2' })
+    })
+
     it('cierra sesion desde menu lateral', () => {
       cy.intercept('GET', '**/api/reportes/sabana-excel/data*', {
         statusCode: 200,
@@ -353,6 +384,20 @@ describe('SabanaExcelView', () => {
 
       cy.contains('Mostrar Filtros', { timeout: 5000 }).click()
       cy.get('.form-label').contains('Médico').should('not.exist')
+    })
+
+    it('ve boton de PDFs', () => {
+      cy.intercept('GET', '**/api/reportes/sabana-excel/data*', {
+        statusCode: 200,
+        body: mockApiResponse(false),
+      }).as('getSabanaData')
+
+      const router = buildRouter()
+      router.push('/sabana-excel')
+      mount(SabanaExcelView, { global: { plugins: [router] } })
+
+      cy.wait('@getSabanaData', { timeout: 10000 })
+      cy.contains('PDFs', { timeout: 5000 }).should('be.visible')
     })
   })
 })

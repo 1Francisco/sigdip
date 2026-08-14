@@ -8,7 +8,9 @@ use App\Models\Inspeccion;
 use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -92,6 +94,48 @@ class InspeccionApiTest extends TestCase
         $response->assertHeader('Content-Type', 'application/pdf');
     }
 
+    public function test_pdf_sirve_dictamen_comite_cuando_existe()
+    {
+        Storage::fake('public');
+
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->user->id,
+        ]);
+
+        $contenido = Pdf::loadHTML('<h1>DICTAMEN OFICIAL DEL COMITE</h1>')->output();
+        $path = 'dictamenes_comite/api_'.$inspeccion->id.'.pdf';
+        Storage::disk('public')->put($path, $contenido);
+        $inspeccion->update(['dictamen_comite_path' => $path]);
+
+        $response = $this->getJson("/api/inspecciones/{$inspeccion->id}/pdf");
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/pdf');
+        $response->assertHeader('Content-Disposition', 'inline; filename="'.$inspeccion->buildPdfFilename().'"');
+        $this->assertSame($contenido, $response->baseResponse->getFile()->getContent());
+    }
+
+    public function test_pdf_con_prototype_fuerza_pdf_generado()
+    {
+        Storage::fake('public');
+
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->user->id,
+        ]);
+
+        $path = 'dictamenes_comite/api_prototype_'.$inspeccion->id.'.pdf';
+        Storage::disk('public')->put($path, Pdf::loadHTML('<h1>DICTAMEN OFICIAL DEL COMITE</h1>')->output());
+        $inspeccion->update(['dictamen_comite_path' => $path]);
+
+        $response = $this->getJson("/api/inspecciones/{$inspeccion->id}/pdf?prototype=1");
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/pdf');
+        $this->assertStringContainsString('%PDF', $response->getContent());
+    }
+
     public function test_destroy()
     {
         $inspeccion = Inspeccion::factory()->create([
@@ -149,28 +193,6 @@ class InspeccionApiTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertDatabaseMissing('inspecciones', ['id' => $inspeccion->id]);
-    }
-
-    public function test_sync_detalles()
-    {
-        $inspeccion = Inspeccion::factory()->create([
-            'predio_id' => $this->predio->id,
-            'veterinario_id' => $this->user->id,
-        ]);
-
-        $animal1 = Animal::factory()->create(['predio_id' => $this->predio->id]);
-        $animal2 = Animal::factory()->create(['predio_id' => $this->predio->id]);
-
-        $response = $this->postJson("/api/inspecciones/{$inspeccion->id}/sync-detalles", [
-            'inspeccion_id' => $inspeccion->id,
-            'detalles' => [
-                ['animal_id' => $animal1->id, 'resultado_prueba' => 'Negativo'],
-                ['animal_id' => $animal2->id, 'resultado_prueba' => 'Positivo'],
-            ],
-        ]);
-
-        $response->assertStatus(200);
-        $this->assertCount(2, $inspeccion->detalles()->get());
     }
 
     public function test_search_inspecciones_by_folio()
@@ -233,85 +255,6 @@ class InspeccionApiTest extends TestCase
         $response->assertJsonFragment([
             'resultado_prueba' => 'No Aplica',
             'motivo_no_aplica' => 'Menor a 4 meses',
-        ]);
-    }
-
-    public function test_ver_pdf_retorna_pdf()
-    {
-        $inspeccion = Inspeccion::factory()->create([
-            'predio_id' => $this->predio->id,
-            'veterinario_id' => $this->user->id,
-        ]);
-
-        $response = $this->getJson("/api/inspecciones/{$inspeccion->id}/ver");
-
-        $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'application/pdf');
-    }
-
-    public function test_ver_pdf_autorizacion_medico()
-    {
-        $inspeccion = Inspeccion::factory()->create([
-            'predio_id' => $this->predio->id,
-            'veterinario_id' => $this->medico->id,
-        ]);
-
-        Sanctum::actingAs($this->medico);
-        $response = $this->getJson("/api/inspecciones/{$inspeccion->id}/ver");
-
-        $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'application/pdf');
-    }
-
-    public function test_ver_pdf_medico_no_ve_ajeno()
-    {
-        $otroMedico = User::factory()->create();
-        $otroMedico->assignRole('Medico_Campo');
-
-        $inspeccion = Inspeccion::factory()->create([
-            'predio_id' => $this->predio->id,
-            'veterinario_id' => $otroMedico->id,
-        ]);
-
-        Sanctum::actingAs($this->medico);
-        $response = $this->getJson("/api/inspecciones/{$inspeccion->id}/ver");
-
-        $response->assertStatus(403);
-    }
-
-    public function test_ver_pdf_404()
-    {
-        $response = $this->getJson('/api/inspecciones/99999/ver');
-
-        $response->assertStatus(404);
-    }
-
-    public function test_sync_detalles_con_motivo_se_conserva()
-    {
-        $inspeccion = Inspeccion::factory()->create([
-            'predio_id' => $this->predio->id,
-            'veterinario_id' => $this->user->id,
-        ]);
-
-        $animal = Animal::factory()->create(['predio_id' => $this->predio->id]);
-
-        $response = $this->postJson("/api/inspecciones/{$inspeccion->id}/sync-detalles", [
-            'inspeccion_id' => $inspeccion->id,
-            'detalles' => [
-                [
-                    'animal_id' => $animal->id,
-                    'resultado_prueba' => 'No Aplica',
-                    'motivo_no_aplica' => 'Menor a 5 meses',
-                ],
-            ],
-        ]);
-
-        $response->assertStatus(200);
-        $this->assertDatabaseHas('detalles_inspeccion', [
-            'inspeccion_id' => $inspeccion->id,
-            'animal_id' => $animal->id,
-            'resultado_prueba' => 'No Aplica',
-            'motivo_no_aplica' => 'Menor a 5 meses',
         ]);
     }
 }

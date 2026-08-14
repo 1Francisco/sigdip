@@ -179,6 +179,39 @@ class ProductorApiTest extends TestCase
             ->assertJsonPath('data.productor.id', $productor->id);
     }
 
+    public function test_show_predio_incluye_otros_predios_del_mismo_hato()
+    {
+        $productor = Productor::factory()->create(['clave' => 'BF-001']);
+        $otroDelHato = Productor::factory()->create(['clave' => 'BF-001']);
+        $otroDeOtroHato = Productor::factory()->create(['clave' => 'BD-002']);
+
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+        Predio::factory()->create(['productor_id' => $otroDelHato->id]);
+        Predio::factory()->create(['productor_id' => $otroDeOtroHato->id]);
+
+        $response = $this->getJson("/api/predios/{$predio->id}");
+
+        $response->assertStatus(200);
+        $otros = $response->json('data.otros_predios');
+        $this->assertCount(1, $otros);
+        $this->assertEquals($otroDelHato->id, $otros[0]['productor']['id']);
+        $this->assertNotEquals($productor->id, $otros[0]['productor']['id']);
+    }
+
+    public function test_show_predio_sin_clave_no_lista_otros_predios()
+    {
+        $productor = Productor::factory()->create(['clave' => null]);
+        $otroSinClave = Productor::factory()->create(['clave' => null]);
+
+        $predio = Predio::factory()->create(['productor_id' => $productor->id]);
+        Predio::factory()->create(['productor_id' => $otroSinClave->id]);
+
+        $response = $this->getJson("/api/predios/{$predio->id}");
+
+        $response->assertStatus(200);
+        $this->assertCount(0, $response->json('data.otros_predios'));
+    }
+
     public function test_medico_solo_ve_sus_productores_asignados()
     {
         Role::firstOrCreate(['name' => 'Medico_Campo']);

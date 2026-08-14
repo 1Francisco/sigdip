@@ -945,3 +945,11 @@ body {
   font-size: 0.65rem;
 }
 
+/* Table Responsive Helper */
+.table-responsive {
+  display: block;
+  width: 100%;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+

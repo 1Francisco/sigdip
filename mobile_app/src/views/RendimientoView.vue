@@ -6,9 +6,6 @@
             <p class="text-secondary small mb-0">Reportes de actividad y productividad en campo</p>
           </div>
           <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm btn-download-excel" @click="downloadExcelGeneral">
-              <i class="bi bi-file-earmark-excel me-1"></i> Excel
-            </button>
             <button class="btn btn-sm btn-danger rounded-pill px-3 shadow-sm btn-download-pdf" @click="downloadPdfGeneral">
               <i class="bi bi-file-earmark-pdf me-1"></i> PDF
             </button>
@@ -123,6 +120,17 @@
           <!-- 1. TABS: MÉDICOS -->
           <div v-if="currentTab === 'medicos'" class="pane-medicos">
 
+            <!-- Gráfica de Lecturas por Médico -->
+            <ChartCard
+              v-if="medicosRendimiento.length > 0"
+              class="mb-4 chart-card-medicos"
+              title="Lecturas por Médico"
+              type="bar"
+              :labels="chartMedicosLabels"
+              :datasets="chartMedicosDatasets"
+              :height="220"
+              icon-class="bi bi-bar-chart-fill"
+            />
 
             <!-- Tabla responsiva de Médicos -->
              <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -308,9 +316,6 @@
                           <button class="btn btn-sm px-1 py-0 text-danger" title="Descargar PDF este mes" @click="downloadRowFile(row, 'pdf')">
                             <i class="bi bi-file-earmark-pdf"></i>
                           </button>
-                          <button class="btn btn-sm px-1 py-0 text-success" title="Descargar Excel este mes" @click="downloadRowFile(row, 'xlsx')">
-                            <i class="bi bi-file-earmark-excel"></i>
-                          </button>
                         </td>
                       </tr>
                       <!-- Fila de Totales Generales -->
@@ -363,6 +368,7 @@
 
 <script>
 import AppLayout from '../components/AppLayout.vue';
+import ChartCard from '../components/ChartCard.vue';
 import api from '../services/api.js';
 import { CONFIG } from '../config.js';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -374,7 +380,8 @@ import { FileOpener } from '@capacitor-community/file-opener';
 export default {
   name: 'RendimientoView',
   components: {
-    AppLayout
+    AppLayout,
+    ChartCard
   },
   data() {
     return {
@@ -465,6 +472,17 @@ export default {
     },
     totalYearsAvailable() {
       return this.availableYears.length;
+    },
+    chartMedicosLabels() {
+      return this.medicosRendimiento.map(m => m.name);
+    },
+    chartMedicosDatasets() {
+      return [{
+        label: 'Lecturas',
+        data: this.medicosRendimiento.map(m => m.total_inspecciones || 0),
+        backgroundColor: '#2563eb',
+        borderRadius: 4
+      }];
     }
   },
   created() {

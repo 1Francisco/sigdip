@@ -60,7 +60,7 @@
 
           <div v-else>
             <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
+              <table class="table table-hover align-middle mb-0 text-nowrap" style="min-width: 950px;">
                 <thead class="table-light">
                   <tr>
                     <th class="ps-4 text-secondary fw-bold text-uppercase fs-7 tracking-wider">#</th>

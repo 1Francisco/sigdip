@@ -52,7 +52,7 @@
         <!-- Section for Other Producers sharing this property -->
         <div class="card shadow-sm border-0 p-4 rounded-4 mb-4">
           <div class="fw-bold text-dark mb-3">
-            <i class="bi bi-people me-2"></i>Otros Productores en este Predio
+            <i class="bi bi-people me-2"></i>Personas del mismo hato
           </div>
           
           <div v-if="otrosPredios && otrosPredios.length" class="list-group list-group-flush text-start">
@@ -86,7 +86,7 @@
           </div>
           <div v-else class="text-center py-3 text-muted">
             <i class="bi bi-person-dash fs-4 d-block mb-2"></i>
-            No hay otros productores registrados con esta misma clave de UPP.
+            No hay otras personas del mismo hato registradas con esta misma clave de UPP.
           </div>
         </div>
 
@@ -183,24 +183,36 @@ export default {
       try {
         const res = await api.getPredio(this.$route.params.id);
         this.predio = res.data;
+        
         if (res.data?.otros_predios) {
           this.otrosPredios = res.data.otros_predios;
-        } else if (this.predio?.clave_unidad_produccion) {
+        } else {
           // Fallback de búsqueda offline en el catálogo local
           const localPredios = await db.getPredios();
-          this.otrosPredios = localPredios
-            .filter(p => p.clave_unidad_produccion === this.predio.clave_unidad_produccion && String(p.productor_id) !== String(this.predio.productor_id))
-            .map(p => ({
-              id: p.id,
-              nombre_rancho: p.nombre_rancho,
-              productor: p.productor ? {
-                id: p.productor.id,
-                nombre: p.productor.nombre,
-                apellido_paterno: p.productor.apellido_paterno,
-                apellido_materno: p.productor.apellido_materno,
-                medico: p.productor.medico ? { name: p.productor.medico.name } : null
-              } : null
-            }));
+          const localProductores = await db.getProductores();
+          
+          const hatoClave = this.predio?.productor?.clave;
+          const currentProductorId = this.predio?.productor?.id;
+          
+          if (hatoClave && currentProductorId) {
+            const matchProds = localProductores.filter(p => p.clave === hatoClave && String(p.id) !== String(currentProductorId));
+            this.otrosPredios = matchProds.map(p => {
+              const matchPredio = localPredios.find(pr => String(pr.productor_id) === String(p.id));
+              return {
+                id: p.id,
+                nombre_rancho: matchPredio ? (matchPredio.nombre_rancho || matchPredio.nombre) : 'Sin Rancho',
+                productor: {
+                  id: p.id,
+                  nombre: p.nombreRaw || p.nombre || '',
+                  apellido_paterno: p.apellido_paterno || '',
+                  apellido_materno: p.apellido_materno || '',
+                  medico: p.medico_id ? { name: 'Asignado' } : null
+                }
+              };
+            });
+          } else {
+            this.otrosPredios = [];
+          }
         }
       } catch (e) {
         this.errorMsg = e.message || 'No se pudo cargar el predio.';

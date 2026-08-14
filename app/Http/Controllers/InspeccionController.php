@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class InspeccionController extends Controller
 {
@@ -946,7 +947,7 @@ class InspeccionController extends Controller
         if ($request->hasFile('dictamen_comite')) {
             // Eliminar archivo anterior si existe
             if ($inspeccion->dictamen_comite_path) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($inspeccion->dictamen_comite_path);
+                Storage::disk('public')->delete($inspeccion->dictamen_comite_path);
             }
 
             // Guardar el nuevo archivo
@@ -973,8 +974,8 @@ class InspeccionController extends Controller
         }
 
         if ($inspeccion->dictamen_comite_path) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($inspeccion->dictamen_comite_path);
-            
+            Storage::disk('public')->delete($inspeccion->dictamen_comite_path);
+
             $inspeccion->update([
                 'dictamen_comite_path' => null,
             ]);
@@ -996,9 +997,10 @@ class InspeccionController extends Controller
         }
 
         if ($inspeccion->dictamen_comite_path) {
-            $filePath = \Illuminate\Support\Facades\Storage::disk('public')->path($inspeccion->dictamen_comite_path);
+            $filePath = Storage::disk('public')->path($inspeccion->dictamen_comite_path);
             if (file_exists($filePath)) {
-                $filename = 'DICTAMEN_COMITE_' . ($inspeccion->clave_interna ?: $inspeccion->folio ?: $inspeccion->id) . '.pdf';
+                $filename = 'DICTAMEN_COMITE_'.($inspeccion->clave_interna ?: $inspeccion->folio ?: $inspeccion->id).'.pdf';
+
                 return response()->download($filePath, $filename);
             }
         }
@@ -1032,5 +1034,3 @@ class InspeccionController extends Controller
         return response()->json(['success' => false, 'message' => 'Arete no encontrado en el censo'], 404);
     }
 }
-
-

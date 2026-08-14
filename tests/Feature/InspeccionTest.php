@@ -8,6 +8,8 @@ use App\Models\Predio;
 use App\Models\Productor;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -651,7 +653,7 @@ class InspeccionTest extends TestCase
 
     public function test_upload_and_delete_dictamen_comite()
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        Storage::fake('public');
 
         $inspeccion = Inspeccion::factory()->create([
             'predio_id' => $this->predio->id,
@@ -659,7 +661,7 @@ class InspeccionTest extends TestCase
             'estado' => 'completada',
         ]);
 
-        $file = \Illuminate\Http\UploadedFile::fake()->create('dictamen.pdf', 100, 'application/pdf');
+        $file = UploadedFile::fake()->create('dictamen.pdf', 100, 'application/pdf');
 
         $response = $this->actingAs($this->admin)
             ->post(route('inspecciones.upload-dictamen-comite', $inspeccion), [
@@ -671,13 +673,13 @@ class InspeccionTest extends TestCase
 
         $inspeccion->refresh();
         $this->assertNotNull($inspeccion->dictamen_comite_path);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($inspeccion->dictamen_comite_path);
+        Storage::disk('public')->assertExists($inspeccion->dictamen_comite_path);
 
         // Download test
         $responseDownload = $this->actingAs($this->admin)
             ->get(route('inspecciones.download-dictamen-comite', $inspeccion));
         $responseDownload->assertStatus(200);
-        $responseDownload->assertHeader('content-disposition', 'attachment; filename=DICTAMEN_COMITE_' . ($inspeccion->clave_interna ?: $inspeccion->folio ?: $inspeccion->id) . '.pdf');
+        $responseDownload->assertHeader('content-disposition', 'attachment; filename=DICTAMEN_COMITE_'.($inspeccion->clave_interna ?: $inspeccion->folio ?: $inspeccion->id).'.pdf');
 
         // Delete test
         $responseDelete = $this->actingAs($this->admin)
