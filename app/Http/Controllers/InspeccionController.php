@@ -930,6 +930,83 @@ class InspeccionController extends Controller
     }
 
     /**
+     * Sube el dictamen oficial del comité y lo asocia a la inspección.
+     */
+    public function uploadDictamenComite(Request $request, Inspeccion $inspeccion)
+    {
+        $user = auth()->user();
+        if ($user && ! $user->hasRole('Administrador') && $inspeccion->veterinario_id !== $user->id) {
+            abort(403, 'No tienes permiso para modificar esta inspección.');
+        }
+
+        $request->validate([
+            'dictamen_comite' => 'required|file|mimes:pdf|max:10240', // PDF, max 10MB
+        ]);
+
+        if ($request->hasFile('dictamen_comite')) {
+            // Eliminar archivo anterior si existe
+            if ($inspeccion->dictamen_comite_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($inspeccion->dictamen_comite_path);
+            }
+
+            // Guardar el nuevo archivo
+            $path = $request->file('dictamen_comite')->store('dictamenes_comite', 'public');
+
+            $inspeccion->update([
+                'dictamen_comite_path' => $path,
+            ]);
+
+            return back()->with('success', 'El dictamen oficial del comité se ha subido y guardado correctamente.');
+        }
+
+        return back()->with('error', 'No se pudo procesar el archivo.');
+    }
+
+    /**
+     * Elimina el dictamen oficial del comité de la inspección.
+     */
+    public function deleteDictamenComite(Inspeccion $inspeccion)
+    {
+        $user = auth()->user();
+        if ($user && ! $user->hasRole('Administrador') && $inspeccion->veterinario_id !== $user->id) {
+            abort(403, 'No tienes permiso para modificar esta inspección.');
+        }
+
+        if ($inspeccion->dictamen_comite_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($inspeccion->dictamen_comite_path);
+            
+            $inspeccion->update([
+                'dictamen_comite_path' => null,
+            ]);
+
+            return back()->with('success', 'El dictamen oficial del comité se ha eliminado correctamente.');
+        }
+
+        return back()->with('error', 'No hay ningún dictamen del comité registrado.');
+    }
+
+    /**
+     * Descarga el dictamen oficial del comité como archivo adjunto.
+     */
+    public function downloadDictamenComite(Inspeccion $inspeccion)
+    {
+        $user = auth()->user();
+        if ($user && ! $user->hasRole('Administrador') && $inspeccion->veterinario_id !== $user->id) {
+            abort(403, 'No tienes permiso para descargar este archivo.');
+        }
+
+        if ($inspeccion->dictamen_comite_path) {
+            $filePath = \Illuminate\Support\Facades\Storage::disk('public')->path($inspeccion->dictamen_comite_path);
+            if (file_exists($filePath)) {
+                $filename = 'DICTAMEN_COMITE_' . ($inspeccion->clave_interna ?: $inspeccion->folio ?: $inspeccion->id) . '.pdf';
+                return response()->download($filePath, $filename);
+            }
+        }
+
+        abort(404, 'El archivo solicitado no existe en el servidor.');
+    }
+
+    /**
      * Busca los datos de un arete en el censo para el autocompletado.
      */
     public function buscarArete($numero)
@@ -955,3 +1032,5 @@ class InspeccionController extends Controller
         return response()->json(['success' => false, 'message' => 'Arete no encontrado en el censo'], 404);
     }
 }
+
+

@@ -7,6 +7,7 @@ use App\Models\Predio;
 use App\Models\Productor;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\Rule;
 
 class PredioController extends Controller
 {
@@ -77,7 +78,13 @@ class PredioController extends Controller
     {
         $validated = $request->validate([
             'nombre_rancho' => 'required|string|max:255',
-            'clave_unidad_produccion' => 'required|string|unique:predios',
+            'clave_unidad_produccion' => [
+                'required',
+                'string',
+                Rule::unique('predios')->where(function ($query) use ($request) {
+                    return $query->where('productor_id', $request->productor_id);
+                })
+            ],
             'latitud' => 'nullable|numeric',
             'longitud' => 'nullable|numeric',
             'domicilio' => 'nullable|string',
@@ -135,7 +142,13 @@ class PredioController extends Controller
 
         $validated = $request->validate([
             'nombre_rancho' => 'required|string|max:255',
-            'clave_unidad_produccion' => 'required|string|unique:predios,clave_unidad_produccion,'.$predio->id,
+            'clave_unidad_produccion' => [
+                'required',
+                'string',
+                Rule::unique('predios')->ignore($predio->id)->where(function ($query) use ($request) {
+                    return $query->where('productor_id', $request->productor_id);
+                })
+            ],
             'latitud' => 'nullable|numeric',
             'longitud' => 'nullable|numeric',
             'domicilio' => 'nullable|string',
@@ -167,7 +180,16 @@ class PredioController extends Controller
             }))
             ->paginate(10);
 
-        return view('predios.show', compact('predio', 'animales'));
+        // Obtener otros predios/productores con la misma clave de unidad de producción (UPP)
+        $otrosPredios = collect();
+        if ($predio->clave_unidad_produccion) {
+            $otrosPredios = Predio::with(['productor', 'productor.medico'])
+                ->where('clave_unidad_produccion', $predio->clave_unidad_produccion)
+                ->where('productor_id', '!=', $predio->productor_id)
+                ->get();
+        }
+
+        return view('predios.show', compact('predio', 'animales', 'otrosPredios'));
     }
 
     public function destroy(Predio $predio)

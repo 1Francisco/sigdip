@@ -22,7 +22,7 @@ class VisitaController extends Controller
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('codigo_unico', 'like', "%{$search}%")
+                $q->where('codigo', 'like', "%{$search}%")
                     ->orWhere('observaciones', 'like', "%{$search}%")
                     ->orWhereHas('predio', function ($pq) use ($search) {
                         $pq->where('nombre_rancho', 'like', "%{$search}%")

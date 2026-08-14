@@ -59,7 +59,7 @@
           </div>
 
           <div v-else>
-            <div class="table-responsive d-none d-lg-block">
+            <div class="table-responsive">
               <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                   <tr>
@@ -120,73 +120,6 @@
                   </tr>
                 </tbody>
               </table>
-            </div>
-
-            <div class="mobile-cards d-lg-none">
-              <div class="mobile-cards-grid">
-                <article v-for="arete in paginatedAretes" :key="arete.id" class="medico-mobile-card shadow-sm">
-                  <div class="medico-content">
-                    <div class="field-block">
-                      <span class="field-label">ARETE</span>
-                      <span class="field-value fw-bold text-dark fs-6">{{ arete.numero_arete }}</span>
-                      <small class="text-secondary d-block mt-0.5" v-if="arete.fecha_nacimiento">{{ arete.fecha_nacimiento }}</small>
-                    </div>
-
-                    <div class="field-block" v-if="arete.raza">
-                      <span class="field-label">RAZA</span>
-                      <span class="field-value text-dark">{{ arete.raza }}</span>
-                    </div>
-
-                    <div class="field-block" v-if="arete.sexo">
-                      <span class="field-label">SEXO</span>
-                      <span class="field-value text-dark">{{ arete.sexo }}</span>
-                    </div>
-
-                    <div class="field-block" v-if="arete.edad_meses != null">
-                      <span class="field-label">EDAD (MESES)</span>
-                      <span class="field-value text-dark">{{ arete.edad_meses }}</span>
-                    </div>
-
-                    <div class="field-block">
-                      <span class="field-label">PRODUCTOR</span>
-                      <span class="field-value text-dark">{{ getProductorName(arete.productor) }}</span>
-                    </div>
-
-                    <div class="field-block">
-                      <span class="field-label">PREDIO</span>
-                      <span class="field-value text-dark">{{ arete.predio?.nombre_rancho || '—' }}</span>
-                      <small class="text-secondary d-block mt-0.5" v-if="arete.predio?.clave_unidad_produccion">CUP: {{ arete.predio.clave_unidad_produccion }}</small>
-                    </div>
-                  </div>
-
-                  <div class="medico-mobile-footer">
-                    <span class="footer-actions-label">Acciones</span>
-                    <div class="d-flex gap-2">
-                      <button
-                        @click="$router.push('/aretes-censo/' + arete.id)"
-                        class="btn-icon-square-info"
-                        title="Ver arete"
-                      >
-                        <i class="bi bi-eye"></i>
-                      </button>
-                      <button
-                        @click="$router.push('/aretes-censo/editar/' + arete.id)"
-                        class="btn-icon-square-blue"
-                        title="Editar arete"
-                      >
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                      <button
-                        @click="deleteAreteCenso(arete)"
-                        class="btn-icon-square-red"
-                        title="Eliminar arete"
-                      >
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              </div>
             </div>
 
             <div class="pagination-footer-custom d-flex justify-content-between align-items-center flex-wrap gap-3 p-4 bg-white">

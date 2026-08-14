@@ -45,7 +45,15 @@ class Inspeccion extends Model
         'clave_interna',
         'grupo_id',
         'modified_at',
+        'dictamen_comite_path',
     ];
+
+    public function getDictamenComiteUrlAttribute(): ?string
+    {
+        return $this->dictamen_comite_path 
+            ? \Illuminate\Support\Facades\Storage::url($this->dictamen_comite_path) 
+            : null;
+    }
 
     protected $casts = [
         'fecha' => 'date',

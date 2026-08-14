@@ -11,7 +11,7 @@
               <h2 class="h4 fw-bold mb-0 text-dark">{{ animal.numero_arete_siniiga }}</h2>
               <p class="text-secondary small mb-0">{{ animal.raza || 'Sin raza' }} · {{ animal.sexo || 'S/E' }}</p>
             </div>
-            <span class="badge bg-primary rounded-pill px-3 py-2">{{ animal.edad ?? '—' }} años</span>
+            <span class="badge bg-primary rounded-pill px-3 py-2">{{ animal.edad ?? '—' }} meses</span>
           </div>
         </div>
 
@@ -31,8 +31,8 @@
               <div class="fw-semibold">{{ animal.sexo || '—' }}</div>
             </div>
             <div class="col-12 col-md-6">
-              <div class="text-muted small">Edad</div>
-              <div class="fw-semibold">{{ animal.edad ?? '—' }} años</div>
+              <div class="text-muted small">Edad (meses)</div>
+              <div class="fw-semibold">{{ animal.edad ?? '—' }} meses</div>
             </div>
           </div>
         </div>
@@ -97,6 +97,12 @@ export default {
     };
   },
   async mounted() {
+    const user = api.getCurrentUser();
+    if (!user || !user.roles || !user.roles.includes('Administrador')) {
+      alert('Solo administradores pueden ver animales.');
+      this.$router.push('/dashboard');
+      return;
+    }
     await this.loadDetail();
   },
   methods: {

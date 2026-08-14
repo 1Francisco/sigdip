@@ -91,9 +91,17 @@ export default {
   },
   watch: {
     '$route.params.id': {
-      handler: 'loadDetail',
-      immediate: true
+      handler: 'loadDetail'
     }
+  },
+  async mounted() {
+    const user = api.getCurrentUser();
+    if (!user || !user.roles || !user.roles.includes('Administrador')) {
+      alert('Solo administradores pueden ver médicos.');
+      this.$router.push('/dashboard');
+      return;
+    }
+    await this.loadDetail();
   },
   methods: {
     async loadDetail() {

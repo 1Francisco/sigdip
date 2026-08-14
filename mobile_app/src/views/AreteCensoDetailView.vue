@@ -124,6 +124,12 @@ export default {
     };
   },
   async mounted() {
+    const user = api.getCurrentUser();
+    if (!user || !user.roles || !user.roles.includes('Administrador')) {
+      alert('Solo administradores pueden ver aretes del censo.');
+      this.$router.push('/dashboard');
+      return;
+    }
     await this.loadDetail();
   },
   methods: {

@@ -14,7 +14,7 @@ class StoreVisitaApiRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'codigo' => 'nullable|string|max:50|unique:visitas,codigo_unico',
+            'codigo' => 'nullable|string|max:50|unique:visitas,codigo',
             'predio_id' => 'required|exists:predios,id',
             'veterinario_id' => 'nullable|exists:users,id',
             'fecha_programada' => 'required|date',

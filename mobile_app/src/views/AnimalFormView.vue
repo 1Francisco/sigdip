@@ -52,7 +52,7 @@
             </div>
 
             <div class="form-group-custom">
-              <label class="form-label-custom">Edad (años)</label>
+              <label class="form-label-custom">Edad (meses)</label>
               <input
                 v-model="form.edad"
                 type="number"

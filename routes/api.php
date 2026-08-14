@@ -100,6 +100,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/inspecciones/{id}', [InspeccionesApiController::class, 'update']);
     Route::delete('/inspecciones/{id}', [InspeccionesApiController::class, 'destroy']);
     Route::post('/inspecciones/{id}/sync-detalles', [InspeccionDetallesController::class, 'sync']);
+    Route::post('/inspecciones/{id}/upload-dictamen-comite', [InspeccionesApiController::class, 'uploadDictamenComite']);
+    Route::get('/inspecciones/{id}/download-dictamen-comite', [InspeccionesApiController::class, 'downloadDictamenComite']);
+    Route::delete('/inspecciones/{id}/delete-dictamen-comite', [InspeccionesApiController::class, 'deleteDictamenComite']);
     Route::get('/reportes/sabana-excel', [ReporteController::class, 'exportExcel']);
     Route::get('/reportes/sábana-excel', [ReporteController::class, 'exportExcel']);
     Route::get('/reportes/sabana-excel/data', [ReporteController::class, 'apiSabana']);

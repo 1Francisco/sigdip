@@ -129,6 +129,7 @@ export default {
       saving: false,
       isEdit: false,
       currentId: null,
+      originalVisita: null,
       productores: [],
       predios: [],
       medicos: [],
@@ -218,6 +219,7 @@ export default {
       try {
         const res = await api.getVisita(this.currentId);
         const visita = res.data || {};
+        this.originalVisita = visita;
         this.form.predio_id = visita.predio_id || '';
         this.form.fecha_programada = visita.fecha_programada || '';
         this.form.veterinario_id = visita.veterinario_id || '';
@@ -270,6 +272,15 @@ export default {
             observaciones: this.form.observaciones,
             codigo: this.form.codigo || null
           });
+
+          // Si la fecha cambió o la visita no estaba pendiente, reprogramar
+          // (el backend resetea el estado a 'pendiente' al reprogramar)
+          const fechaCambio = this.originalVisita?.fecha_programada && this.originalVisita.fecha_programada !== this.form.fecha_programada;
+          const noPendiente = this.originalVisita?.estado && this.originalVisita.estado !== 'pendiente';
+          if (fechaCambio || noPendiente) {
+            await api.reprogramarVisita(this.currentId, this.form.fecha_programada);
+          }
+
           this.successMsg = 'Visita programada actualizada con éxito.';
         } else {
           // Generate unique code based on doctor name and date

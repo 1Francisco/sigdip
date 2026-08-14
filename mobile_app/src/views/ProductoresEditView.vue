@@ -113,6 +113,38 @@
                 </div>
               </div>
 
+              <div class="col-12 col-md-6">
+                <div class="form-group-custom">
+                  <label class="form-label-custom">Tipo de Actividad</label>
+                  <select v-model="form.tipo_actividad" class="form-select form-control-custom">
+                    <option value="">-- Seleccionar Actividad --</option>
+                    <option value="Barrido">Barrido</option>
+                    <option value="Buffer">Buffer</option>
+                    <option value="Seguimiento">Seguimiento</option>
+                  </select>
+                </div>
+              </div>
+              <div v-if="form.tipo_actividad === 'Barrido' || form.tipo_actividad === 'Buffer'" class="col-12 col-md-6">
+                <div class="form-group-custom">
+                  <label class="form-label-custom">Subtipo de Actividad</label>
+                  <select v-model="form.sub_tipo_actividad" class="form-select form-control-custom">
+                    <option value="">-- Seleccionar Subtipo --</option>
+                    <option value="Cuarentena Precautoria">Cuarentena Precautoria</option>
+                    <option value="Cuarentena Definitiva">Cuarentena Definitiva</option>
+                    <option value="Hatos Relacionados y Expuestos">Hatos Relacionados y Expuestos</option>
+                  </select>
+                </div>
+              </div>
+              <div v-if="isAdmin" class="col-12 col-md-6">
+                <div class="form-group-custom">
+                  <label class="form-label-custom">Médico Veterinario Zootecnista (MVZ) Asignado</label>
+                  <select v-model="form.medico_id" class="form-select form-control-custom">
+                    <option value="">-- Seleccionar Médico (Opcional) --</option>
+                    <option v-for="med in medicos" :key="med.id" :value="med.id">{{ med.name }} ({{ med.email }})</option>
+                  </select>
+                </div>
+              </div>
+
               <!-- Clave | Zona / Sector (Solo Administradores) -->
               <template v-if="isAdmin">
                 <div class="col-12 col-md-6">
@@ -206,6 +238,7 @@ export default {
       saving: false,
       errorMsg: '',
       productorId: null,
+      medicos: [],
       
       // Clave autocomplete states
       resultadosClave: [],
@@ -227,6 +260,9 @@ export default {
         email: '',
         clave: '',
         zona: '',
+        tipo_actividad: '',
+        sub_tipo_actividad: '',
+        medico_id: '',
         nombre_rancho: '',
         clave_unidad_produccion: '',
         predio_localidad: '',
@@ -245,6 +281,9 @@ export default {
         email: '',
         clave: '',
         zona: '',
+        tipo_actividad: '',
+        sub_tipo_actividad: '',
+        medico_id: '',
         nombre_rancho: '',
         clave_unidad_produccion: '',
         predio_localidad: '',
@@ -260,6 +299,15 @@ export default {
     this.userName = user?.name || 'Administrador Central';
     this.isAdmin = user?.roles && user.roles.includes('Administrador');
     this.productorId = this.$route.params.id;
+
+    if (this.isAdmin) {
+      try {
+        const res = await api.getMedicos();
+        this.medicos = res.data || [];
+      } catch (e) {
+        this.medicos = await db.getMedicos();
+      }
+    }
 
     await this.loadProductorDataForEdit();
 
@@ -299,6 +347,9 @@ export default {
         this.form.email = productor.email || '';
         this.form.clave = productor.clave || '';
         this.form.zona = productor.zona || '';
+        this.form.tipo_actividad = productor.tipo_actividad || '';
+        this.form.sub_tipo_actividad = productor.sub_tipo_actividad || '';
+        this.form.medico_id = productor.medico_id ? String(productor.medico_id) : '';
         this.form.nombre_rancho = predio?.nombre_rancho || predio?.nombre || '';
         this.form.clave_unidad_produccion = predio?.clave_unidad_produccion || predio?.upp || '';
         this.form.predio_localidad = predio?.localidad || '';
@@ -324,6 +375,9 @@ export default {
           this.form.email = prod.email || '';
           this.form.clave = prod.clave || '';
           this.form.zona = prod.zona || '';
+          this.form.tipo_actividad = prod.tipo_actividad || '';
+          this.form.sub_tipo_actividad = prod.sub_tipo_actividad || '';
+          this.form.medico_id = prod.medico_id ? String(prod.medico_id) : '';
           this.form.nombre_rancho = predioAsociado.nombre || predioAsociado.nombre_rancho || '';
           this.form.clave_unidad_produccion = predioAsociado.upp || predioAsociado.clave_unidad_produccion || '';
           this.form.predio_localidad = predioAsociado.localidad || '';
@@ -413,8 +467,13 @@ export default {
         estado: this.form.estado.trim(),
         telefono: this.form.telefono.trim(),
         email: this.form.email.trim(),
+        tipo_actividad: this.form.tipo_actividad || null,
+        sub_tipo_actividad: this.form.tipo_actividad === 'Barrido' || this.form.tipo_actividad === 'Buffer'
+          ? (this.form.sub_tipo_actividad || null)
+          : null,
         clave: this.isAdmin ? (this.form.clave || '').toUpperCase().trim() : null,
         zona: this.isAdmin ? (this.form.zona || null) : null,
+        medico_id: this.isAdmin ? (this.form.medico_id || null) : null,
       };
 
       try {
@@ -438,6 +497,9 @@ export default {
             p.productor.email = body.email;
             p.productor.clave = body.clave;
             p.productor.zona = body.zona;
+            p.productor.tipo_actividad = body.tipo_actividad;
+            p.productor.sub_tipo_actividad = body.sub_tipo_actividad;
+            p.productor.medico_id = body.medico_id;
             if (p.nombre !== 'Sin Rancho' && this.form.nombre_rancho.trim()) {
               p.nombre = this.form.nombre_rancho.trim();
               p.upp = this.form.clave_unidad_produccion.trim();
@@ -472,6 +534,9 @@ export default {
           productores[prodIdx].email = body.email;
           productores[prodIdx].clave = body.clave;
           productores[prodIdx].zona = body.zona;
+          productores[prodIdx].tipo_actividad = body.tipo_actividad;
+          productores[prodIdx].sub_tipo_actividad = body.sub_tipo_actividad;
+          productores[prodIdx].medico_id = body.medico_id;
           await db.saveProductores(productores);
         }
 

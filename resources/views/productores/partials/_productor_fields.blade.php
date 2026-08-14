@@ -86,14 +86,13 @@
         </select>
     </div>
 
-    @if($isAdmin)
-    <div class="col-md-6">
+    <div class="col-md-6" id="clave_container{{ $idSuffix }}" style="display: none;">
         <label class="form-label fw-semibold">Clave</label>
-        <input type="text" name="{{ $nameFn('clave') }}" id="clave{{ $idSuffix }}" class="form-control text-uppercase rounded-3" placeholder="Ej. BD-123421" value="{{ $oldFn('clave') }}" autocomplete="off">
-        <div class="form-text small text-muted">Clave del productor. Debe iniciar con AD, AP, BD o BP. Ej. BD-123421</div>
+        <input type="text" name="{{ $nameFn('clave') }}" id="clave{{ $idSuffix }}" class="form-control text-uppercase rounded-3" placeholder="Ej. BAF-1234" value="{{ $oldFn('clave') }}" autocomplete="off">
+        <div class="form-text small text-muted" id="clave_help{{ $idSuffix }}">Clave del productor. Debe iniciar con AD, AP, BD o BP. Ej. BD-123421</div>
         <div id="resultadosClave{{ $idSuffix }}" class="mt-2"></div>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-6" id="zona_container{{ $idSuffix }}" style="display: none;">
         <label class="form-label fw-semibold">Zona / Sector</label>
         <select id="zona_select{{ $idSuffix }}" class="form-select rounded-3 bg-light">
             <option value="">-- Sin Zona --</option>
@@ -106,19 +105,17 @@
 
     <div class="col-md-12">
         <label class="form-label fw-semibold">Médico Veterinario Zootecnista (MVZ) Asignado</label>
+        @if($isAdmin)
         <select name="{{ $nameFn('medico_id') }}" id="medico_id{{ $idSuffix }}" class="form-select rounded-3">
             <option value="">-- Seleccionar Médico (Opcional) --</option>
             @foreach($medicos as $medico)
                 <option value="{{ $medico->id }}" {{ $selected('medico_id', $medico->id) }}>{{ $medico->name }} ({{ $medico->email }})</option>
             @endforeach
         </select>
-    </div>
-    @else
-    <div class="col-md-12">
-        <label class="form-label fw-semibold">Médico Veterinario Zootecnista (MVZ) Asignado</label>
+        @else
         <input type="text" class="form-control bg-light" value="{{ auth()->user()->name }}" readonly disabled>
+        @endif
     </div>
-    @endif
 
     <!-- Marcador de clave visible para todos -->
     <div id="clave-marker{{ $idSuffix }}" class="col-12 mt-1" style="display:none;"></div>
@@ -132,6 +129,63 @@
 
         var zonaSelect = document.getElementById('zona_select' + suf);
         var zonaHidden = document.getElementById('zona' + suf);
+        var tipoSelect = document.getElementById('tipo_actividad' + suf);
+        var subSelect = document.getElementById('sub_tipo_actividad' + suf);
+        var medicoSelect = document.getElementById('medico_id' + suf);
+        
+        var claveContainer = document.getElementById('clave_container' + suf);
+        var zonaContainer = document.getElementById('zona_container' + suf);
+        var claveHelp = document.getElementById('clave_help' + suf);
+
+        var isAdmin = {{ $isAdmin ? 'true' : 'false' }};
+        var defaultZona = '{{ auth()->user()->zona ?? "" }}';
+        
+        var originalTipo = '{{ $productor->tipo_actividad ?? "" }}';
+        var originalZona = '{{ $productor->zona ?? "" }}';
+        var originalClave = '{{ $productor->clave ?? "" }}';
+
+        function toggleFieldsVisibility() {
+            if (!tipoSelect) return;
+            var val = tipoSelect.value;
+            if (val === 'Seguimiento') {
+                if (isAdmin) {
+                    if (claveContainer) claveContainer.style.display = '';
+                    if (zonaContainer) zonaContainer.style.display = '';
+                    if (input) {
+                        input.readOnly = false;
+                        input.disabled = false;
+                        input.classList.remove('bg-light');
+                    }
+                    if (zonaSelect) {
+                        zonaSelect.disabled = false;
+                    }
+                    if (claveHelp) claveHelp.textContent = 'Clave del productor. Debe iniciar con AD, AP, BD o BP. Ej. BD-123421';
+                } else {
+                    if (claveContainer) claveContainer.style.display = 'none';
+                    if (zonaContainer) zonaContainer.style.display = 'none';
+                }
+            } else if (val === 'Barrido' || val === 'Buffer') {
+                if (claveContainer) claveContainer.style.display = '';
+                if (zonaContainer) zonaContainer.style.display = '';
+                if (input) {
+                    input.readOnly = true;
+                    input.classList.add('bg-light');
+                }
+                if (zonaSelect) {
+                    zonaSelect.disabled = false;
+                }
+                // Default zone if not selected
+                if (zonaSelect && !zonaSelect.value) {
+                    var zoneToSet = defaultZona === 'A' || defaultZona === 'B' ? defaultZona : 'B';
+                    zonaSelect.value = zoneToSet;
+                    if (zonaHidden) zonaHidden.value = zoneToSet;
+                }
+                if (claveHelp) claveHelp.textContent = 'Clave autogenerada según la actividad y zona seleccionada.';
+            } else {
+                if (claveContainer) claveContainer.style.display = 'none';
+                if (zonaContainer) zonaContainer.style.display = 'none';
+            }
+        }
 
         function updateClaveMarker(val) {
             if (val === undefined) {
@@ -143,15 +197,66 @@
                 var sector = first;
                 marker.innerHTML = '<span class="badge bg-primary rounded-pill px-3 py-1 fs-6">' + val + '  ·  Zona ' + sector + '</span>';
                 marker.style.display = '';
-                if (zonaSelect && !zonaSelect.value) {
-                    zonaSelect.value = sector;
-                }
-                if (zonaHidden && !zonaHidden.value) {
-                    zonaHidden.value = sector;
+                
+                // For Seguimiento, always set the zone when key matches A or B
+                if (tipoSelect && tipoSelect.value === 'Seguimiento') {
+                    if (zonaSelect) zonaSelect.value = sector;
+                    if (zonaHidden) zonaHidden.value = sector;
                 }
             } else {
                 marker.style.display = 'none';
             }
+        }
+
+        function previewClave() {
+            if (!tipoSelect || !tipoSelect.value) {
+                if (input && (tipoSelect.value === 'Barrido' || tipoSelect.value === 'Buffer')) {
+                    input.value = '';
+                }
+                marker.style.display = 'none';
+                return;
+            }
+
+            var currentTipo = tipoSelect.value;
+            var currentZona = zonaHidden ? zonaHidden.value : '';
+
+            // If it's edit mode and tipo + zona didn't change, keep original key
+            if (originalClave && currentTipo === originalTipo && currentZona === originalZona) {
+                if (input) input.value = originalClave;
+                marker.style.display = 'none';
+                return;
+            }
+
+            // For Seguimiento, if input has manual value, don't overwrite it
+            if (currentTipo === 'Seguimiento' && input && input.value.trim() && !input.readOnly) {
+                updateClaveMarker();
+                return;
+            }
+
+            var params = new URLSearchParams();
+            params.set('tipo_actividad', currentTipo);
+            if (subSelect && subSelect.value) params.set('sub_tipo_actividad', subSelect.value);
+            if (zonaHidden && zonaHidden.value) params.set('zona', zonaHidden.value);
+            if (medicoSelect && medicoSelect.value) params.set('medico_id', medicoSelect.value);
+
+            fetch('{{ route("productores.preview-clave") }}?' + params.toString())
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data || !data.clave) return;
+                    if (zonaHidden && !zonaHidden.value && data.zona) {
+                        zonaHidden.value = data.zona;
+                        if (zonaSelect) zonaSelect.value = data.zona;
+                    }
+                    
+                    // If it is Barrido or Buffer, we update the input value with the autogenerated key!
+                    if (currentTipo === 'Barrido' || currentTipo === 'Buffer') {
+                        if (input) input.value = data.clave;
+                    }
+
+                    marker.innerHTML = '<span class="badge bg-success rounded-pill px-3 py-1 fs-6"><i class="bi bi-magic me-1"></i>Se generará: ' + data.clave + (data.zona ? ' · Zona ' + data.zona : '') + '</span>';
+                    marker.style.display = '';
+                })
+                .catch(function() {});
         }
 
         if (input) {
@@ -165,38 +270,12 @@
             updateClaveMarker();
         }
 
-        // ========= Vista previa de clave auto-generada =========
-        var tipoSelect = document.getElementById('tipo_actividad' + suf);
-        var subSelect = document.getElementById('sub_tipo_actividad' + suf);
-        var medicoSelect = document.getElementById('medico_id' + suf);
-
-        function previewClave() {
-            if (!tipoSelect || !tipoSelect.value) {
-                marker.style.display = 'none';
-                return;
-            }
-            if (input && input.value.trim()) {
-                updateClaveMarker();
-                return;
-            }
-            var params = new URLSearchParams();
-            params.set('tipo_actividad', tipoSelect.value);
-            if (subSelect && subSelect.value) params.set('sub_tipo_actividad', subSelect.value);
-            if (zonaHidden && zonaHidden.value) params.set('zona', zonaHidden.value);
-            if (medicoSelect && medicoSelect.value) params.set('medico_id', medicoSelect.value);
-            fetch('{{ route("productores.preview-clave") }}?' + params.toString())
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (!data || !data.clave) return;
-                    if (zonaHidden && !zonaHidden.value && data.zona) zonaHidden.value = data.zona;
-                    if (zonaSelect && !zonaSelect.value && data.zona) zonaSelect.value = data.zona;
-                    marker.innerHTML = '<span class="badge bg-success rounded-pill px-3 py-1 fs-6"><i class="bi bi-magic me-1"></i>Se generará: ' + data.clave + (data.zona ? ' · Zona ' + data.zona : '') + '</span>';
-                    marker.style.display = '';
-                })
-                .catch(function() {});
+        if (tipoSelect) {
+            tipoSelect.addEventListener('change', function() {
+                toggleFieldsVisibility();
+                previewClave();
+            });
         }
-
-        if (tipoSelect) tipoSelect.addEventListener('change', previewClave);
         if (subSelect) subSelect.addEventListener('change', previewClave);
         if (medicoSelect) medicoSelect.addEventListener('change', previewClave);
         if (zonaSelect) {
@@ -205,6 +284,9 @@
                 previewClave();
             });
         }
+
+        // Initialize visibility on load
+        toggleFieldsVisibility();
 
         window['previewClave' + (suf ? suf : '')] = previewClave;
         marker._previewClave = previewClave;

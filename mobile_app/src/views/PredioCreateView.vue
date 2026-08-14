@@ -633,13 +633,7 @@ export default {
           }
         }
 
-        if (this.newProductor.upp.trim()) {
-          const duplicateUpp = prediosLocales.some(p => p.productor && p.productor.upp && p.productor.upp === this.newProductor.upp.trim());
-          if (duplicateUpp) {
-            this.modalErrorMsg = 'Ya existe un productor registrado con esta UPP localmente.';
-            return;
-          }
-        }
+        // UPP unique check removed to allow shared UPP properties
       } catch (dbErr) {
         console.warn('Error al verificar duplicados locales en modal:', dbErr);
       }
@@ -772,10 +766,10 @@ export default {
       try {
         const prediosLocales = await db.getPredios();
         
-        // Duplicidad de UPP del predio
-        const duplicatePredioUpp = prediosLocales.some(p => p.upp && p.upp === this.form.clave_unidad_produccion.trim() && String(p.id) !== String(this.predioId));
+        // Duplicidad de UPP del predio por productor
+        const duplicatePredioUpp = prediosLocales.some(p => p.upp && p.upp === this.form.clave_unidad_produccion.trim() && String(p.id) !== String(this.predioId) && String(p.productor_id) === String(this.form.productor_id));
         if (duplicatePredioUpp) {
-          this.errorMsg = 'Ya existe un Rancho/Predio registrado con esta UPP localmente.';
+          this.errorMsg = 'Ya tienes un Rancho/Predio registrado con esta UPP para este productor.';
           return;
         }
 
@@ -792,13 +786,7 @@ export default {
             }
           }
 
-          if (prodUpp) {
-            const duplicateUpp = prediosLocales.some(p => p.productor && p.productor.upp && p.productor.upp === prodUpp && String(p.productor.id) !== String(this.productorIdOriginal));
-            if (duplicateUpp) {
-              this.errorMsg = 'Ya existe un productor registrado con esta UPP localmente.';
-              return;
-            }
-          }
+          // UPP unique check removed to allow shared UPP properties
         }
       } catch (dbErr) {
         console.warn('Error al verificar duplicados locales en savePredio:', dbErr);

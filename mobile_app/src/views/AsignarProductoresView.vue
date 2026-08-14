@@ -48,7 +48,9 @@
                   </div>
                   <div v-for="prod in asignados" :key="prod.id" class="d-flex justify-content-between align-items-center p-3 border-bottom">
                     <div class="text-start">
-                      <div class="fw-bold small">{{ prod.nombre }} {{ prod.apellido_paterno }} {{ prod.apellido_materno }}</div>
+                      <div class="fw-bold small">{{ prod.nombre }} {{ prod.apellido_paterno }} {{ prod.apellido_materno }}
+                        <span v-if="prod.clave" class="badge bg-secondary rounded-pill">Hato: {{ prod.clave }}</span>
+                      </div>
                       <small class="text-muted">UPP: {{ prod.upp || 'N/A' }} | Predios: {{ prod.predios_count }}</small>
                     </div>
                     <button
@@ -109,7 +111,9 @@
                         >
                       </div>
                       <div class="flex-grow-1" style="cursor: pointer;" @click="toggleProductor(prod.id)">
-                        <div class="fw-bold small">{{ prod.nombre }} {{ prod.apellido_paterno }} {{ prod.apellido_materno }}</div>
+                        <div class="fw-bold small">{{ prod.nombre }} {{ prod.apellido_paterno }} {{ prod.apellido_materno }}
+                          <span v-if="prod.clave" class="badge bg-secondary rounded-pill">Hato: {{ prod.clave }}</span>
+                        </div>
                         <small class="text-muted">CURP: {{ prod.curp || 'N/A' }} | UPP: {{ prod.upp || 'N/A' }} | Predios: {{ prod.predios_count }}</small>
                       </div>
                     </label>
@@ -218,10 +222,21 @@ export default {
     },
 
     toggleProductor(id) {
-      if (this.selectedIds.has(id)) {
-        this.selectedIds.delete(id);
-      } else {
+      const prod = this.disponibles.find(p => p.id === id);
+      const willCheck = !this.selectedIds.has(id);
+      if (prod && prod.clave) {
+        // Un hato (misma clave) siempre se asigna completo:
+        // al marcar un productor, se marcan todos los del mismo hato.
+        this.disponibles.forEach(p => {
+          if (p.clave === prod.clave) {
+            if (willCheck) this.selectedIds.add(p.id);
+            else this.selectedIds.delete(p.id);
+          }
+        });
+      } else if (willCheck) {
         this.selectedIds.add(id);
+      } else {
+        this.selectedIds.delete(id);
       }
       this.selectAll = this.disponibles.length > 0 && this.selectedIds.size === this.disponibles.length;
     },

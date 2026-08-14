@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Inspeccion;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class InspeccionesApiController extends Controller
 {
@@ -104,6 +105,92 @@ class InspeccionesApiController extends Controller
     public function ver(Request $request, $id)
     {
         return $this->pdf($request, $id);
+    }
+
+    /**
+     * Sube el dictamen oficial del comité (PDF) y lo asocia a la inspección.
+     */
+    public function uploadDictamenComite(Request $request, $id)
+    {
+        $inspeccion = Inspeccion::findOrFail($id);
+        $this->authorizeInspection($request, $inspeccion);
+
+        $request->validate([
+            'dictamen_comite' => 'required|file|mimes:pdf|max:10240',
+        ]);
+
+        if (! $request->hasFile('dictamen_comite')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo procesar el archivo.',
+            ], 422);
+        }
+
+        if ($inspeccion->dictamen_comite_path) {
+            Storage::disk('public')->delete($inspeccion->dictamen_comite_path);
+        }
+
+        $path = $request->file('dictamen_comite')->store('dictamenes_comite', 'public');
+        $inspeccion->update(['dictamen_comite_path' => $path]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'El dictamen oficial del comité se ha subido y guardado correctamente.',
+            'data' => $this->toDetailArray($inspeccion->refresh()->load([
+                'predio.productor',
+                'detalles.animal',
+                'veterinario',
+                'visita.predio.productor',
+            ])),
+        ]);
+    }
+
+    /**
+     * Descarga el dictamen oficial del comité como archivo adjunto.
+     */
+    public function downloadDictamenComite(Request $request, $id)
+    {
+        $inspeccion = Inspeccion::findOrFail($id);
+        $this->authorizeInspection($request, $inspeccion);
+
+        if ($inspeccion->dictamen_comite_path) {
+            $filePath = Storage::disk('public')->path($inspeccion->dictamen_comite_path);
+            if (file_exists($filePath)) {
+                $filename = 'DICTAMEN_COMITE_'.($inspeccion->clave_interna ?: $inspeccion->folio ?: $inspeccion->id).'.pdf';
+
+                return response()->file($filePath, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+                ]);
+            }
+        }
+
+        abort(404, 'El archivo solicitado no existe en el servidor.');
+    }
+
+    /**
+     * Elimina el dictamen oficial del comité de la inspección.
+     */
+    public function deleteDictamenComite(Request $request, $id)
+    {
+        $inspeccion = Inspeccion::findOrFail($id);
+        $this->authorizeInspection($request, $inspeccion);
+
+        if ($inspeccion->dictamen_comite_path) {
+            Storage::disk('public')->delete($inspeccion->dictamen_comite_path);
+
+            $inspeccion->update(['dictamen_comite_path' => null]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'El dictamen oficial del comité se ha eliminado correctamente.',
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'No hay ningún dictamen del comité registrado.',
+        ], 404);
     }
 
     public function update(Request $request, $id)
@@ -277,6 +364,7 @@ class InspeccionesApiController extends Controller
                     'resultado_prueba' => $detalle->resultado_prueba,
                     'motivo_no_aplica' => $detalle->motivo_no_aplica,
                     'observaciones_animal' => $detalle->observaciones_animal,
+                    'agregado_en_lectura' => (bool) $detalle->agregado_en_lectura,
                     'animal' => $detalle->animal ? [
                         'id' => $detalle->animal->id,
                         'numero_arete_siniiga' => $detalle->animal->numero_arete_siniiga,
@@ -286,6 +374,10 @@ class InspeccionesApiController extends Controller
                     ] : null,
                 ];
             })->values(),
+            'dictamen_comite' => $inspeccion->dictamen_comite_path ? [
+                'path' => $inspeccion->dictamen_comite_path,
+                'url' => url("/api/inspecciones/{$inspeccion->id}/download-dictamen-comite"),
+            ] : null,
             'pdf_url' => url("/api/inspecciones/{$inspeccion->id}/pdf"),
         ];
     }

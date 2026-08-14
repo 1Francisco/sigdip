@@ -37,21 +37,58 @@ class Productor extends Model
     protected static function booted()
     {
         static::saving(function ($productor) {
-            if ($productor->clave && ! $productor->zona) {
+            $tipo = strtolower($productor->tipo_actividad ?? '');
+
+            // 1. If key is present, auto-derive zone from the first character if it's A or B
+            if ($productor->clave) {
                 $first = strtoupper($productor->clave)[0] ?? '';
-                $productor->zona = in_array($first, ['A', 'B'], true) ? $first : null;
+                if (in_array($first, ['A', 'B'], true)) {
+                    if ($tipo === 'seguimiento' || empty($productor->zona)) {
+                        $productor->zona = $first;
+                    }
+                }
             }
 
-            if (empty($productor->clave) && ! empty($productor->tipo_actividad)) {
-                $generated = static::siguienteClave(
-                    $productor->tipo_actividad,
-                    $productor->sub_tipo_actividad,
-                    $productor->zona,
-                    $productor->medico_id
-                );
-                $productor->clave = $generated['clave'];
-                if ($generated['zona']) {
-                    $productor->zona = $generated['zona'];
+            // 2. Autogenerate if empty
+            if (empty($productor->clave)) {
+                if ($tipo === 'seguimiento') {
+                    $generated = static::siguienteClave(
+                        $productor->tipo_actividad,
+                        $productor->sub_tipo_actividad,
+                        $productor->zona,
+                        $productor->medico_id
+                    );
+                    $productor->clave = $generated['clave'];
+                    if ($generated['zona']) {
+                        $productor->zona = $generated['zona'];
+                    }
+                }
+            }
+
+            // 3. For Barrido and Buffer, regenerate if needed
+            if ($tipo === 'barrido' || $tipo === 'buffer') {
+                $shouldGenerate = empty($productor->clave) ||
+                                  ($productor->exists && ($productor->isDirty('tipo_actividad') || $productor->isDirty('zona')));
+
+                if ($shouldGenerate) {
+                    if (empty($productor->zona)) {
+                        $zone = null;
+                        if ($productor->medico_id) {
+                            $medico = User::find($productor->medico_id);
+                            if ($medico && $medico->zona) {
+                                $zone = strtoupper($medico->zona);
+                            }
+                        }
+                        $productor->zona = ($zone === 'A' || $zone === 'B') ? $zone : 'B';
+                    }
+
+                    $generated = static::siguienteClave(
+                        $productor->tipo_actividad,
+                        $productor->sub_tipo_actividad,
+                        $productor->zona,
+                        $productor->medico_id
+                    );
+                    $productor->clave = $generated['clave'];
                 }
             }
         });
@@ -70,26 +107,35 @@ class Productor extends Model
         ?int $medicoId = null
     ): array {
         $tipo = strtolower($tipoActividad);
+        
+        // Determine effective zone
+        $zone = strtoupper($zona ?? '');
+        if (empty($zone) && $medicoId) {
+            $medico = User::find($medicoId);
+            if ($medico && $medico->zona) {
+                $zone = strtoupper($medico->zona);
+            }
+        }
+        if ($zone !== 'A' && $zone !== 'B') {
+            $zone = 'B';
+        }
+        $efectivaZona = $zone;
+        
         $prefix = 'GP';
-        $efectivaZona = null;
 
         if ($tipo === 'barrido') {
-            $prefix = 'BA';
+            if ($zone === 'A') {
+                $prefix = 'BAF'; // Barrido Federal
+            } else {
+                $prefix = 'BAE'; // Barrido Estatal
+            }
         } elseif ($tipo === 'buffer') {
-            $prefix = 'BFC';
+            if ($zone === 'A') {
+                $prefix = 'BFE'; // Escasa Prevalencia
+            } else {
+                $prefix = 'BFC'; // Control
+            }
         } elseif ($tipo === 'seguimiento') {
-            $zone = strtoupper($zona ?? '');
-            if (empty($zone) && $medicoId) {
-                $medico = User::find($medicoId);
-                if ($medico && $medico->zona) {
-                    $zone = strtoupper($medico->zona);
-                }
-            }
-            if ($zone !== 'A' && $zone !== 'B') {
-                $zone = 'B';
-            }
-            $efectivaZona = $zone;
-
             $subType = strtolower($subTipoActividad ?? '');
             $typeChar = 'P';
             if (str_contains($subType, 'definitiva')) {

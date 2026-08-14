@@ -51,6 +51,9 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/inspecciones/{inspeccion}', [InspeccionController::class, 'update'])->name('inspecciones.update');
     Route::get('/inspecciones/{inspeccion}', [InspeccionController::class, 'show'])->name('inspecciones.show');
     Route::delete('/inspecciones/{inspeccion}', [InspeccionController::class, 'destroy'])->name('inspecciones.destroy');
+    Route::post('/inspecciones/{inspeccion}/upload-dictamen-comite', [InspeccionController::class, 'uploadDictamenComite'])->name('inspecciones.upload-dictamen-comite');
+    Route::delete('/inspecciones/{inspeccion}/delete-dictamen-comite', [InspeccionController::class, 'deleteDictamenComite'])->name('inspecciones.delete-dictamen-comite');
+    Route::get('/inspecciones/{inspeccion}/download-dictamen-comite', [InspeccionController::class, 'downloadDictamenComite'])->name('inspecciones.download-dictamen-comite');
 
     // Productores y Predios
     Route::get('/productores/preview-clave', [ProductorController::class, 'previewClave'])->name('productores.preview-clave')->middleware('role:Administrador');
@@ -114,4 +117,13 @@ Route::middleware(['auth'])->group(function () {
 
         return back()->with('error', 'El archivo APK de la aplicación móvil no está disponible en este momento. Contacte al administrador del CEFPPENAY.');
     })->name('descargar.apk');
+
+    // Fallback de servidor de archivos para almacenar/mostrar archivos en Windows/XAMPP sin symlinks
+    Route::get('/storage/{path}', function ($path) {
+        $filePath = \Illuminate\Support\Facades\Storage::disk('public')->path($path);
+        if (!file_exists($filePath)) {
+            abort(404);
+        }
+        return response()->file($filePath);
+    })->where('path', '.*');
 });

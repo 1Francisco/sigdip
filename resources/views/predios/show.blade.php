@@ -53,6 +53,47 @@
                 </table>
             </div>
         </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-people text-primary me-2"></i>Otros Productores en este Predio</h5>
+            </div>
+            <div class="card-body p-4">
+                @if($otrosPredios->count() > 0)
+                    <div class="list-group list-group-flush">
+                        @foreach($otrosPredios as $otroPredio)
+                            @if($otroPredio->productor)
+                                <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                                    <div>
+                                        <h6 class="mb-1 fw-bold">
+                                            <a href="{{ route('productores.show', $otroPredio->productor_id) }}" class="text-decoration-none">
+                                                {{ $otroPredio->productor->nombre }} {{ $otroPredio->productor->apellido_paterno }} {{ $otroPredio->productor->apellido_materno }}
+                                            </a>
+                                        </h6>
+                                        <p class="mb-0 small text-muted">
+                                            Rancho: <span class="fw-semibold text-dark">{{ $otroPredio->nombre_rancho }}</span>
+                                            @if($otroPredio->productor->clave)
+                                                · Clave: <code class="small">{{ $otroPredio->productor->clave }}</code>
+                                            @endif
+                                        </p>
+                                    </div>
+                                    @if($otroPredio->productor->medico)
+                                        <span class="badge bg-light text-secondary rounded-pill px-3 py-1 fw-normal border">
+                                            MVZ: {{ $otroPredio->productor->medico->name }}
+                                        </span>
+                                    @endif
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-person-dash fs-2 d-block mb-2"></i>
+                        No hay otros productores registrados con esta misma clave de unidad de producción (UPP).
+                    </div>
+                @endif
+            </div>
+        </div>
     </div>
     <div class="col-lg-6">
         <div class="card border-0 shadow-sm mb-4">

@@ -648,4 +648,45 @@ class InspeccionTest extends TestCase
         $this->assertDatabaseMissing('inspecciones', ['id' => $extraIns->id]);
         $this->assertDatabaseHas('inspecciones', ['id' => $mainIns->id, 'folio' => 'F-2000']);
     }
+
+    public function test_upload_and_delete_dictamen_comite()
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $inspeccion = Inspeccion::factory()->create([
+            'predio_id' => $this->predio->id,
+            'veterinario_id' => $this->admin->id,
+            'estado' => 'completada',
+        ]);
+
+        $file = \Illuminate\Http\UploadedFile::fake()->create('dictamen.pdf', 100, 'application/pdf');
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('inspecciones.upload-dictamen-comite', $inspeccion), [
+                'dictamen_comite' => $file,
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $inspeccion->refresh();
+        $this->assertNotNull($inspeccion->dictamen_comite_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($inspeccion->dictamen_comite_path);
+
+        // Download test
+        $responseDownload = $this->actingAs($this->admin)
+            ->get(route('inspecciones.download-dictamen-comite', $inspeccion));
+        $responseDownload->assertStatus(200);
+        $responseDownload->assertHeader('content-disposition', 'attachment; filename=DICTAMEN_COMITE_' . ($inspeccion->clave_interna ?: $inspeccion->folio ?: $inspeccion->id) . '.pdf');
+
+        // Delete test
+        $responseDelete = $this->actingAs($this->admin)
+            ->delete(route('inspecciones.delete-dictamen-comite', $inspeccion));
+
+        $responseDelete->assertRedirect();
+        $responseDelete->assertSessionHas('success');
+
+        $inspeccion->refresh();
+        $this->assertNull($inspeccion->dictamen_comite_path);
+    }
 }

@@ -31,10 +31,14 @@
               <div class="text-start">
                 <div class="fw-semibold">{{ vinc.nombre_completo }}</div>
                 <div class="text-secondary small">UPP: {{ vinc.upp || '—' }} · Tel: {{ vinc.telefono || '—' }}</div>
+                <div class="text-secondary small">MVZ: {{ vinc.medico?.name || 'Sin asignar' }}</div>
               </div>
               <div class="d-flex gap-1">
                 <button class="btn btn-sm btn-outline-primary rounded-pill" @click="$router.push(`/productores/${vinc.id}`)">
                   <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary rounded-pill" @click="$router.push(`/productores/editar/${vinc.id}`)" title="Editar">
+                  <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-sm btn-outline-danger rounded-pill" @click="desvincular(vinc)" title="Quitar del hato">
                   <i class="bi bi-person-x"></i>

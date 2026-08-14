@@ -49,6 +49,47 @@
           </div>
         </div>
 
+        <!-- Section for Other Producers sharing this property -->
+        <div class="card shadow-sm border-0 p-4 rounded-4 mb-4">
+          <div class="fw-bold text-dark mb-3">
+            <i class="bi bi-people me-2"></i>Otros Productores en este Predio
+          </div>
+          
+          <div v-if="otrosPredios && otrosPredios.length" class="list-group list-group-flush text-start">
+            <div 
+              v-for="otro in otrosPredios" 
+              :key="otro.id" 
+              class="list-group-item d-flex justify-content-between align-items-center px-0 py-3 border-bottom"
+            >
+              <div>
+                <h6 class="mb-1 fw-bold">
+                  <a 
+                    v-if="otro.productor"
+                    href="#" 
+                    class="text-primary text-decoration-none"
+                    @click.prevent="$router.push(`/productores/${otro.productor.id}`)"
+                  >
+                    {{ otro.productor.nombre }} {{ otro.productor.apellido_paterno }} {{ otro.productor.apellido_materno }}
+                  </a>
+                </h6>
+                <p class="mb-0 small text-muted">
+                  Rancho: <span class="fw-semibold text-dark">{{ otro.nombre_rancho }}</span>
+                </p>
+              </div>
+              <span 
+                v-if="otro.productor && otro.productor.medico" 
+                class="badge bg-light text-secondary rounded-pill px-3 py-1 fw-normal border"
+              >
+                MVZ: {{ otro.productor.medico.name }}
+              </span>
+            </div>
+          </div>
+          <div v-else class="text-center py-3 text-muted">
+            <i class="bi bi-person-dash fs-4 d-block mb-2"></i>
+            No hay otros productores registrados con esta misma clave de UPP.
+          </div>
+        </div>
+
         <div class="card shadow-sm border-0 p-4 rounded-4 mb-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="fw-bold text-dark"><i class="bi bi bi-gender-ambiguous me-2"></i>Animales</div>
@@ -105,6 +146,7 @@
 <script>
 import AppLayout from '../components/AppLayout.vue';
 import api from '../services/api.js';
+import db from '../services/db.js';
 
 export default {
   name: 'PredioDetailView',
@@ -114,7 +156,8 @@ export default {
       loading: false,
       errorMsg: '',
       predio: null,
-      searchAnimal: ''
+      searchAnimal: '',
+      otrosPredios: []
     };
   },
   computed: {
@@ -140,6 +183,25 @@ export default {
       try {
         const res = await api.getPredio(this.$route.params.id);
         this.predio = res.data;
+        if (res.data?.otros_predios) {
+          this.otrosPredios = res.data.otros_predios;
+        } else if (this.predio?.clave_unidad_produccion) {
+          // Fallback de búsqueda offline en el catálogo local
+          const localPredios = await db.getPredios();
+          this.otrosPredios = localPredios
+            .filter(p => p.clave_unidad_produccion === this.predio.clave_unidad_produccion && String(p.productor_id) !== String(this.predio.productor_id))
+            .map(p => ({
+              id: p.id,
+              nombre_rancho: p.nombre_rancho,
+              productor: p.productor ? {
+                id: p.productor.id,
+                nombre: p.productor.nombre,
+                apellido_paterno: p.productor.apellido_paterno,
+                apellido_materno: p.productor.apellido_materno,
+                medico: p.productor.medico ? { name: p.productor.medico.name } : null
+              } : null
+            }));
+        }
       } catch (e) {
         this.errorMsg = e.message || 'No se pudo cargar el predio.';
       } finally {

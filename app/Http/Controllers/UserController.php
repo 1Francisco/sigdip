@@ -142,7 +142,7 @@ class UserController extends Controller
             ->orWhere('medico_id', '!=', $usuario->id)
             ->withCount('predios')
             ->orderBy('nombre')
-            ->paginate(20);
+            ->get();
 
         return view('users.asignar-productores', compact('usuario', 'asignados', 'disponibles'));
     }
@@ -157,15 +157,21 @@ class UserController extends Controller
             'productor_ids.*' => 'exists:productores,id',
         ]);
 
-        $productorIds = $request->input('productor_ids', []);
+        $productorIds = collect($request->input('productor_ids', []));
+
+        // Un hato (productores con la misma clave) nunca se divide:
+        // al seleccionar un miembro, se asignan todos los del hato.
+        $claves = Productor::whereIn('id', $productorIds)
+            ->whereNotNull('clave')
+            ->pluck('clave');
+
+        if ($claves->isNotEmpty()) {
+            $hatoIds = Productor::whereIn('clave', $claves)->pluck('id');
+            $productorIds = $productorIds->merge($hatoIds)->unique()->values();
+        }
 
         // Asignar los productores seleccionados a este médico
         Productor::whereIn('id', $productorIds)->update(['medico_id' => $usuario->id]);
-
-        // Desasignar productores que ya no están en la lista (solo los que eran de este médico)
-        Productor::where('medico_id', $usuario->id)
-            ->whereNotIn('id', $productorIds)
-            ->update(['medico_id' => null]);
 
         $count = count($productorIds);
 
@@ -210,10 +216,12 @@ class UserController extends Controller
                 'apellido_materno' => $p->apellido_materno,
                 'curp' => $p->curp,
                 'upp' => $p->upp,
+                'clave' => $p->clave,
                 'predios_count' => $p->predios_count,
             ]);
 
         $disponibles = Productor::whereNull('medico_id')
+            ->orWhere('medico_id', '!=', $usuario->id)
             ->withCount('predios')
             ->orderBy('nombre')
             ->get()
@@ -224,6 +232,7 @@ class UserController extends Controller
                 'apellido_materno' => $p->apellido_materno,
                 'curp' => $p->curp,
                 'upp' => $p->upp,
+                'clave' => $p->clave,
                 'predios_count' => $p->predios_count,
             ]);
 
@@ -249,7 +258,18 @@ class UserController extends Controller
             'productor_ids.*' => 'exists:productores,id',
         ]);
 
-        $productorIds = $request->input('productor_ids', []);
+        $productorIds = collect($request->input('productor_ids', []));
+
+        // Un hato (productores con la misma clave) nunca se divide:
+        // al seleccionar un miembro, se asignan todos los del hato.
+        $claves = Productor::whereIn('id', $productorIds)
+            ->whereNotNull('clave')
+            ->pluck('clave');
+
+        if ($claves->isNotEmpty()) {
+            $hatoIds = Productor::whereIn('clave', $claves)->pluck('id');
+            $productorIds = $productorIds->merge($hatoIds)->unique()->values();
+        }
 
         Productor::whereIn('id', $productorIds)->update(['medico_id' => $usuario->id]);
 

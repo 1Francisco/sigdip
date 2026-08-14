@@ -75,10 +75,31 @@ class UserAssignmentTest extends TestCase
         ]);
     }
 
-    public function test_admin_desasigna_todos_los_productores()
+    public function test_admin_guardar_no_desasigna_existentes()
     {
-        $prod1 = Productor::factory()->create(['medico_id' => $this->medico1->id]);
-        $prod2 = Productor::factory()->create(['medico_id' => $this->medico1->id]);
+        $prodAsignado = Productor::factory()->create(['medico_id' => $this->medico1->id]);
+        $prodNuevo = Productor::factory()->create(['medico_id' => null]);
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('usuarios.guardar-asignacion', $this->medico1), [
+                'productor_ids' => [$prodNuevo->id],
+            ]);
+
+        $response->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('productores', [
+            'id' => $prodAsignado->id,
+            'medico_id' => $this->medico1->id,
+        ]);
+        $this->assertDatabaseHas('productores', [
+            'id' => $prodNuevo->id,
+            'medico_id' => $this->medico1->id,
+        ]);
+    }
+
+    public function test_admin_guardar_vacio_no_desasigna()
+    {
+        $prodAsignado = Productor::factory()->create(['medico_id' => $this->medico1->id]);
 
         $response = $this->actingAs($this->admin)
             ->post(route('usuarios.guardar-asignacion', $this->medico1), [
@@ -87,12 +108,8 @@ class UserAssignmentTest extends TestCase
 
         $response->assertSessionHasNoErrors();
         $this->assertDatabaseHas('productores', [
-            'id' => $prod1->id,
-            'medico_id' => null,
-        ]);
-        $this->assertDatabaseHas('productores', [
-            'id' => $prod2->id,
-            'medico_id' => null,
+            'id' => $prodAsignado->id,
+            'medico_id' => $this->medico1->id,
         ]);
     }
 
@@ -204,5 +221,52 @@ class UserAssignmentTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Todos los productores est'."\xC3\xA1".'n asignados a alg'."\xC3\xBA".'n m'."\xC3\xA9".'dico.');
+    }
+
+    public function test_admin_asigna_hato_completo_al_seleccionar_un_miembro()
+    {
+        $miembro1 = Productor::factory()->create(['clave' => 'BP-1234']);
+        $miembro2 = Productor::factory()->create(['clave' => 'BP-1234']);
+        $otro = Productor::factory()->create(['clave' => 'BP-9999']);
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('usuarios.guardar-asignacion', $this->medico1), [
+                'productor_ids' => [$miembro1->id],
+            ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('productores', [
+            'id' => $miembro1->id,
+            'medico_id' => $this->medico1->id,
+        ]);
+        $this->assertDatabaseHas('productores', [
+            'id' => $miembro2->id,
+            'medico_id' => $this->medico1->id,
+        ]);
+        $this->assertDatabaseHas('productores', [
+            'id' => $otro->id,
+            'medico_id' => null,
+        ]);
+    }
+
+    public function test_admin_mueve_hato_division_entre_medicos()
+    {
+        $miembroA = Productor::factory()->create(['clave' => 'BD-4321', 'medico_id' => $this->medico2->id]);
+        $miembroB = Productor::factory()->create(['clave' => 'BD-4321']);
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('usuarios.guardar-asignacion', $this->medico1), [
+                'productor_ids' => [$miembroB->id],
+            ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('productores', [
+            'id' => $miembroA->id,
+            'medico_id' => $this->medico1->id,
+        ]);
+        $this->assertDatabaseHas('productores', [
+            'id' => $miembroB->id,
+            'medico_id' => $this->medico1->id,
+        ]);
     }
 }

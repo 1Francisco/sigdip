@@ -208,61 +208,7 @@
         <span class="spinner-border spinner-border-sm me-2"></span>Cargando aretes...
       </div>
 
-      <div class="mobile-cards d-lg-none" v-if="!areteLoading">
-        <div v-if="paginatedAretes.length === 0" class="empty-state-card shadow-sm">
-          <i class="bi bi-upc-scan display-6 d-block mb-2 text-muted"></i>
-          <div class="text-muted">No hay aretes para mostrar</div>
-        </div>
-
-        <div class="mobile-cards-grid">
-          <article v-for="arete in paginatedAretes" :key="arete.id" class="predio-mobile-card shadow-sm item-card">
-            <div class="predio-content">
-              <div class="field-block">
-                <span class="field-label">ARETE</span>
-                <span class="field-value fw-bold">{{ arete.numero_arete }}</span>
-              </div>
-              <div class="field-block" v-if="arete.raza">
-                <span class="field-label">RAZA</span>
-                <span class="field-value">{{ arete.raza }}</span>
-              </div>
-              <div class="field-block" v-if="arete.sexo">
-                <span class="field-label">SEXO</span>
-                <span class="field-value">{{ arete.sexo }}</span>
-              </div>
-              <div class="field-block" v-if="arete.edad_meses != null">
-                <span class="field-label">EDAD (MESES)</span>
-                <span class="field-value">{{ arete.edad_meses }}</span>
-              </div>
-              <div class="field-block">
-                <span class="field-label">SACRIFICIO</span>
-                <span v-if="arete.sacrificio" class="badge bg-danger">Sí</span>
-                <span v-else class="badge bg-secondary">No</span>
-              </div>
-              <div class="field-block">
-                <span class="field-label">PRODUCTOR</span>
-                <span class="field-value">{{ getAreteProductorName(arete.productor) }}</span>
-              </div>
-              <div class="field-block">
-                <span class="field-label">PREDIO</span>
-                <span class="field-value">{{ arete.predio?.nombre_rancho || '—' }}</span>
-              </div>
-            </div>
-            <div class="predio-mobile-footer">
-              <span class="footer-actions-label">Acciones</span>
-              <div class="d-flex gap-2">
-                <button class="btn-icon-square-gray" @click.stop="$router.push('/aretes-censo/' + arete.id)" title="Ver arete">
-                  <i class="bi bi-eye"></i>
-                </button>
-                <button class="btn-icon-square-gray" @click.stop="$router.push('/aretes-censo/editar/' + arete.id)" title="Editar arete">
-                  <i class="bi bi-pencil"></i>
-                </button>
-              </div>
-            </div>
-          </article>
-        </div>
-      </div>
-
-      <div class="desktop-card card border-0 shadow-sm overflow-hidden d-none d-lg-block" v-if="!areteLoading">
+      <div class="desktop-card card border-0 shadow-sm overflow-hidden" v-if="!areteLoading">
         <div class="card-header bg-white d-flex justify-content-between align-items-center p-3 p-md-4 border-bottom border-slate-100">
           <h5 class="mb-0 fw-bold fs-5 text-dark">Listado de Aretes del Censo</h5>
           <button class="btn btn-primary btn-sm-custom d-flex align-items-center gap-1-5 px-3 py-2" style="background: #0ea5e9;" @click="$router.push('/aretes-censo/nuevo')">

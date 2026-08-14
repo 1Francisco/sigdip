@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ProductoresApiController extends Controller
@@ -201,6 +202,30 @@ class ProductoresApiController extends Controller
             ], 403);
         }
 
+        $otrosPredios = collect();
+        if ($predio->clave_unidad_produccion) {
+            $otrosPredios = Predio::with(['productor', 'productor.medico'])
+                ->where('clave_unidad_produccion', $predio->clave_unidad_produccion)
+                ->where('productor_id', '!=', $predio->productor_id)
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'nombre_rancho' => $item->nombre_rancho,
+                        'clave_unidad_produccion' => $item->clave_unidad_produccion,
+                        'productor' => $item->productor ? [
+                            'id' => $item->productor->id,
+                            'nombre' => $item->productor->nombre,
+                            'apellido_paterno' => $item->productor->apellido_paterno,
+                            'apellido_materno' => $item->productor->apellido_materno,
+                            'medico' => $item->productor->medico ? [
+                                'name' => $item->productor->medico->name,
+                            ] : null,
+                        ] : null,
+                    ];
+                });
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -240,6 +265,7 @@ class ProductoresApiController extends Controller
                         'edad' => $animal->edad,
                     ];
                 })->values(),
+                'otros_predios' => $otrosPredios,
             ],
         ]);
     }
@@ -260,7 +286,7 @@ class ProductoresApiController extends Controller
                 'estado' => 'nullable|string',
                 'email' => 'nullable|email',
                 'medico_id' => 'nullable|exists:users,id',
-                'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
+                'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP|BAF|BAE)-?\d*$/i'],
                 'zona' => 'nullable|string|in:A,B',
                 'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
                 'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
@@ -268,7 +294,7 @@ class ProductoresApiController extends Controller
                 // Validaciones para el predio opcional (copia exacta de la web)
                 'registrar_predio' => 'nullable|boolean',
                 'nombre_rancho' => 'required_if:registrar_predio,1|nullable|string|max:255',
-                'clave_unidad_produccion' => 'required_if:registrar_predio,1|nullable|string|unique:predios,clave_unidad_produccion',
+                'clave_unidad_produccion' => 'required_if:registrar_predio,1|nullable|string',
                 'predio_municipio' => 'required_if:registrar_predio,1|nullable|string|max:255',
                 'predio_localidad' => 'required_if:registrar_predio,1|nullable|string|max:255',
             ]);
@@ -279,7 +305,12 @@ class ProductoresApiController extends Controller
                 $medicoId = $validated['medico_id'] ?? null;
                 if ($user && ! $user->hasRole('Administrador')) {
                     $medicoId = $user->id;
-                    unset($validated['clave'], $validated['zona']);
+                    $tipo = strtolower($validated['tipo_actividad'] ?? '');
+                    if ($tipo === 'barrido' || $tipo === 'buffer') {
+                        unset($validated['clave']);
+                    } else {
+                        unset($validated['clave'], $validated['zona']);
+                    }
                 }
 
                 if (($validated['tipo_actividad'] ?? '') !== 'Seguimiento') {
@@ -468,7 +499,7 @@ class ProductoresApiController extends Controller
                 'estado' => 'nullable|string',
                 'email' => 'nullable|email',
                 'medico_id' => 'nullable|exists:users,id',
-                'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
+                'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP|BAF|BAE)-?\d*$/i'],
                 'zona' => 'nullable|string|in:A,B',
                 'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
                 'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
@@ -481,7 +512,12 @@ class ProductoresApiController extends Controller
             $medicoId = $validated['medico_id'] ?? $productor->medico_id;
             if ($user && ! $user->hasRole('Administrador')) {
                 $medicoId = $user->id;
-                unset($validated['clave'], $validated['zona']);
+                $tipo = strtolower($validated['tipo_actividad'] ?? '');
+                if ($tipo === 'barrido' || $tipo === 'buffer') {
+                    unset($validated['clave']);
+                } else {
+                    unset($validated['clave'], $validated['zona']);
+                }
             }
             $validated['medico_id'] = $medicoId;
 
@@ -539,7 +575,13 @@ class ProductoresApiController extends Controller
 
             $validated = $request->validate([
                 'nombre_rancho' => 'required|string|max:255',
-                'clave_unidad_produccion' => 'required|string|unique:predios,clave_unidad_produccion',
+                'clave_unidad_produccion' => [
+                    'required',
+                    'string',
+                    Rule::unique('predios')->where(function ($query) use ($request) {
+                        return $query->where('productor_id', $request->productor_id);
+                    }),
+                ],
                 'localidad' => 'required|string|max:255',
                 'municipio' => 'nullable|string|max:255',
                 'productor_id' => 'required|exists:productores,id',
@@ -613,7 +655,13 @@ class ProductoresApiController extends Controller
 
             $validated = $request->validate([
                 'nombre_rancho' => 'required|string|max:255',
-                'clave_unidad_produccion' => 'required|string|unique:predios,clave_unidad_produccion,'.$predio->id,
+                'clave_unidad_produccion' => [
+                    'required',
+                    'string',
+                    Rule::unique('predios')->ignore($predio->id)->where(function ($query) use ($request) {
+                        return $query->where('productor_id', $request->productor_id);
+                    }),
+                ],
                 'localidad' => 'required|string|max:255',
                 'municipio' => 'nullable|string|max:255',
                 'productor_id' => 'required|exists:productores,id',
@@ -824,7 +872,8 @@ class ProductoresApiController extends Controller
 
             $vinculados = collect();
             if ($productor->clave) {
-                $vinculados = Productor::where('clave', $productor->clave)
+                $vinculados = Productor::with('medico')
+                    ->where('clave', $productor->clave)
                     ->where('id', '!=', $productor->id)
                     ->get();
             }
@@ -839,6 +888,11 @@ class ProductoresApiController extends Controller
                     'telefono' => $v->telefono,
                     'clave' => $v->clave,
                     'zona' => $v->zona,
+                    'medico_id' => $v->medico_id,
+                    'medico' => $v->medico ? [
+                        'id' => $v->medico->id,
+                        'name' => $v->medico->name,
+                    ] : null,
                 ];
             })->values();
         }

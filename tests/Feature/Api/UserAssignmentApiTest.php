@@ -145,4 +145,60 @@ class UserAssignmentApiTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    public function test_productores_asignables_incluye_clave()
+    {
+        Productor::factory()->create(['clave' => 'BP-1234']);
+
+        $response = $this->getJson("/api/usuarios/{$this->medico->id}/productores-asignables");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'medico',
+                'asignados' => [['id', 'nombre', 'clave', 'predios_count']],
+                'disponibles' => [['id', 'nombre', 'clave', 'predios_count']],
+            ]);
+    }
+
+    public function test_guardar_asignacion_asigna_hato_completo()
+    {
+        $miembro1 = Productor::factory()->create(['clave' => 'BAF-5555']);
+        $miembro2 = Productor::factory()->create(['clave' => 'BAF-5555']);
+
+        $response = $this->postJson("/api/usuarios/{$this->medico->id}/asignar-productores", [
+            'productor_ids' => [$miembro1->id],
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true);
+        $this->assertDatabaseHas('productores', [
+            'id' => $miembro1->id,
+            'medico_id' => $this->medico->id,
+        ]);
+        $this->assertDatabaseHas('productores', [
+            'id' => $miembro2->id,
+            'medico_id' => $this->medico->id,
+        ]);
+    }
+
+    public function test_guardar_asignacion_mueve_hato_division_entre_medicos()
+    {
+        $otroMedico = User::factory()->create();
+        $otroMedico->assignRole('Medico_Campo');
+
+        $miembroA = Productor::factory()->create(['clave' => 'BFC-7777', 'medico_id' => $this->medico->id]);
+        $miembroB = Productor::factory()->create(['clave' => 'BFC-7777', 'medico_id' => $otroMedico->id]);
+
+        $response = $this->postJson("/api/usuarios/{$this->medico->id}/asignar-productores", [
+            'productor_ids' => [$miembroA->id],
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true);
+        $this->assertDatabaseHas('productores', [
+            'id' => $miembroB->id,
+            'medico_id' => $this->medico->id,
+        ]);
+    }
 }

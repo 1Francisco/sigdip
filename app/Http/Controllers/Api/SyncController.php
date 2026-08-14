@@ -243,6 +243,7 @@ class SyncController extends Controller
                             'hato_libre_fecha' => $data['hato_libre_fecha'] ?? null,
                             'estado' => $data['estado'] ?? 'sincronizado',
                             'clave_interna' => $data['clave_interna'],
+                            'modified_at' => now(),
                         ]);
                         $inspeccion = $existingByClave;
                     } else {
@@ -276,6 +277,7 @@ class SyncController extends Controller
                                 'hato_libre_fecha' => $data['hato_libre_fecha'] ?? null,
                                 'estado' => $data['estado'] ?? 'sincronizado',
                                 'clave_interna' => $data['clave_interna'] ?? null,
+                                'modified_at' => now(),
                             ]
                         );
                     }
@@ -309,6 +311,7 @@ class SyncController extends Controller
                             'hato_libre_no' => $data['hato_libre_no'] ?? null,
                             'hato_libre_fecha' => $data['hato_libre_fecha'] ?? null,
                             'estado' => $data['estado'] ?? 'sincronizado',
+                            'modified_at' => now(),
                         ]
                     );
                 }
@@ -483,8 +486,15 @@ class SyncController extends Controller
             'productores.*.id' => 'required|string',
             'productores.*.nombre' => 'required|string',
             'productores.*.apellido_paterno' => 'required|string',
-            'productores.*.clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
+            'productores.*.clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP|BAF|BAE)-?\d*$/i'],
             'productores.*.zona' => 'nullable|string|in:A,B',
+            'productores.*.tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
+            'productores.*.sub_tipo_actividad' => 'nullable|string',
+            'productores.*.domicilio' => 'nullable|string',
+            'productores.*.municipio' => 'nullable|string',
+            'productores.*.localidad' => 'nullable|string',
+            'productores.*.estado' => 'nullable|string',
+            'productores.*.email' => 'nullable|email',
         ]);
 
         $resultados = [];
@@ -497,6 +507,7 @@ class SyncController extends Controller
             }
 
             if (! $productor) {
+                $isBarridoOrBuffer = isset($item['tipo_actividad']) && in_array(strtolower($item['tipo_actividad']), ['barrido', 'buffer'], true);
                 $productor = Productor::create([
                     'nombre' => $item['nombre'],
                     'apellido_paterno' => $item['apellido_paterno'],
@@ -504,9 +515,16 @@ class SyncController extends Controller
                     'curp' => $item['curp'] ?? ('OFFLINE-'.strtoupper(Str::random(12))),
                     'upp' => $item['upp'] ?? 'N/A',
                     'telefono' => $item['telefono'] ?? '',
+                    'domicilio' => $item['domicilio'] ?? '',
+                    'municipio' => $item['municipio'] ?? '',
+                    'localidad' => $item['localidad'] ?? '',
+                    'estado' => $item['estado'] ?? '',
+                    'email' => $item['email'] ?? '',
+                    'tipo_actividad' => $item['tipo_actividad'] ?? null,
+                    'sub_tipo_actividad' => $item['sub_tipo_actividad'] ?? null,
                     'medico_id' => $request->user()->hasRole('Administrador') ? ($item['medico_id'] ?? null) : $request->user()->id,
-                    'clave' => $request->user()->hasRole('Administrador') ? ($item['clave'] ?? null) : null,
-                    'zona' => $request->user()->hasRole('Administrador') ? ($item['zona'] ?? null) : null,
+                    'clave' => ($request->user()->hasRole('Administrador') || $isBarridoOrBuffer) ? ($item['clave'] ?? null) : null,
+                    'zona' => ($request->user()->hasRole('Administrador') || $isBarridoOrBuffer) ? ($item['zona'] ?? null) : null,
                 ]);
             }
 

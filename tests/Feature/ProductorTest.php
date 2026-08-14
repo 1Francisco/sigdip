@@ -306,24 +306,52 @@ class ProductorTest extends TestCase
         ]);
     }
 
-    public function test_autogenerates_clave_for_barrido()
+    public function test_autogenerates_clave_for_barrido_federal_zone_a()
     {
         $productor = Productor::create([
-            'nombre' => 'Barrido',
+            'nombre' => 'Barrido Fed',
             'apellido_paterno' => 'Test',
             'tipo_actividad' => 'Barrido',
+            'zona' => 'A',
         ]);
 
         $this->assertNotNull($productor->clave);
-        $this->assertStringStartsWith('BA-', $productor->clave);
+        $this->assertStringStartsWith('BAF-', $productor->clave);
     }
 
-    public function test_autogenerates_clave_for_buffer()
+    public function test_autogenerates_clave_for_barrido_estatal_zone_b()
     {
         $productor = Productor::create([
-            'nombre' => 'Buffer',
+            'nombre' => 'Barrido Est',
+            'apellido_paterno' => 'Test',
+            'tipo_actividad' => 'Barrido',
+            'zona' => 'B',
+        ]);
+
+        $this->assertNotNull($productor->clave);
+        $this->assertStringStartsWith('BAE-', $productor->clave);
+    }
+
+    public function test_autogenerates_clave_for_buffer_escasa_prevalencia_zone_a()
+    {
+        $productor = Productor::create([
+            'nombre' => 'Buffer Esc',
             'apellido_paterno' => 'Test',
             'tipo_actividad' => 'Buffer',
+            'zona' => 'A',
+        ]);
+
+        $this->assertNotNull($productor->clave);
+        $this->assertStringStartsWith('BFE-', $productor->clave);
+    }
+
+    public function test_autogenerates_clave_for_buffer_control_zone_b()
+    {
+        $productor = Productor::create([
+            'nombre' => 'Buffer Ctrl',
+            'apellido_paterno' => 'Test',
+            'tipo_actividad' => 'Buffer',
+            'zona' => 'B',
         ]);
 
         $this->assertNotNull($productor->clave);
@@ -350,8 +378,8 @@ class ProductorTest extends TestCase
         $p2 = Productor::create(['nombre' => 'P2', 'apellido_paterno' => 'T2', 'tipo_actividad' => 'Barrido']);
 
         $this->assertNotEquals($p1->clave, $p2->clave);
-        $this->assertStringStartsWith('BA-', $p1->clave);
-        $this->assertStringStartsWith('BA-', $p2->clave);
+        $this->assertStringStartsWith('BAE-', $p1->clave);
+        $this->assertStringStartsWith('BAE-', $p2->clave);
     }
 
     public function test_preview_clave_web_admin()
@@ -388,7 +416,7 @@ class ProductorTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('success', true);
-        $this->assertStringStartsWith('BA-', $response->json('clave'));
+        $this->assertStringStartsWith('BAE-', $response->json('clave'));
     }
 
     public function test_preview_clave_api_movil_usa_zona_del_medico()
@@ -415,8 +443,8 @@ class ProductorTest extends TestCase
     {
         $generated = Productor::siguienteClave('Barrido');
 
-        $this->assertStringStartsWith('BA-', $generated['clave']);
-        $this->assertNull($generated['zona']);
+        $this->assertStringStartsWith('BAE-', $generated['clave']);
+        $this->assertEquals('B', $generated['zona']);
         $this->assertDatabaseCount('productores', 0);
     }
 

@@ -54,6 +54,29 @@
         </div>
 
         <div class="card shadow-sm border-0 p-4 rounded-4 mb-4">
+          <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <div class="text-start">
+              <div class="fw-bold text-dark">Dictamen Oficial del Comité</div>
+              <div class="text-secondary small">
+                {{ inspeccion.dictamen_comite ? 'Archivo PDF adjunto al dictamen.' : 'No hay dictamen del comité registrado.' }}
+              </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+              <button class="btn btn-outline-primary btn-sm rounded-pill px-3" :disabled="comiteUploading" @click="$refs.comiteInput.click()">
+                <i class="bi bi-upload me-1"></i>{{ inspeccion.dictamen_comite ? 'Reemplazar' : 'Subir PDF' }}
+              </button>
+              <button v-if="inspeccion.dictamen_comite" class="btn btn-outline-primary btn-sm rounded-pill px-3" @click="downloadComitePdf">
+                <i class="bi bi-download me-1"></i> Descargar
+              </button>
+              <button v-if="inspeccion.dictamen_comite" class="btn btn-outline-danger btn-sm rounded-pill px-3" @click="deleteComitePdf">
+                <i class="bi bi-trash me-1"></i> Eliminar
+              </button>
+              <input ref="comiteInput" type="file" accept="application/pdf,.pdf" style="display: none" @change="onComiteFileSelected" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm border-0 p-4 rounded-4 mb-4">
           <div class="fw-bold text-dark mb-3">Datos Generales</div>
           <div class="row g-3 text-start">
             <div class="col-12 col-md-4"><div class="text-muted small">Tipo de prueba</div><div class="fw-semibold">{{ inspeccion.tipo_prueba || '-' }}</div></div>
@@ -121,7 +144,8 @@ export default {
     return {
       loading: false,
       errorMsg: '',
-      inspeccion: null
+      inspeccion: null,
+      comiteUploading: false
     };
   },
   async mounted() {
@@ -169,8 +193,13 @@ export default {
       try {
         const blob = await api.getInspectionPdf(this.inspeccion.id);
         const fileName = `dictamen_${this.inspeccion.clave_interna || this.inspeccion.id}_${new Date().getDate()}-${new Date().getMonth() + 1}-${new Date().getFullYear()}.pdf`;
-
-        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        await this.savePdf(blob, fileName);
+      } catch (e) {
+        this.errorMsg = e.message || 'No se pudo abrir el PDF.';
+      }
+    },
+    async savePdf(blob, fileName) {
+      if (window.Capacitor && window.Capacitor.isNativePlatform()) {
           const reader = new FileReader();
           reader.readAsDataURL(blob);
           reader.onloadend = async () => {
@@ -267,8 +296,44 @@ export default {
           document.body.removeChild(link);
           setTimeout(() => URL.revokeObjectURL(url), 15000);
         }
+    },
+    async downloadComitePdf() {
+      this.errorMsg = '';
+      try {
+        const blob = await api.getDictamenComite(this.inspeccion.id);
+        const fileName = `DICTAMEN_COMITE_${this.inspeccion.clave_interna || this.inspeccion.id}.pdf`;
+        await this.savePdf(blob, fileName);
       } catch (e) {
-        this.errorMsg = e.message || 'No se pudo abrir el PDF.';
+        this.errorMsg = e.message || 'No se pudo descargar el dictamen del comité.';
+      }
+    },
+    async onComiteFileSelected(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      this.comiteUploading = true;
+      this.errorMsg = '';
+      try {
+        const formData = new FormData();
+        formData.append('dictamen_comite', file);
+        const res = await api.uploadDictamenComite(this.inspeccion.id, formData);
+        if (res.success) {
+          this.inspeccion = res.data;
+        }
+      } catch (e) {
+        this.errorMsg = e.message || 'No se pudo subir el dictamen del comité.';
+      } finally {
+        this.comiteUploading = false;
+        event.target.value = '';
+      }
+    },
+    async deleteComitePdf() {
+      if (!confirm('¿Eliminar el dictamen oficial del comité del servidor? Esta acción no se puede deshacer.')) return;
+      this.errorMsg = '';
+      try {
+        await api.deleteDictamenComite(this.inspeccion.id);
+        await this.loadDetail();
+      } catch (e) {
+        this.errorMsg = e.message || 'No se pudo eliminar el dictamen del comité.';
       }
     },
     async deleteInspeccion() {

@@ -407,6 +407,43 @@ export default {
     return await requestBlob(`/inspecciones/${id}/pdf`);
   },
 
+  async uploadDictamenComite(id, formData) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+    const headers = {
+      'Accept': 'application/json',
+    };
+
+    const token = getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE}/inspecciones/${id}/upload-dictamen-comite`, {
+      method: 'POST',
+      headers,
+      body: formData,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || `Error ${response.status}`);
+    }
+
+    return data;
+  },
+
+  async getDictamenComite(id) {
+    return await requestBlob(`/inspecciones/${id}/download-dictamen-comite`);
+  },
+
+  async deleteDictamenComite(id) {
+    return await request('DELETE', `/inspecciones/${id}/delete-dictamen-comite`);
+  },
+
   async getSábanaExcel(params = {}) {
     const query = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
     return await requestBlob('/reportes/sábana-excel' + query, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

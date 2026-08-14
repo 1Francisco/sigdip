@@ -77,7 +77,7 @@
                     <td class="fw-bold text-dark">{{ animal.numero_arete_siniiga }}</td>
                     <td class="text-dark">{{ animal.raza || '—' }}</td>
                     <td class="text-dark">{{ animal.sexo || '—' }}</td>
-                    <td class="text-dark">{{ animal.edad != null ? animal.edad + ' años' : '—' }}</td>
+                    <td class="text-dark">{{ animal.edad != null ? animal.edad + ' meses' : '—' }}</td>
                     <td class="text-dark">
                       <div v-if="animal.predio">
                         <div class="fw-semibold">{{ animal.predio.nombre_rancho || 'Sin nombre' }}</div>
@@ -137,7 +137,7 @@
 
                     <div class="field-block">
                       <span class="field-label">EDAD</span>
-                      <span class="field-value text-dark">{{ animal.edad != null ? animal.edad + ' años' : '—' }}</span>
+                      <span class="field-value text-dark">{{ animal.edad != null ? animal.edad + ' meses' : '—' }}</span>
                     </div>
 
                     <div class="field-block">

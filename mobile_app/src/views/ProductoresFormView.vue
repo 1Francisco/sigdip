@@ -263,8 +263,8 @@
                   </div>
                 </div>
 
-                <!-- Clave | Zona / Sector (Solo Administradores) -->
-                <template v-if="isAdmin">
+                <!-- Clave | Zona / Sector (Administradores, or Barrido/Buffer) -->
+                <template v-if="isAdmin || form.tipo_actividad === 'Barrido' || form.tipo_actividad === 'Buffer'">
                   <div class="col-12 col-md-6">
                     <div class="form-group-custom">
                       <label class="form-label-custom">Clave</label>
@@ -272,13 +272,17 @@
                         :value="form.clave" 
                         type="text" 
                         class="form-control-custom text-uppercase" 
-                        placeholder="Ej. BD-123421"
+                        placeholder="Ej. BAF-1234"
+                        :readonly="form.tipo_actividad === 'Barrido' || form.tipo_actividad === 'Buffer'"
+                        :class="{ 'bg-light': form.tipo_actividad === 'Barrido' || form.tipo_actividad === 'Buffer' }"
                         @input="e => { form.clave = e.target.value.toUpperCase(); onClaveInput(); }"
                       >
-                      <div class="small text-muted mt-1" style="font-size: 0.72rem;">Debe iniciar con AD, AP, BD o BP.</div>
+                      <div class="small text-muted mt-1" style="font-size: 0.72rem;">
+                        {{ (form.tipo_actividad === 'Barrido' || form.tipo_actividad === 'Buffer') ? 'Clave autogenerada según la actividad y zona seleccionada.' : 'Debe iniciar con AD, AP, BD o BP.' }}
+                      </div>
                       
-                      <!-- Resultados de clave autocomplete (real-time como en la web) -->
-                      <div v-if="resultadosClave.length > 0" class="mt-2 p-2 bg-light rounded border text-start" style="max-height: 180px; overflow-y: auto;">
+                      <!-- Resultados de clave autocomplete (only show if not Barrido/Buffer) -->
+                      <div v-if="(form.tipo_actividad !== 'Barrido' && form.tipo_actividad !== 'Buffer') && resultadosClave.length > 0" class="mt-2 p-2 bg-light rounded border text-start" style="max-height: 180px; overflow-y: auto;">
                         <div class="small text-muted fw-bold mb-1" style="font-size: 0.75rem;">Productores con esta clave:</div>
                         <div class="list-group list-group-flush">
                           <div 
@@ -296,10 +300,10 @@
                           </div>
                         </div>
                       </div>
-                      <div v-else-if="form.clave && isSearchingClave" class="small text-muted mt-1 text-start" style="font-size: 0.75rem;">
+                      <div v-else-if="(form.tipo_actividad !== 'Barrido' && form.tipo_actividad !== 'Buffer') && form.clave && isSearchingClave" class="small text-muted mt-1 text-start" style="font-size: 0.75rem;">
                         <span class="spinner-border spinner-border-sm me-1" role="status" style="width: 0.75rem; height: 0.75rem;"></span> Buscando claves...
                       </div>
-                      <div v-else-if="form.clave && noClaveFound" class="small text-warning mt-1 text-start" style="font-size: 0.75rem;">
+                      <div v-else-if="(form.tipo_actividad !== 'Barrido' && form.tipo_actividad !== 'Buffer') && form.clave && noClaveFound" class="small text-warning mt-1 text-start" style="font-size: 0.75rem;">
                         <i class="bi bi-exclamation-triangle-fill"></i> Clave nueva (no asignada a ningún productor en el servidor).
                       </div>
                     </div>
@@ -616,6 +620,10 @@ export default {
           this.form.sub_tipo_actividad = prod.sub_tipo_actividad || '';
           this.form.medico_id = prod.medico_id || '';
 
+          this.originalTipo = prod.tipo_actividad || '';
+          this.originalZona = prod.zona || '';
+          this.originalClave = prod.clave || '';
+
           // Si es edición, también permitimos editar su predio directamente
           this.form.nombre_rancho = predioAsociado.nombre !== 'Sin Rancho' ? predioAsociado.nombre : '';
           this.form.clave_unidad_produccion = predioAsociado.nombre !== 'Sin Rancho' ? predioAsociado.upp : '';
@@ -632,11 +640,20 @@ export default {
             const res = await api.getProductor(this.productorId);
             if (res?.productor) {
               const prod = res.productor;
-              if (prod.tipo_actividad) this.form.tipo_actividad = prod.tipo_actividad;
+              if (prod.tipo_actividad) {
+                this.form.tipo_actividad = prod.tipo_actividad;
+                this.originalTipo = prod.tipo_actividad;
+              }
               if (prod.sub_tipo_actividad) this.form.sub_tipo_actividad = prod.sub_tipo_actividad;
               if (prod.medico_id) this.form.medico_id = prod.medico_id;
-              if (prod.clave) this.form.clave = prod.clave;
-              if (prod.zona) this.form.zona = prod.zona;
+              if (prod.clave) {
+                this.form.clave = prod.clave;
+                this.originalClave = prod.clave;
+              }
+              if (prod.zona) {
+                this.form.zona = prod.zona;
+                this.originalZona = prod.zona;
+              }
             }
           } catch (e) {
             console.warn('No se pudieron cargar datos adicionales del servidor:', e.message);
@@ -670,6 +687,13 @@ export default {
       if (this.form.tipo_actividad !== 'Seguimiento') {
         this.form.sub_tipo_actividad = '';
       }
+      if (this.form.tipo_actividad === 'Barrido' || this.form.tipo_actividad === 'Buffer') {
+        const user = api.getCurrentUser();
+        const userZona = user?.zona || '';
+        if (!this.form.zona) {
+          this.form.zona = userZona === 'A' || userZona === 'B' ? userZona : 'B';
+        }
+      }
       this.fetchClavePreview();
     },
 
@@ -678,10 +702,21 @@ export default {
         this.clavePreview = null;
         return;
       }
-      if (this.form.clave && this.form.clave.trim()) {
+      const isBarridoOrBuffer = this.form.tipo_actividad === 'Barrido' || this.form.tipo_actividad === 'Buffer';
+      
+      if (!isBarridoOrBuffer && this.form.clave && this.form.clave.trim()) {
         this.clavePreview = null;
         return;
       }
+
+      if (this.mode === 'edit' && this.originalClave && 
+          this.form.tipo_actividad === this.originalTipo && 
+          this.form.zona === this.originalZona) {
+        this.form.clave = this.originalClave;
+        this.clavePreview = null;
+        return;
+      }
+
       try {
         const params = { tipo_actividad: this.form.tipo_actividad };
         if (this.form.sub_tipo_actividad) params.sub_tipo_actividad = this.form.sub_tipo_actividad;
@@ -690,6 +725,10 @@ export default {
         const res = await api.previewClaveProductor(params);
         this.clavePreview = res?.clave ? { clave: res.clave, zona: res.zona || null } : null;
         if (res?.zona && !this.form.zona) this.form.zona = res.zona;
+
+        if (isBarridoOrBuffer && res?.clave) {
+          this.form.clave = res.clave;
+        }
       } catch (e) {
         this.clavePreview = null;
       }
@@ -745,6 +784,7 @@ export default {
     },
 
     autoSelectZona() {
+      if (this.form.tipo_actividad !== 'Seguimiento') return;
       if (!this.form.clave) return;
       const first = this.form.clave.toUpperCase()[0];
       if (first === 'A' || first === 'B') this.form.zona = first;
@@ -1027,8 +1067,8 @@ export default {
         estado: this.form.estado.trim(),
         telefono: this.form.telefono.trim(),
         email: this.form.email.trim(),
-        clave: this.isAdmin ? (this.form.clave || '').toUpperCase().trim() : null,
-        zona: this.isAdmin ? (this.form.zona || null) : null,
+        clave: (this.isAdmin || this.form.tipo_actividad === 'Barrido' || this.form.tipo_actividad === 'Buffer') ? (this.form.clave || '').toUpperCase().trim() : null,
+        zona: (this.isAdmin || this.form.tipo_actividad === 'Barrido' || this.form.tipo_actividad === 'Buffer') ? (this.form.zona || null) : null,
         tipo_actividad: this.form.tipo_actividad || null,
         sub_tipo_actividad: this.form.tipo_actividad === 'Seguimiento' ? (this.form.sub_tipo_actividad || null) : null,
         medico_id: this.isAdmin ? (this.form.medico_id || null) : null,
@@ -1054,16 +1094,10 @@ export default {
           return;
         }
 
-        const duplicateUpp = prediosLocales.some(p => p.productor && p.productor.upp && p.productor.upp === body.upp && String(p.productor.id) !== String(this.productorId));
-        if (duplicateUpp) {
-          alert('Ya existe un productor registrado con esta UPP localmente.');
-          return;
-        }
-
         if (body.registrar_predio) {
-          const duplicatePredioUpp = prediosLocales.some(p => p.upp && p.upp === body.clave_unidad_produccion && String(p.productor_id) !== String(this.productorId));
+          const duplicatePredioUpp = prediosLocales.some(p => p.upp && p.upp === body.clave_unidad_produccion && String(p.productor_id) === String(this.productorId));
           if (duplicatePredioUpp) {
-            alert('Ya existe un Rancho/Predio registrado con esta UPP localmente.');
+            alert('Ya tienes un Rancho/Predio registrado con esta UPP para este productor.');
             return;
           }
         }

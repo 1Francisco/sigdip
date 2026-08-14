@@ -84,7 +84,7 @@ class ProductorController extends Controller
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email',
             'medico_id' => 'nullable|exists:users,id',
-            'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
+            'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP|BAF|BAE)-?\d*$/i'],
             'zona' => 'nullable|string|in:A,B',
             'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
             'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
@@ -92,7 +92,7 @@ class ProductorController extends Controller
             // Validaciones para el predio (si se envían)
             'registrar_predio' => 'nullable|boolean',
             'nombre_rancho' => 'required_if:registrar_predio,1|nullable|string|max:255',
-            'clave_unidad_produccion' => 'required_if:registrar_predio,1|nullable|string|unique:predios,clave_unidad_produccion',
+            'clave_unidad_produccion' => 'required_if:registrar_predio,1|nullable|string',
             'predio_municipio' => 'required_if:registrar_predio,1|nullable|string|max:255',
             'predio_localidad' => 'required_if:registrar_predio,1|nullable|string|max:255',
             'latitud' => 'nullable|string|max:50',
@@ -105,7 +105,12 @@ class ProductorController extends Controller
                 $medicoId = $validated['medico_id'] ?? null;
                 if (! auth()->user()->hasRole('Administrador')) {
                     $medicoId = auth()->id();
-                    unset($validated['clave'], $validated['zona']);
+                    $tipo = strtolower($validated['tipo_actividad'] ?? '');
+                    if ($tipo === 'barrido' || $tipo === 'buffer') {
+                        unset($validated['clave']);
+                    } else {
+                        unset($validated['clave'], $validated['zona']);
+                    }
                 }
 
                 if (($validated['tipo_actividad'] ?? '') !== 'Seguimiento') {
@@ -189,7 +194,7 @@ class ProductorController extends Controller
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email',
             'medico_id' => 'nullable|exists:users,id',
-            'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
+            'clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP|BAF|BAE)-?\d*$/i'],
             'zona' => 'nullable|string|in:A,B',
             'tipo_actividad' => 'nullable|string|in:Barrido,Buffer,Seguimiento',
             'sub_tipo_actividad' => 'required_if:tipo_actividad,Seguimiento|nullable|string|in:Cuarentena Precautoria,Cuarentena Definitiva,Hatos Relacionados y Expuestos',
@@ -202,7 +207,12 @@ class ProductorController extends Controller
         $medicoId = $validated['medico_id'] ?? $productor->medico_id;
         if (! auth()->user()->hasRole('Administrador')) {
             $medicoId = auth()->id();
-            unset($validated['clave'], $validated['zona']);
+            $tipo = strtolower($validated['tipo_actividad'] ?? '');
+            if ($tipo === 'barrido' || $tipo === 'buffer') {
+                unset($validated['clave']);
+            } else {
+                unset($validated['clave'], $validated['zona']);
+            }
         }
         $validated['medico_id'] = $medicoId;
 
@@ -378,7 +388,7 @@ class ProductorController extends Controller
             'productores.*.apellido_materno' => 'nullable|string|max:255',
             'productores.*.curp' => 'nullable|string|size:18|unique:productores,curp',
             'productores.*.upp' => 'nullable|string|unique:productores,upp',
-            'productores.*.clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP)-?\d*$/i'],
+            'productores.*.clave' => ['nullable', 'string', 'regex:/^(AD|AP|BD|BP|BA|BF|BFC|BFE|BU|SG|GP|BAF|BAE)-?\d*$/i'],
             'productores.*.domicilio' => 'nullable|string',
             'productores.*.municipio' => 'nullable|string',
             'productores.*.localidad' => 'nullable|string',
@@ -393,7 +403,7 @@ class ProductorController extends Controller
             // Predio
             'productores.*.registrar_predio' => 'nullable|boolean',
             'productores.*.nombre_rancho' => 'required_if:productores.*.registrar_predio,1|nullable|string|max:255',
-            'productores.*.clave_unidad_produccion' => 'required_if:productores.*.registrar_predio,1|nullable|string|unique:predios,clave_unidad_produccion',
+            'productores.*.clave_unidad_produccion' => 'required_if:productores.*.registrar_predio,1|nullable|string',
             'productores.*.predio_municipio' => 'required_if:productores.*.registrar_predio,1|nullable|string|max:255',
             'productores.*.predio_localidad' => 'required_if:productores.*.registrar_predio,1|nullable|string|max:255',
             'productores.*.latitud' => 'nullable|string|max:50',
@@ -419,7 +429,12 @@ class ProductorController extends Controller
                     $medicoId = $pData['medico_id'] ?? null;
                     if (! auth()->user()->hasRole('Administrador')) {
                         $medicoId = auth()->id();
-                        unset($pData['zona']);
+                        $tipo = strtolower($pData['tipo_actividad'] ?? '');
+                        if ($tipo === 'barrido' || $tipo === 'buffer') {
+                            unset($pData['clave']);
+                        } else {
+                            unset($pData['clave'], $pData['zona']);
+                        }
                     }
 
                     if (($pData['tipo_actividad'] ?? '') !== 'Seguimiento') {
